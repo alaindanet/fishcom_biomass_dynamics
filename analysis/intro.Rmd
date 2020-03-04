@@ -1,0 +1,117 @@
+---
+title: "Vignette Title"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = TRUE
+)
+library(datasets)
+```
+
+```{r}
+library(tidyverse)
+library(magrittr)
+
+data(iris)
+head(iris)
+```
+
+```{r}
+# I do not like uppercase:
+iris %<>% rename_all(tolower)
+head(iris)
+
+# I prefer tibble format:
+iris %<>% as.tibble 
+iris
+
+```
+
+
+We want to compute the mean value for each variable for each species. We will
+use the functions of the `dplyr` package.
+
+```{r}
+iris_species <- iris %>%
+  gather(variable, value, sepal.length:petal.width) %>%
+  group_by(species, variable) %>%
+  summarise(avg = mean(value)) %>%
+  spread(variable, avg)
+```
+
+## Tables
+
+You can generate tables in markdown with `kable()` but you can also generate it
+in LaTeX.
+
+```{r}
+knitr::kable(iris_species)
+
+```
+
+```{r}
+library(xtable)
+xtable(iris_species)
+
+```
+
+Let's tweak a bit the table by removing row numbering, reduce digit number,
+etc... See `r ?xtable` and `r ?print.xtable`
+
+
+```{r}
+iris_species_xtable <- xtable(iris_species, 
+  caption = "Average flower phenology (in cm) of different species of the
+  \textit{Iris} genus.",
+  label = "tab:iris_species",
+  align = c("c","l", "|", "r", "r", "r", "r"),
+  digits = 1
+  )
+print(iris_species_xtable, include.rownames = FALSE)
+
+```
+
+## Figures
+
+
+```{r}
+iris_petall <- select(iris, species, petal.length)
+p <- ggplot(iris_petall, aes(y = petal.length, x = species)) + 
+  geom_violin()
+p
+```
+
+This plot is not ready to be put in a paper (grey area, bad axes, font not
+ajusted). The package `cowplot` load a theme with better default. See the
+cowplot
+[vignette](https://cran.r-project.org/web/packages/cowplot/vignettes/introduction.html).
+
+```{r}
+library(cowplot)
+p
+
+```
+
+You can also arrange plots in a grid: 
+
+```{r}
+p2 <- ggplot(mpg, aes(x = cty, y = hwy, colour = factor(cyl))) + 
+  geom_point(size=2.5)
+p2
+
+```
+```{r, fig.dim = c(7, 5)}
+plot_grid(p, p2, labels = "AUTO")
+```
+
+
