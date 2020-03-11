@@ -1,6 +1,14 @@
-library(dplyr)
 library(tidyverse)
+library(magrittr)
+
+mypath <- rprojroot::find_package_root_file
+source(mypath("R", "misc.R"))
+
 #### Création d'un tableau avec niveau trophique moyen et années ###
+myload(network_metrics, dir = mypath("data", "classes"))
+myload(biomass_ts_sax, dir = mypath("data"))
+    
+# Troph_level_avg is not in network_metrics ? 
 data_troph_level <- dplyr::select(network_metrics, opcod, troph_level_avg) %>%
   left_join(cba, data_troph_level, by = "opcod") %>%
   filter(!is.na(station) & !is.na(opcod))
