@@ -27,7 +27,10 @@ str(biomass_coeff)
 ##OK
 #Suppression des parenthèses
 data <- mutate(biomass_coeff,
-                str_replace_all, pattern = "(Intercept)", replacement = "Intercept")
+                term = str_replace_all(term, "(Intercept)", "Intercept")
+
+data <- str_replace_all(term, "(Intercept)", "Intercept")
+
 library(stringi)
 data <- stri_replace_all_fixed(biomass_coeff$term, ")", "")
 
