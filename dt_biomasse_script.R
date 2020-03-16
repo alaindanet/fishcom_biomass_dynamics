@@ -3,7 +3,15 @@ library (tidyverse)
 library (dplyr)
 library (magrittr)
 #Import des fichiers
-load("~/Desktop/fishcom_biomass_dynamics/biomass_cba.RData")
+# Ajout pour Alain:
+if (Sys.info()["nodename"] == "Andy") {
+  mypath <- rprojroot::find_package_root_file
+  source(mypath("R", "misc.R")) # pour myload and mysave 
+  load(mypath("biomass_cba.RData"))
+
+} else {
+  load("~/Desktop/fishcom_biomass_dynamics/biomass_cba.RData")
+}
 
 #Ajout du log(biomass) et du nb d'années
 logbiomass_cba<-dplyr::mutate(biomass_cba,log_biomass=log10(biomass)) %>%
@@ -19,26 +27,15 @@ bystation_biomass <-logbiomass_cba%>%
     coeff = map(model, broom::tidy)
   )
 #Tableau des coefficients
-biomass_unnest <-unnest(bystation_biomass, coeff)
-
-#Suppression des colonnes inutiles
-biomass_coeff <- biomass_unnest[ , - c(2:3)]
+biomass_coeff <- bystation_biomass %>%
+  select(station, coeff) %>%
+  unnest(coeff)
 str(biomass_coeff)
 ##OK
-#Suppression des parenthèses
-data <- mutate(biomass_coeff,
-                term = str_replace_all(term, "(Intercept)", "Intercept")
-
-data <- str_replace_all(term, "(Intercept)", "Intercept")
-
-library(stringi)
-data <- stri_replace_all_fixed(biomass_coeff$term, ")", "")
-
-gsub("\s*\([^\)]+\)","",as.character(biomass_coeff$term))
-
-library(stringr)
-str_replace(biomass_coeff$term, "\(.*\)", "")
-
+#Suppression des parenthèses: https://stackoverflow.com/a/53622690
+data <- biomass_coeff %>%
+  mutate(term = str_replace_all(term, "[//(//)]", ""))
+ 
 ####
 str(df)
 #C'est là que les estimate deviennent des caractères...
