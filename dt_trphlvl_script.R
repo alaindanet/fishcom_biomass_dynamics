@@ -24,10 +24,11 @@ trphlvl_unnest <-unnest(bystation_trphlvl, coeff)
 #Suppression des colonnes inutiles
 trphlvl_coeff <- trphlvl_unnest[ , - c(2:3)]
 
-#Suppression des parenthèses
-datat<-trphlvl_coeff
-datat[-1] <- lapply(datat[-1], gsub, pattern = "(Intercept)", replacement = "Intercept", fixed = TRUE)
-datat[-1] <- lapply(datat[-1], gsub, pattern = "nb_year", replacement = "Pente", fixed = TRUE)
+#Suppression des parenthèses: https://stackoverflow.com/a/53622690
+datat <- trphlvl_coeff %>%
+  mutate(term = str_replace_all(term, "[//(//)]", ""))
+str(datat)
+
 #Division en deux du data frame
 datat_part1 <- dplyr::select(datat, station, term, estimate) %>%
   pivot_wider(names_from = term, values_from = estimate)
@@ -39,3 +40,16 @@ datat_part3 <- datat_part2[seq(2, nrow(datat_part2), 2),] %>%
 
 #Fusionner les deux jeux de données
 dt_trphlvl <- left_join(datat_part1, datat_part3, by = "station")
+
+graphe_trphlvl <-ggplot(dt_trphlvl, aes(x=Intercept, y=nb_year, color=p.value_pente)) + geom_point()
+graphe_trphlvl
+
+#Ajout de la biomasse initiale
+biomass_init <- read.table("//Users//Loubnaem//Desktop//biomass_init.txt",header=TRUE,dec=",") %>%
+  mutate(station=as.character(station))
+dt_troph_biomass_init <- left_join(dt_richness, biomass_init, by = "station")
+
+graphe_troph_biomass_init <-ggplot(dt_troph_biomass_init, aes(x=Intercept, y=nb_year, color=log(biomass_init))) + geom_point()
+graphe_troph_biomass_init
+
+
