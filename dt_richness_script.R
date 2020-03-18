@@ -25,9 +25,10 @@ richness_unnest <-unnest(bystation_richness, coeff)
 richness_coeff <- richness_unnest[ , - c(2:3)]
 
 #Suppression des parenthèses
-datar<-richness_coeff
-datar[-1] <- lapply(datar[-1], gsub, pattern = "(Intercept)", replacement = "Intercept", fixed = TRUE)
-datar[-1] <- lapply(datar[-1], gsub, pattern = "nb_year", replacement = "Pente", fixed = TRUE)
+#Suppression des parenthèses: https://stackoverflow.com/a/53622690
+datar <- richness_coeff %>%
+  mutate(term = str_replace_all(term, "[//(//)]", ""))
+str(datar)
 #Division en deux du data frame
 datar_part1 <- dplyr::select(datar, station, term, estimate) %>%
   pivot_wider(names_from = term, values_from = estimate)
@@ -39,3 +40,15 @@ datar_part3 <- datar_part2[seq(2, nrow(datar_part2), 2),] %>%
 
 #Fusionner les deux jeux de données
 dt_richness <- left_join(datar_part1, datar_part3, by = "station")
+plot(dt_richness$Intercept,dt_richness$nb_year)
+graphe_richness <-ggplot(dt_richness, aes(x=Intercept, y=nb_year, color=p.value_pente)) + geom_point()
+graphe_richness
+
+#Ajout de la biomasse initiale
+biomass_init <- read.table("//Users//Loubnaem//Desktop//biomass_init.txt",header=TRUE,dec=",") %>%
+  mutate(station=as.character(station))
+dt_richness_biomass_init <- left_join(dt_richness, biomass_init, by = "station")
+
+graphe_richness_biomass_init <-ggplot(dt_richness_biomass_init, aes(x=Intercept, y=nb_year, color=log(biomass_init))) + geom_point()
+graphe_richness_biomass_init
+
