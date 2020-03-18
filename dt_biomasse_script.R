@@ -35,28 +35,12 @@ str(biomass_coeff)
 #Suppression des parenthèses: https://stackoverflow.com/a/53622690
 data <- biomass_coeff %>%
   mutate(term = str_replace_all(term, "[//(//)]", ""))
- 
-####
-str(df)
-#C'est là que les estimate deviennent des caractères...
-data[-1] <- lapply(data[-1], gsub, pattern = "(Intercept)", replacement = "Intercept", fixed = TRUE)
-data[-1] <- lapply(data[-1], gsub, pattern = "nb_year", replacement = "Pente", fixed = TRUE)
-## Réessayer avec str_replace_all. str_replace_all pour vecteurs ? 
-df <- mutate_if(data, 
-                is.numeric,
-                str_replace_all, pattern = "(Intercept)", replacement = "Intercept")
-str(df)
-# essai avec un data frame modifié à la base 
-#Caractères aussi 
+str(data)
 #Division en deux du data frame
 data_part1 <- dplyr::select(data, station, term, estimate) %>%
   pivot_wider(names_from = term, values_from = estimate)
-#Essai : spread
-data_part1_bis <- dplyr::select(data, station, term, estimate)
-data_part1_spread <- tidyr::spread(data_part1_bis, term, estimate)
-str(data_part1_bis)
-
 str(data_part1)
+
 #Supprimer les lignes intercept du data_part2
 data_part2 <- dplyr::select(data, station, term, std.error, statistic, p.value)
 data_part3 <- data_part2[seq(2, nrow(data_part2), 2),] %>% 
@@ -64,5 +48,16 @@ data_part3 <- data_part2[seq(2, nrow(data_part2), 2),] %>%
 
 #Fusionner les deux jeux de données
 dt_biomass <- left_join(data_part1, data_part3, by = "station")
-
 #ungroup
+plot(dt_biomass$Intercept,dt_biomass$nb_year)
+graphe_biomass <-ggplot(dt_biomass, aes(x=Intercept, y=nb_year, color=p.value_pente)) + geom_point()
+graphe_biomass
+
+#Ajout de la biomasse initiale
+biomass_init <- read.table("//Users//Loubnaem//Desktop//biomass_init.txt",header=TRUE,dec=",") %>%
+  mutate(station=as.character(station))
+dt_biomass_init <- left_join(dt_biomass, biomass_init, by = "station")
+
+graphe_biomass_init <-ggplot(dt_biomass_init, aes(x=Intercept, y=nb_year, color=log(biomass_init))) + geom_point()
+graphe_biomass_init
+
