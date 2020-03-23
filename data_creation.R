@@ -71,3 +71,27 @@ net_class_trph <- net_trph %>%
 # Ne garder que les cba
 trphlvl_cba <- filter(net_class_trph, sax == "cba") %>%
   dplyr::select(opcod, station, w_trph_lvl_avg, year)
+
+#############################################################
+### Data frame : connectance_cba (opcod, station, connectance, year)
+op_con <- dplyr::select(op_analysis, station, opcod, year)
+net_con <- dplyr::select(network_metrics, opcod, connectance)
+op_net_con <- left_join(net_con, op_con, by = "opcod") %>%
+  filter(!is.na(station) & !is.na(opcod))
+
+# Ajout de la classification cba
+classification_cba <- dplyr::select(biomass_ts_sax, station, sax)
+# S'assurer que la variable station soit en character dans les deux data frame
+op_station_con <- dplyr::select(op_analysis, station, opcod, year) %>%
+  mutate(station = as.character(station))
+
+net_class_con <- net_con %>%
+  # ajouter les stations à community analysis
+  left_join(op_station_con, by = "opcod") %>%
+  # ajouter les classifications
+  left_join(classification_cba, by = "station")
+# Ne garder que les cba
+connectance_cba <- filter(net_class_con, sax == "cba") %>%
+  dplyr::select(opcod, station, connectance, year)
+
+
