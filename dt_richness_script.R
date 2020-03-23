@@ -1,12 +1,24 @@
 # Importation des packages
+mypath <- rprojroot::find_package_root_file
 library (tidyverse)
 library (dplyr)
 library (magrittr)
 #Import des fichiers
 load("~/Desktop/fishcom_biomass_dynamics/richness_cba.RData")
+load(paste0(mypath(), "/richness_cba.RData"))
+
+add_nb_year_station <- function (.data = NULL) {
+
+  output <- .data %>%
+    group_by(station) %>%
+    mutate(nb_year = year - min(year)) %>%
+    ungroup()
+  return(output)
+} 
+add_nb_year_station(.data = richness_cba)
 
 #Ajout du nb d'années
-richness_cba_nb <- richness_cba %>% 
+richness_cba_nb <- richness_cba %>%
   group_by(station)%>%
   mutate(nb_year = year - min(year))
 
