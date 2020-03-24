@@ -30,6 +30,54 @@ bystation_richness <-richness_cba_nb%>%
     model = map(data, ~ lm(richness ~ nb_year, .x)),
     coeff = map(model, broom::tidy)
   )
+
+#' Just compute a linear model with data.frame and a formula 
+compute_linear_model <- function (.data = NULL, formulas = NULL) {
+
+  model <- lm(
+    formula = as.formula(formulas),
+    data = .data
+  )
+  return(model)
+} 
+
+get_lm_coeff <- function(.data = NULL, formulas = NULL) {
+
+
+  data_for_model <- .data %>%
+    group_by(station) %>%
+    nest()
+
+  # Run the model
+  ## Here I used lapply to show you an another method than purrr::map
+  ## But they do the same thing
+  data_for_model$model <- lapply( 
+    X = data_for_model$data, #
+    FUN = compute_linear_model,
+    formulas = formulas
+    )
+
+  # Get the coefficients
+  ## Here I could use purrr::map or lapply but I show you with for loop 
+
+  ## Prepare the output
+  data_for_model$coeff <- vector(mode = "list", length = nrow(data_for_model))
+  for (i in seq_along(data_for_model$coeff)) {
+  
+    data_for_model$coeff[[i]] <-
+      broom::tidy(data_for_model$model[[i]])
+  }
+
+  return(data_for_model)
+
+}
+test <- 
+  get_lm_coeff(
+    .data = add_nb_year_station(.data = richness_cba),
+    formulas = "richness ~ nb_year"
+  )
+unnest(test, coeff)
+
 #Tableau des coefficients richness
 richness_unnest <-unnest(bystation_richness, coeff)
 
