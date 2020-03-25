@@ -100,9 +100,9 @@ df_part2 <- function (.data = NULL) {
 essai_ter <- df_part2(.data=essai)
 
 #Fusion pour obtenir le df final avec : station, Intercept, pente, p.value pente
-fusion_df <- function (.data = NULL) {
+fusion_df <- function (.data = NULL, data_to_join = NULL) {
   output <- .data %>%
-    leftjoin (df_part2, by = "station")
+    left_join(data_to_join, by = "station")
   return(output)
 }
-df <- fusion_df(.data=df_part1)
+df <- fusion_df(.data=df_part1, data_to_join = df_part2)
