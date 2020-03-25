@@ -86,6 +86,7 @@ df_part1 <- function (.data = NULL) {
 return(output)
 }
 
+load(paste0(mypath(), "/", "essai.RData"))
 essai_bis <- df_part1(.data = essai)
 
 df_part2 <- function (.data = NULL) {
@@ -101,8 +102,14 @@ essai_ter <- df_part2(.data=essai)
 
 #Fusion pour obtenir le df final avec : station, Intercept, pente, p.value pente
 merge_df <- function (.data = NULL, data_to_join = NULL) {
+  #check arguments if u need:
+  stopifnot(all(is.data.frame(.data), is.data.frame(data_to_join)))
+
   output <- .data %>%
     left_join(data_to_join, by = "station")
   return(output)
 }
-df <- merge_df(.data=df_part1, data_to_join = df_part2)
+
+df <- merge_df(.data = essai_bis, data_to_join = essai_ter)
+df <- merge_df(.data = df_part1, data_to_join = df_part2)
+
