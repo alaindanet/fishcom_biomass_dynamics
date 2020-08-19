@@ -28,7 +28,7 @@ bystation_all_biomasses <-all_biomasses_nb_bi%>%
 all_biomasses_unnest <-unnest(bystation_all_biomasses, coeff)
 
 #Suppression des colonnes inutiles
-all_biomasses_coeff <-all_biomasses_unnest[ , - c(2:3)]
+all_biomasses_coeff <- all_biomasses_unnest[ , - c(2:3)]
 
 #Suppression des parenthèses: https://stackoverflow.com/a/53622690
 datac <- all_biomasses_coeff %>%

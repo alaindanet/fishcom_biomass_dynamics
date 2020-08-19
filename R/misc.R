@@ -22,8 +22,7 @@ mysave <- function (..., dir = ".", overwrite = FALSE,
       compress = compress))
   invisible()
 }
-
-myload <- function (..., dir = ".") {
+myload <- function (..., dir = ".", envir = environment()) {
 
   objs <- eval(substitute(alist(...)))
   objs <- vapply(objs, as.character, character(1))
@@ -32,6 +31,18 @@ myload <- function (..., dir = ".") {
   if (any(!file.exists(paths))) {
     stop(paste0(existing_file, " does not exist\n"))
   }
-  lapply(paths, load, .GlobalEnv)
+  lapply(paths, load, envir)
   invisible()
+}
+
+get_mypath <- function (...) {
+  rprojroot::find_package_root_file(...)
+}
+
+source_dir <- function(path, trace = TRUE, ...) {
+  for (nm in list.files(path, pattern = "*.R")) {
+    if(trace) cat(nm,":")
+    source(file.path(path, nm), ...)
+    if(trace) cat("\n")
+  }
 }
