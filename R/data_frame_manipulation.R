@@ -19,9 +19,16 @@ add_relative_biomass_to_start <- function (.data = NULL) {
   output <- .data %>%
     dplyr::group_by(station) %>%
     dplyr::arrange(nb_year) %>%
-    dplyr::mutate(rel_bm = (biomass - first(biomass)) / first(biomass)) %>%
-    dplyr::ungroup()
-  return(output)
+    dplyr::mutate(rel_bm = (biomass - first(biomass)) / first(biomass)) 
+  
+  if ("log_bm" %in% names(output)) {
+
+    output %<>% 
+      dplyr::mutate(rel_log_bm = (log_bm - first(log_bm)) / first(log_bm))
+  
+  }
+
+  return(ungroup(output))
 }
 
 #' Compute derivate variables
@@ -29,7 +36,9 @@ add_relative_biomass_to_start <- function (.data = NULL) {
 #' @inheritParams add_relative_biomass_to_start 
 add_to_full_data <- function (.data = NULL) {
 
-  output <- add_nb_year_station(.data)  
+  output <- add_nb_year_station(.data)
+  output <- output %>% 
+    mutate(log_bm = log(biomass))
   output <- add_relative_biomass_to_start(output) 
 
   return(output)

@@ -1,0 +1,48 @@
+---
+title: "Report"
+author: "Alain Danet"
+output: html_document
+---
+
+```{r}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  #fig.dim = c(7, 7),
+  fig.fullwidth = TRUE,
+  fig.show = "hold",
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  results = FALSE 
+)
+
+library(drake)
+library(tidyverse)
+library(magrittr)
+library(cowplot)
+```
+
+
+##
+
+```{r print_merged}
+loadd(temporal_dynamics_plot)
+
+c("rel_bm", "biomass", "connectance", "w_")
+for (i in 1 :)
+to_plot <- temporal_dynamics_plot %>% 
+  filter(variable == ) %>%
+  slice(1:9)
+cowplot::plot_grid(plotlist = to_plot$plot, labels = to_plot$station)
+```
+
+
+```{r print_merged}
+
+to_plot <- readd(temporal_dynamics_plot) %>% 
+  filter(variable == "rel_bm") %>%
+  slice(1:9)
+cowplot::plot_grid(plotlist = to_plot$plot, labels = to_plot$station)
+```
