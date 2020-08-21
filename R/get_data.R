@@ -72,3 +72,26 @@ get_full_data <- function (net = NULL, com = NULL, op = NULL) {
 
 }
 
+update_files <- function () {
+
+  folder <- "~/Documents/post-these/mnhn/fishcom" 
+  data_folder <- paste0(folder, "/data") 
+  net_folder <- paste0(folder, "/data/classes") 
+
+  file.copy(
+    from = c(
+      paste0(data_folder, "/op_analysis.rda"), 
+      paste0(data_folder, "/community_metrics.rda")
+      ),
+    to = get_mypath("data"),
+   overwrite = TRUE,
+   copy.date = TRUE
+  )
+
+  file.copy(
+    from = c(paste0(net_folder, "/network_metrics.rda")),
+    to = get_mypath("data", "classes"),
+   overwrite = TRUE,
+   copy.date = TRUE
+   )
+}

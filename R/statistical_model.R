@@ -76,8 +76,11 @@ extract_xy_slope_from_coeff <- function (y = NULL, x = NULL, .data = NULL) {
 compute_lm_temporal_trends <- function (.data = NULL, y = "biomass", x = "connectance") {
   
   output <- list(y = y, x = x) %>%
-    expand.grid() %>% 
-    mutate_all(as.character)
+    expand.grid() %>%
+    mutate_all(as.character) %>%
+    distinct(x, y) %>%
+    filter_at(vars(x, y), any_vars((. != x))) %>%
+    as_tibble
 
 
   output$data <- purrr::map2(output$y, output$x, extract_xy_slope_from_coeff, .data = .data)

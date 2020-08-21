@@ -1,0 +1,110 @@
+---
+title: "Report"
+author: "Alain Danet"
+output: html_document
+---
+
+```{r}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  #fig.dim = c(7, 7),
+  fig.fullwidth = TRUE,
+  fig.show = "hold",
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  results = TRUE 
+)
+
+library(drake)
+library(tidyverse)
+library(magrittr)
+library(cowplot)
+#theme_set(theme_cowplot())
+```
+
+
+## Temporal dynamics
+
+```{r p-tmp-dyn, cache = FALSE}
+loadd(temporal_dynamics_plot)
+
+p <- vector(mode = "list", length = 10)
+for (i in seq_len(length(p))) {
+  to_plot <- temporal_dynamics_plot %>% 
+    filter(station == sample(temporal_dynamics_plot$station, 1))
+  p[[i]] <- cowplot::plot_grid(plotlist = to_plot$plot, labels = to_plot$station)
+} 
+p
+```
+
+## Links betwenn temporal dynamics
+
+```{r p-bivar, cache = FALSE}
+loadd(net_dyn_lm_plot)
+
+cowplot::plot_grid(plotlist = net_dyn_lm_plot$plot[1:9], ncol = 3)
+
+cowplot::plot_grid(plotlist = net_dyn_lm_plot$plot[10:18], ncol = 3)
+
+```
+
+```{r}
+loadd(temporal_dynamics_coef)
+loadd(data)
+first_year_biomass <- 
+  data %>%
+  filter(nb_year == 0) %>%
+  select(station, biomass, rel_bm, log_bm, rel_log_bm) %>%
+  pivot_longer(-station, names_to = "coeff", values_to = "first_year")
+
+temporal_dynamics_coef %>%
+  filter(term %in% "slope", coeff %in% c("biomass", "rel_bm", "log_bm", "rel_log_bm")) %>%
+  select(1:4) %>%
+  pivot_wider(names_from = "term", values_from = estimate) %>%
+  left_join(first_year_biomass, by = c("station", "coeff")) %>%
+  ggplot(aes(x = first_year, y = slope)) +
+  geom_point() +
+  facet_wrap(~coeff, scales = "free")
+```
+
+```{r}
+data %>%
+  group_by(station) %>%
+  summarise(med_bm = median(biomass)) %>%
+  ggplot(aes(x = med_bm)) +
+  geom_histogram() +
+  labs(x = "Median total biomass over time by station (g)")
+```
+
+```{r}
+slope_com_net <- temporal_dynamics_coef %>%
+  filter(!coeff %in% get_biomass_var(), term == "slope") %>%
+  select(station, coeff, estimate) %>%
+  pivot_wider(names_from = "coeff", values_from = estimate)
+
+absolute_slope_biomass <- temporal_dynamics_coef %>%
+  filter(coeff %in% get_biomass_var(), term == "slope") %>%
+  select(station, coeff, estimate) %>%
+  mutate(
+    absolute_slope =  abs(estimate),
+    trend_sign = if_else(estimate > 0, "positive", "negative")
+  ) %>%
+  left_join(slope_com_net, by = "station") 
+
+metrics <- unique(temporal_dynamics_coef$coeff)[!unique(temporal_dynamics_coef$coeff) %in% get_biomass_var()]
+
+p <- vector("list", length = length(metrics))
+for (i in seq_along(metrics)) {
+  p[[i]] <- 
+    absolute_slope_biomass %>%
+    ggplot(aes_string(x = "absolute_slope", y = metrics[i])) +
+    geom_point(aes(color = trend_sign)) +
+    facet_wrap(facets = ~ coeff, scales = "free") +
+    labs(title = metrics[i])
+}
+p
+```
+
