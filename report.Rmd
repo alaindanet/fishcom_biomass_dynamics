@@ -25,8 +25,32 @@ library(cowplot)
 #theme_set(theme_cowplot())
 ```
 
+# Research questions
+
+## State of the art
+
+- Report of community biomass (or number of individual) collapses in many
+  ecosystems
+- Modification of community are linked to modification in network structure 
+- Studies have been interested in how network assembles or disassembles
+  themselves.
+- However, the lack of availability of such empirical dataset have prevented the
+answering to this question.  
+  
+- Questions:
+  1. Are assembly and disassembly of networks symmetric processes ?
+
+
+# Results
 
 ## Temporal dynamics
+
+```{r}
+p_cap <- paste0(
+  "Temporal dynamics of biomass and temporal dynamics of
+  metrics for 10 randomly selected communities."
+)
+```
 
 ```{r p-tmp-dyn, cache = FALSE}
 loadd(temporal_dynamics_plot)
@@ -42,32 +66,85 @@ p
 
 ## Links betwenn temporal dynamics
 
-```{r p-bivar, cache = FALSE}
+```{r b-bivar-cap}
+bivar_cap <- paste0(
+  "Links between temporal dynamics of biomass and temporal dynamics of
+  metrics for the communities which have a median biomass across time inferior
+  to the median of the station (little) and the other (big)"
+)
+```
+
+
+```{r p-bivar, cache = FALSE, fig.cap = bivar_cap, fig.height = 10}
+loadd(net_dyn_lm)
 loadd(net_dyn_lm_plot)
 
-cowplot::plot_grid(plotlist = net_dyn_lm_plot$plot[1:9], ncol = 3)
 
-cowplot::plot_grid(plotlist = net_dyn_lm_plot$plot[10:18], ncol = 3)
-
+cowplot::plot_grid(
+  cowplot::plot_grid(plotlist = net_dyn_lm_plot$plot[1:4], ncol = 2),
+  cowplot::plot_grid(plotlist = filter(net_dyn_lm_plot, group == "big")$plot[1:4], ncol = 2),
+  ncol = 1, 
+  axis = "rlbt",
+  align = "hv",
+  label_y = 1.01,
+  label_x = .40,
+  labels = c("Little community", "Big community")
+)
+ 
+cowplot::plot_grid(
+  cowplot::plot_grid(plotlist = net_dyn_lm_plot$plot[5:8], ncol = 2),
+  cowplot::plot_grid(plotlist = filter(net_dyn_lm_plot, group == "big")$plot[5:8], ncol = 2),
+  ncol = 1, 
+  axis = "rlbt",
+  align = "hv",
+  label_y = 1.01,
+  label_x = .40,
+  labels = c("Little community", "Big community")
+)
 ```
+
+- Intercept close to 0 for all but richness in big communities 
+- Same slope between big and little communities except for connectance 
 
 ```{r}
 loadd(temporal_dynamics_coef)
 loadd(data)
-first_year_biomass <- 
+first_year_biomass <-
   data %>%
   filter(nb_year == 0) %>%
   select(station, biomass, rel_bm, log_bm, rel_log_bm) %>%
-  pivot_longer(-station, names_to = "coeff", values_to = "first_year")
+  pivot_longer(-station, names_to = "coeff", values_to = "first_year") %>%
+  group_by(coeff) %>%
+  mutate(com_size = ifelse(first_year < median(first_year, na.rm = TRUE), "little", "big"))
+median_biomass <- 
+  data %>%
+  select(station, biomass, log_bm) %>%
+  pivot_longer(-station, names_to = "coeff", values_to = "biomass") %>%
+  group_by(station, coeff) %>%
+  summarise(bm_med = median(biomass, na.rm = TRUE)) %>%
+  ungroup()
 
 temporal_dynamics_coef %>%
-  filter(term %in% "slope", coeff %in% c("biomass", "rel_bm", "log_bm", "rel_log_bm")) %>%
+  filter(term %in% "slope", coeff %in% c("biomass", "log_bm")) %>%
   select(1:4) %>%
   pivot_wider(names_from = "term", values_from = estimate) %>%
   left_join(first_year_biomass, by = c("station", "coeff")) %>%
   ggplot(aes(x = first_year, y = slope)) +
-  geom_point() +
-  facet_wrap(~coeff, scales = "free")
+  geom_point(aes(color = com_size)) +
+  facet_wrap(~coeff, scales = "free") +
+  labs(x = "First year biomass (g)", y = "Slope (g.y^-1)")
+
+loadd(biomass_group)
+temporal_dynamics_coef %>%
+  filter(term %in% "slope", coeff %in% c("biomass", "log_bm")) %>%
+  select(1:4) %>%
+  pivot_wider(names_from = "term", values_from = estimate) %>%
+  left_join(median_biomass, by = c("station", "coeff")) %>%
+  left_join(biomass_group, by = c("station")) %>%
+  ggplot(aes(x = bm_med, y = slope)) +
+  geom_point(aes(color = com_size)) +
+  facet_wrap(~coeff, scales = "free") +
+  labs(x = "Median biomass (g)", y = "Slope (g.y^-1)")
 ```
 
 ```{r}
@@ -79,7 +156,7 @@ data %>%
   labs(x = "Median total biomass over time by station (g)")
 ```
 
-```{r}
+```{r, eval = FALSE}
 slope_com_net <- temporal_dynamics_coef %>%
   filter(!coeff %in% get_biomass_var(), term == "slope") %>%
   select(station, coeff, estimate) %>%
@@ -108,3 +185,4 @@ for (i in seq_along(metrics)) {
 p
 ```
 
+# Methods

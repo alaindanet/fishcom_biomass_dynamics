@@ -1,9 +1,12 @@
 #' Get community metrics
 #'
 #' @param dir path to the data
-get_community_data <- function (dir = get_mypath("data")) {
+get_community_data <- function (
+  path = get_mypath("data", "community_metrics.rda"),
+  community_metrics = NULL
+  ) {
 
-  myload(community_metrics, dir = dir, envir = environment())
+  load(path, envir = environment())
 
   com <- community_metrics %>% 
     dplyr::select(opcod, biomass, richness) %>%
@@ -16,10 +19,12 @@ get_community_data <- function (dir = get_mypath("data")) {
 #' Get network metrics
 #'
 #' @param dir path to the data
-get_network_data <- function (dir = get_mypath("data", "classes"), metrics = NULL) {
+get_network_data <- function (network_metrics = NULL, 
+  path = get_mypath("data", "classes", "network_metrics.rda"), 
+metrics = NULL) {
 
   
-  myload(network_metrics, dir = dir, envir = environment())
+  load(path, envir = environment())
 
   if (is.null(metrics)) {
     metrics <- c(
@@ -39,9 +44,9 @@ get_network_data <- function (dir = get_mypath("data", "classes"), metrics = NUL
 #' Get fishing operation data
 #'
 #'
-get_op_data <- function (dir = get_mypath("data")) {
+get_op_data <- function (path = get_mypath("data", "op_analysis.rda")) {
 
-  myload(op_analysis, dir = dir, envir = environment())
+  load(path, envir = environment())
 
   col_to_keep <- c("opcod", "station", "year", "surface")
   op <- op_analysis[, colnames(op_analysis) %in% col_to_keep]
@@ -70,6 +75,23 @@ get_full_data <- function (net = NULL, com = NULL, op = NULL) {
 
   return(full)
 
+}
+
+#' Get group of community based on median biomass 
+#'
+#'
+get_biomass_group <- function(.data = data) {
+ 
+  .data %>%
+  select(station, biomass, log_bm) %>%
+  pivot_longer(-station, names_to = "coeff", values_to = "biomass") %>%
+  group_by(station, coeff) %>%
+  summarise(bm_med = median(biomass, na.rm = TRUE)) %>%
+  ungroup() %>%
+  filter(coeff == "biomass") %>%
+  mutate(com_size = ifelse(bm_med < median(bm_med, na.rm = TRUE), "little", "big")) %>%
+  ungroup() %>%
+  select(station, com_size)
 }
 
 update_files <- function () {

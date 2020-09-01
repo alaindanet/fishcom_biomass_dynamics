@@ -43,3 +43,15 @@ add_to_full_data <- function (.data = NULL) {
 
   return(output)
 }
+
+#' Add group to data according to station
+#'
+#'
+add_group_station <- function (.data = NULL, group = NULL) {
+
+  output <- .data %>%
+    left_join(group, by = "station")
+
+  return(output)
+
+}

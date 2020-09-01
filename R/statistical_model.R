@@ -73,24 +73,39 @@ extract_xy_slope_from_coeff <- function (y = NULL, x = NULL, .data = NULL) {
   return(output)
 }
 
-compute_lm_temporal_trends <- function (.data = NULL, y = "biomass", x = "connectance") {
+compute_lm_temporal_trends <- function (.data = NULL, y = "biomass", x = "connectance", group = NULL) {
   
-  output <- list(y = y, x = x) %>%
+  group_var <- enquo(group)
+  group_var_chr <- quo_name(group_var)
+
+
+  if (rlang::quo_is_null(group_var)) {
+    output <- list(y = y, x = x)
+  } else {
+    output <- list(y = y, x = x, group = unique(.data[[group_var_chr]]))
+  }
+  output <- 
+    output %>%
     expand.grid() %>%
     mutate_all(as.character) %>%
-    distinct(x, y) %>%
+    distinct() %>%
     filter_at(vars(x, y), any_vars((. != x))) %>%
     as_tibble
 
-
-  output$data <- purrr::map2(output$y, output$x, extract_xy_slope_from_coeff, .data = .data)
+  if (rlang::quo_is_null(group_var)) {
+    output$data <- purrr::map2(output$y, output$x, extract_xy_slope_from_coeff, .data = .data)
+  } else {
+    output$data <- purrr::pmap(
+      list(output$y, output$x, output$group),
+      ~extract_xy_slope_from_coeff(y = ..1, x = ..2, .data = filter(.data, !!group_var == ..3)))
+  }
 
   output %<>%
     mutate(
       formulas = paste(y, "~", x ),
       model = purrr::map2(data, formulas, ~lm(formula = .y, weights = weight, data =.x))
       ) %>%
-    select(y, x, model)
+    select(-formulas)
   return(output)
 }
 
