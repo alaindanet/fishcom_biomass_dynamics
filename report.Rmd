@@ -22,6 +22,9 @@ library(drake)
 library(tidyverse)
 library(magrittr)
 library(cowplot)
+source("R/misc.R") # Define your custom code as a bunch of functions.
+source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
+
 #theme_set(theme_cowplot())
 ```
 
@@ -38,33 +41,23 @@ library(cowplot)
 answering to this question.  
   
 - Questions:
-  1. Are assembly and disassembly of networks symmetric processes ?
+  1. Is a decrease or a increase in biomass related to a network
+     structure modification?
+     1.1 Is a contant decrease/increase in biomass correspond the same dynamic
+     in network? Or there are non linear dynamics ?
+  2. Are assembly and disassembly of networks symmetric processes?
 
 
 # Results
 
-## Temporal dynamics
-
-```{r}
-p_cap <- paste0(
-  "Temporal dynamics of biomass and temporal dynamics of
-  metrics for 10 randomly selected communities."
-)
-```
-
-```{r p-tmp-dyn, cache = FALSE}
-loadd(temporal_dynamics_plot)
-
-p <- vector(mode = "list", length = 10)
-for (i in seq_len(length(p))) {
-  to_plot <- temporal_dynamics_plot %>% 
-    filter(station == sample(temporal_dynamics_plot$station, 1))
-  p[[i]] <- cowplot::plot_grid(plotlist = to_plot$plot, labels = to_plot$station)
-} 
-p
-```
 
 ## Links betwenn temporal dynamics
+
+```{r}
+loadd(net_dyn_lm)
+loadd(net_dyn_lm_plot)
+```
+
 
 ```{r b-bivar-cap}
 bivar_cap <- paste0(
@@ -75,10 +68,7 @@ bivar_cap <- paste0(
 ```
 
 
-```{r p-bivar, cache = FALSE, fig.cap = bivar_cap, fig.height = 10}
-loadd(net_dyn_lm)
-loadd(net_dyn_lm_plot)
-
+```{r p-bivar, cache = TRUE, fig.cap = bivar_cap, fig.height = 10}
 
 cowplot::plot_grid(
   cowplot::plot_grid(plotlist = net_dyn_lm_plot$plot[1:4], ncol = 2),
@@ -106,22 +96,40 @@ cowplot::plot_grid(
 - Intercept close to 0 for all but richness in big communities 
 - Same slope between big and little communities except for connectance 
 
+
 ```{r}
 loadd(temporal_dynamics_coef)
-loadd(data)
+loadd(temporal_dynamics_plot)
+loadd(full_data2)
+```
+
+
+```{r}
 first_year_biomass <-
-  data %>%
+  full_data2 %>%
   filter(nb_year == 0) %>%
   select(station, biomass, rel_bm, log_bm, rel_log_bm) %>%
   pivot_longer(-station, names_to = "coeff", values_to = "first_year") %>%
   group_by(coeff) %>%
-  mutate(com_size = ifelse(first_year < median(first_year, na.rm = TRUE), "little", "big"))
+  mutate(com_size = ifelse(first_year < median(first_year, na.rm = TRUE), "little", "big")) %>%
+  ungroup()
+
 median_biomass <- 
-  data %>%
+  full_data2 %>%
   select(station, biomass, log_bm) %>%
   pivot_longer(-station, names_to = "coeff", values_to = "biomass") %>%
   group_by(station, coeff) %>%
   summarise(bm_med = median(biomass, na.rm = TRUE)) %>%
+  ungroup()
+three_first_year_biomass <-
+  full_data2 %>%
+  filter(nb_year <= 2) %>%
+  select(station, nb_year, biomass, rel_bm, log_bm, rel_log_bm) %>%
+  pivot_longer(cols = biomass:rel_log_bm, names_to = "coeff", values_to = "first_year") %>%
+  group_by(station, coeff) %>%
+  summarise(first_3_year = median(first_year, na.rm = TRUE)) %>%
+  group_by(coeff) %>%
+  mutate(com_size = ifelse(first_3_year < median(first_3_year, na.rm = TRUE), "little", "big")) %>%
   ungroup()
 
 temporal_dynamics_coef %>%
@@ -148,13 +156,15 @@ temporal_dynamics_coef %>%
 ```
 
 ```{r}
-data %>%
+full_data2 %>%
   group_by(station) %>%
   summarise(med_bm = median(biomass)) %>%
   ggplot(aes(x = med_bm)) +
   geom_histogram() +
   labs(x = "Median total biomass over time by station (g)")
 ```
+
+##
 
 ```{r, eval = FALSE}
 slope_com_net <- temporal_dynamics_coef %>%
@@ -185,4 +195,496 @@ for (i in seq_along(metrics)) {
 p
 ```
 
+
+
 # Methods
+
+## Biomass classification
+
+```{r}
+loadd(rigal_classification)
+myload(biomass_ts_sax, envir = globalenv(),dir = get_mypath("data"))
+
+biomass_classif_rigal <- rigal_classification %>%
+  filter(variable %in% c("biomass", "log_bm")) %>%
+  unnest(classif) %>%
+  mutate(station = as.character(station)) %>%
+  select(station, variable,shape_class)
+
+p_biomass_classif_rigal <- biomass_classif_rigal %>%
+  ggplot(aes(x = shape_class)) +
+  geom_bar() +
+  facet_wrap(~variable) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Temporal dynamics
+
+```{r}
+p_cap <- paste0(
+  "Temporal dynamics of biomass and temporal dynamics of
+  metrics for 10 randomly selected communities."
+)
+```
+
+```{r p-tmp-dyn, cache = TRUE}
+
+p <- vector(mode = "list", length = 10)
+for (i in seq_len(length(p))) {
+  to_plot <- temporal_dynamics_plot %>% 
+    filter(station == sample(temporal_dynamics_plot$station, 1))
+  p[[i]] <- cowplot::plot_grid(plotlist = to_plot$plot, labels = to_plot$station)
+}
+p
+```
+
+
+## Temporal dynamics decrease/increase constant
+
+### Log biomass
+
+```{r, fig.height = 45}
+st_decrease_increase_rigal <- biomass_classif_rigal %>%
+  filter(shape_class %in% c("increase_constant", "decrease_constant"))
+data_decrease_increase <- full_data2 %>%
+  filter(station %in% st_decrease_increase_rigal$station)
+
+log_bm_min_max <- map_dbl(c(min, max),
+  ~.x(data_decrease_increase$log_bm, na.rm = TRUE))
+nb_year_min_max <- map_dbl(c(min, max),
+  ~.x(data_decrease_increase$nb_year, na.rm = TRUE))
+temporal_dynamics_plot$plot %<>%
+  map(., ~ .x + lims(y = log_bm_min_max, x = nb_year_min_max))
+
+temporal_dynamics_plot %>%
+  filter(variable == "log_bm", station %in% st_decrease_increase_rigal$station) %>%
+  plot_grid(plotlist = .$plot, ncol = 3, labels = st_decrease_increase_rigal$station)
+```
+
+### Raw Biomass
+
+```{r, fig.height = 45}
+st_decrease_increase_rigal_biomass <- rigal_classification %>%
+  filter(variable == "bm_std") %>%
+  unnest(classif) %>%
+  filter(shape_class %in% c("increase_constant", "decrease_constant"))
+
+bm_min_max <- map_dbl(
+  c(min, max),
+  ~.x(data_decrease_increase$biomass, na.rm = TRUE))
+nb_year_min_max <- map_dbl(
+  c(min, max),
+  ~.x(data_decrease_increase$nb_year, na.rm = TRUE))
+temporal_dynamics_plot[temporal_dynamics_plot$variable == "biomass",]$plot %<>%
+  map(., ~ .x + lims(y = bm_min_max, x = nb_year_min_max))
+
+temporal_dynamics_plot %>%
+  filter(variable == "biomass", station %in% st_decrease_increase_rigal_biomass$station) %>%
+  plot_grid(plotlist = .$plot, ncol = 3, labels = st_decrease_increase_rigal_biomass$station)
+```
+
+## Station grouping
+
+### Rigal station increase / decrease
+
+Les stations ont moins de 40 kilos au départ ont l'air comparable en terme de
+dynamique.
+
+```{r}
+
+station_summary_biomass <- full_data2 %>%
+  group_by(station) %>%
+  summarise(bm_med = median(biomass, na.rm = TRUE)) %>%
+  left_join(
+    filter(three_first_year_biomass, coeff == "biomass") %>%
+      select(station, first_3_year)
+    , by =
+    "station") %>%
+  left_join(
+    filter(first_year_biomass, coeff == "biomass") %>%
+      select(station, first_year)
+      , by =
+    "station")
+
+p_rigal_decrease_increase_slope_st <- 
+  st_decrease_increase_rigal_biomass %>%
+  left_join(station_summary_biomass, by = "station") %>%
+  select(station, shape_class, linear_slope, linear_intercept, first_3_year, bm_med, first_year) %>%
+  pivot_longer(cols = first_3_year:first_year, names_to = "variable",
+    values_to = "value") %>%
+  ggplot(aes(y = linear_slope, x = value, color = shape_class)) +
+  geom_point() +
+  facet_wrap(~variable)
+p_rigal_decrease_increase_slope_st
+```
+
+### Tendancies in rigal increase / decrease 
+
+```{r}
+rigal_biomass_coeff_dynamics <- st_decrease_increase_rigal_biomass %>%
+  select(station, linear_slope, strd_error) %>%
+  left_join(temporal_dynamics_coef, by = "station") %>%
+  filter(!coeff %in% get_biomass_var(), term == "slope") %>%
+  select(station, coeff, estimate, std.error, linear_slope, bm_std_error = strd_error) %>%
+  mutate(reg_weight = (abs(estimate / std.error) + abs(linear_slope / bm_std_error))/2)
+rigal_biomass_coeff_dynamics %>%
+  ggplot(aes(x = reg_weight)) +
+  geom_histogram() +
+  facet_wrap(~coeff)
+  
+rigal_biomass_coeff_dynamics %>%
+  ggplot(aes(x = linear_slope, y = estimate, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~coeff, scales = "free_y")
+rigal_biomass_coeff_dynamics %>%
+  ggplot(aes(x = linear_slope, y = estimate, size = reg_weight)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~coeff, scales = "free_y")
+```
+
+### With group 
+
+#### Median
+
+```{r}
+group_results <- rigal_biomass_coeff_dynamics %>%
+  left_join(station_summary_biomass, by = "station") %>%
+  pivot_longer(cols = bm_med:first_year, names_to = "bm_summary_type", values_to = "bm_summary") %>%
+  group_by(bm_summary_type) %>%
+  mutate(
+    median_group = ifelse(bm_summary < median(bm_summary, na.rm = TRUE), "little", "big"),
+    first_quartile = map_chr(bm_summary, function (x, y) {
+      if (is.na(x)) return(NA)
+
+      if (x < y[1])
+	output <- "first_quartile"
+      else if (x > y[2])
+	output <- "third_quartile"
+      else
+	output <- NA
+      return(output)
+}, y = quantile(bm_summary, probs = c(.25, .75), na.rm = TRUE))
+  ) %>%
+  ungroup()
+
+##Summary of group 
+group_results %>%
+  ggplot(aes(x = bm_summary)) +
+  geom_histogram() +
+  facet_wrap(~bm_summary_type, scales = "free_x")
+
+
+p1 <- group_results  %>%
+  filter(bm_summary_type == "first_3_year") %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = median_group, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free_y")
+
+p2 <- group_results  %>%
+  filter(bm_summary_type == "first_3_year") %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = first_quartile, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free_y")
+
+p3 <- group_results  %>%
+  filter(bm_summary_type == "bm_med") %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = median_group, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free_y")
+
+
+p1
+p2
+p3
+```
+
+#### Little and big rivers
+
+```{r}
+#grandes/petites rivières
+myload(habitat_press, habitat_pressure, op_analysis, envir = environment(),
+  dir = get_mypath("data"))
+width_classif_mean <- habitat_press %>%
+    mutate(width_classif_mean  = if_else(width_river_mean < mean(width_river_mean, na.rm = TRUE), "little",
+      "big")) %>%
+    select(station, width_river_mean, width_classif_mean)
+habitat_press %>%
+  ggplot(aes(x = width_river_mean)) +
+  geom_histogram()
+  
+habitat_pressure %>%
+  pivot_longer(cols = c(RC1, RC2), names_to = "PCA_axis", values_to = "value") %>%
+  ggplot(aes(x = value)) +
+  geom_histogram() +
+  facet_wrap(~PCA_axis)
+protocol_station <- op_analysis %>%
+  group_by(station) %>%
+  summarise(protocol_type = unique(protocol_type))
+
+habitat_press %>%
+  left_join(protocol_station, by = "station") %>%
+  ggplot(aes(x = width_river_mean, fill = protocol_type)) +
+  geom_histogram()
+
+group_results_stream_size <-
+  group_results %>%
+  left_join(
+    habitat_pressure %>%
+    mutate(RC1_med = if_else(RC1 < median(RC1, na.rm = TRUE), "little",
+      "big")) %>%
+    select(station, RC1, RC1_med),
+  by = "station"
+  ) %>%
+  left_join(protocol_station, by = "station") %>%
+  left_join(width_classif_mean, by = "station")
+
+
+group_results_stream_size %>%
+  filter(bm_summary_type == "first_3_year", linear_slope < 8) %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = protocol_type, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free_y") +
+  labs(title = "Group as protocol type")
+
+group_results_stream_size %>%
+  filter(bm_summary_type == "first_3_year", linear_slope < 8) %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = protocol_type, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free_y") +
+  labs(title = "Group as mean river size")
+
+group_results_stream_size %>%
+  filter(bm_summary_type == "first_3_year", linear_slope < 8) %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = width_classif_mean, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free_y") +
+  labs(title = "Group as mean river size")
+
+group_results_stream_size %>%
+  filter(bm_summary_type == "bm_med", linear_slope < 8) %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = median_group, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free_y") +
+  labs(title = "Group as mean biomass")
+
+# Quelle est la compo des dynamique dans RC1
+group_results_stream_size %>%
+  filter(bm_summary_type == "first_3_year") %>%
+  ggplot(aes(x = RC1)) +
+  geom_histogram() +
+  facet_wrap(~protocol_type)
+
+group_results_stream_size %>%
+  filter(bm_summary_type == "first_3_year") %>%
+  ggplot(aes(x = bm_summary)) +
+  geom_histogram() +
+  facet_wrap(~protocol_type)
+```
+
+```{r}
+model_int <- group_results_stream_size %>%
+  filter(bm_summary_type == "first_3_year", linear_slope < 5000) %>%
+  group_by(coeff) %>%
+  nest() %>%
+  mutate(model = map(data, ~lm(estimate ~ linear_slope * width_river_mean,.x)))
+
+test <- model_int$model[[3]]
+car::vif(test)
+
+
+
+```
+
+```{r}
+group_results_stream_size %>%
+  filter(bm_summary_type == "bm_med", linear_slope < 8) %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = median_group, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free") +
+  labs(title = "Group as mean biomass")
+```
+
+```{r}
+model_int <- group_results_stream_size %>%
+  filter(bm_summary_type == "bm_med", linear_slope < 8) %>%
+  mutate(
+    increasing = linear_slope > 0,
+    inc_f = as.factor(increasing) 
+    ) %>%
+  group_by(coeff) %>%
+  nest() %>%
+  mutate(
+    mod1 = map(data, ~lm(estimate ~ linear_slope:(linear_slope <0) + linear_slope:(linear_slope >0),.x)),
+    mod2 = map(data, ~lm(estimate ~ linear_slope:increasing,.x)),
+    mod3 = map(data, ~lm(estimate ~ linear_slope:increasing:median_group,.x)),
+    mod4 = map(data, ~lm(estimate ~ linear_slope:increasing:median_group, .x, weights = reg_weight)),
+    mod5 = map(data, ~lm(estimate ~ linear_slope:inc_f:median_group, .x, weights = reg_weight)),
+  )
+
+model_out <- map(model_int$mod5, summary)
+model_vif <- map(model_int$mod4, car::vif)
+names(model_out) <- model_int$coeff 
+model_out
+```
+
+```{r}
+library(ggeffects)
+mydf <- ggpredict(model_int$mod5[[1]], terms = c("linear_slope", "inc_f",
+    "median_group"))
+plot(mydf, add.data = TRUE)
+
+plot_final_model <- function (ggpred = NULL, rawdata = NULL) {
+  ggpred %<>%
+    as_tibble %>%
+    rename(increasing = group, bm_group = facet)
+
+  ggpred %<>%
+    filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
+
+  if (is.null(rawdata)) {
+  rawdata <- attr(ggpred, "rawdata")
+  }
+
+
+  p <- ggplot(ggpred, aes(x = x , y = predicted, color = bm_group)) +
+    geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = bm_group), alpha =
+      .1) +
+    geom_line()
+  p + geom_point(data = rawdata, aes(y = estimate, x = linear_slope, color =
+      median_group))
+  
+
+}
+```
+
+```{r}
+model_int %<>%
+  mutate(
+    pred5 = map(mod5, ~ggpredict(.x,
+	terms = c("linear_slope [-8, -6, -4,-3, -2, -1, -.5, -.01, .01, .5, 1, 2,3, 4, 6]", "inc_f", "median_group"))),
+    plot = map(pred5, ~plot(.x, add.data = TRUE)),
+    myplot = map2(pred5, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+plot_grid(plotlist = model_int$myplot, labels = model_int$coeff)
+```
+
+
+```{r}
+library(segmented)
+
+mod_tlvl <- lm(estimate ~ linear_slope, model_int$data[[2]])
+mod_tlvl <- lm(
+  estimate ~ linear_slope*decreasing*median_group,#(linear_slope < 0)*linear_slope + (linear_slope >= 0)*linear_slope,
+  mutate(model_int$data[[2]], decreasing = linear_slope < 0)
+)
+seg_tlvl <- segmented(mod_tlvl, seg.Z=~linear_slope)
+plot(seg_tlvl)
+
+mod_richness <- lm(estimate ~ linear_slope, model_int$data[[2]])
+test <- segmented(mod_richness, seg.Z=~linear_slope)
+plot(test)
+
+car::vif(test)
+```
+
+
+```{r}
+#keep only complete protocol
+group_results_stream_size %>%
+  filter(protocol_type == "complete") %>%
+  filter(bm_summary_type == "bm_med", linear_slope < 8) %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = median_group)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free") +
+  labs(title = "Group as mean biomass")
+
+```
+
+
+## Richness
+
+```{r}
+```
+
+
+```{r}
+st_big_bm_tendancies <- group_results %>%
+  filter(abs(linear_slope) > 5000) %>%
+  .$station %>%
+  unique
+plot_big_bm_tendancies <- temporal_dynamics_plot %>%
+  filter(variable == "biomass", station %in% st_big_bm_tendancies) %>%
+  .$plot
+plot_grid(
+  plotlist = map(plot_big_bm_tendancies, 
+    ~.x + lims(x = c(0, 10), y = c(0, 155000)))
+)
+```
+
+
+```{r}
+rigal_shape_var <- rigal_classification %>%
+  unnest(classif) %>%
+  select(station, variable, shape_class) %>%
+  mutate(station = as.character(station))
+
+rigal_shape_var %>%
+  filter(station %in% st_decrease_increase_rigal_biomass$station) %>%
+  ggplot(aes(x = shape_class)) +
+  geom_bar() +
+  facet_wrap(~ variable) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+
+```
+
+
+## SAX
+
+```{r, eval = FALSE}
+library(jmotif)
+loadd(full_data2)
+sax_all_variable <- full_data2 %>%
+  select(station, nb_year, biomass:log_bm) %>%
+  pivot_longer(cols = biomass:log_bm, names_to = "variable", values_to = "value") %>%
+  group_by(station, variable) %>%
+  arrange(nb_year) %>%
+  nest() %>%
+  mutate(
+    zts = map(data, function(x) znorm(x$value, threshold = 0.01)),
+    paa = map(zts, ~paa(., 3)),
+    sax = map_chr(paa, ~series_to_string(., 3))
+  ) %>%
+  ungroup()
+
+# CBA:
+sax_all_variable %>%
+  filter(station %in% cba_rigal_sax$station, !variable %in% c("biomass", "nbnode")) %>%
+  ggplot(aes(x = sax)) +
+  geom_bar() +
+  facet_wrap(facets = ~variable)
+
+sax_all_variable %>%
+  filter(
+    station %in% cba_rigal_sax$station,
+    !variable %in% c("biomass", "nbnode")
+    ) %>%
+  ggplot(aes(x = sax)) +
+  geom_bar() +
+  facet_wrap(facets = ~variable)
+
+```
+

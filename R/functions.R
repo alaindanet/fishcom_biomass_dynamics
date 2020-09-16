@@ -9,3 +9,4 @@ generate_data <- function() {
 fit_model <- function(data) {
   summary(lm(y ~ x, data = data))
 }
+

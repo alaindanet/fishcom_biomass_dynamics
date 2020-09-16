@@ -5,12 +5,14 @@ plan <- drake_plan(
   com_data = get_community_data(path = file_in(!!get_mypath("data", "community_metrics.rda"))),
   op_data = get_op_data(path = file_in(!!get_mypath("data", "op_analysis.rda"))),
   full_data = get_full_data(net = net_data, com = com_data, op = op_data),
-  filtered_time_series = get_monotonous_station(.data = full_data),
-  data = add_to_full_data(.data = filtered_time_series),
-  biomass_group = get_biomass_group(.data = data),
-  temporal_dynamics = get_lm_station(.data = data, 
+  full_data2 = add_to_full_data(.data = full_data),
+  monotonous_data = get_monotonous_station(.data = full_data2),
+  biomass_group = get_biomass_group(.data = monotonous_data),
+  temporal_dynamics = get_lm_station(.data = monotonous_data, 
     var_name = c("biomass", "log_bm", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance"),
     rhs = " ~ nb_year + surface"),
+  rigal_classification = compute_rigal_classif(data = full_data2, 
+    variable = c("biomass", "bm_std", "log_bm", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance")),
   temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
   temporal_dynamics_coef = get_lm_coeff(
     .data = temporal_dynamics,
@@ -27,4 +29,3 @@ plan <- drake_plan(
     output_file = file_out("report.html")
   )
 )
-

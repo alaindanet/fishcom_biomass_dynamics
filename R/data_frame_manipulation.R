@@ -38,7 +38,10 @@ add_to_full_data <- function (.data = NULL) {
 
   output <- add_nb_year_station(.data)
   output <- output %>% 
-    mutate(log_bm = log(biomass))
+    mutate(
+      log_bm = log(biomass),
+      bm_std = biomass / surface
+    )
   output <- add_relative_biomass_to_start(output) 
 
   return(output)

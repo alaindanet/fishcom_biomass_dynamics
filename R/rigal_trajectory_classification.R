@@ -134,3 +134,48 @@ class.trajectory <- function (Y = NULL, X = NULL, dataset = NULL, interval_size 
   return(classification)
 
 }
+
+get_rigal_trajectory_classification <- function (dataset = NULL, y_var = NULL, x_var = NULL) {
+  
+  data_to_analyse <- dataset[, colnames(dataset) %in% c("station", y_var, x_var)] %>%
+    na.omit() %>%
+    group_by(station) %>%
+    nest() 
+
+  output <- data.frame(station = data_to_analyse[["station"]])
+
+  classification <- purrr::map(data_to_analyse$data,
+    ~try(class.trajectory(Y = .x[[y_var]], X = .x[[x_var]]))
+  )
+
+  error <- which(map_chr(classification, class) != "try-error")
+  if (length(error) != 0) {
+    warning(paste0(length(error), "stations/variable failed"))
+  }
+
+  to_add_to_output <- classification[error] %>%
+    bind_rows %>%
+    mutate(station = output$station[error]) %>%
+    as_tibble
+
+  output %<>%
+    left_join(to_add_to_output, by = "station") %>% 
+    as_tibble
+
+  return(output)
+} 
+
+compute_rigal_classif <- function(
+  data = NULL, 
+  variable = c("biomass", "log_bm", "richness", "connectance", "w_trph_lvl_avg")
+  ) {
+
+  rigal_classif <- tibble(variable = variable)
+  rigal_classif %<>% 
+    mutate(classif = purrr::map(variable, 
+      ~get_rigal_trajectory_classification(dataset = data, y_var = .x, x_var = "nb_year")
+      )
+  )
+
+  return(rigal_classif)
+}
