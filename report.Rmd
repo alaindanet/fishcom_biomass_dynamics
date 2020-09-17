@@ -105,32 +105,7 @@ loadd(full_data2)
 
 
 ```{r}
-first_year_biomass <-
-  full_data2 %>%
-  filter(nb_year == 0) %>%
-  select(station, biomass, rel_bm, log_bm, rel_log_bm) %>%
-  pivot_longer(-station, names_to = "coeff", values_to = "first_year") %>%
-  group_by(coeff) %>%
-  mutate(com_size = ifelse(first_year < median(first_year, na.rm = TRUE), "little", "big")) %>%
-  ungroup()
-
-median_biomass <- 
-  full_data2 %>%
-  select(station, biomass, log_bm) %>%
-  pivot_longer(-station, names_to = "coeff", values_to = "biomass") %>%
-  group_by(station, coeff) %>%
-  summarise(bm_med = median(biomass, na.rm = TRUE)) %>%
-  ungroup()
-three_first_year_biomass <-
-  full_data2 %>%
-  filter(nb_year <= 2) %>%
-  select(station, nb_year, biomass, rel_bm, log_bm, rel_log_bm) %>%
-  pivot_longer(cols = biomass:rel_log_bm, names_to = "coeff", values_to = "first_year") %>%
-  group_by(station, coeff) %>%
-  summarise(first_3_year = median(first_year, na.rm = TRUE)) %>%
-  group_by(coeff) %>%
-  mutate(com_size = ifelse(first_3_year < median(first_3_year, na.rm = TRUE), "little", "big")) %>%
-  ungroup()
+loadd(full_data2)
 
 temporal_dynamics_coef %>%
   filter(term %in% "slope", coeff %in% c("biomass", "log_bm")) %>%
@@ -142,7 +117,6 @@ temporal_dynamics_coef %>%
   facet_wrap(~coeff, scales = "free") +
   labs(x = "First year biomass (g)", y = "Slope (g.y^-1)")
 
-loadd(biomass_group)
 temporal_dynamics_coef %>%
   filter(term %in% "slope", coeff %in% c("biomass", "log_bm")) %>%
   select(1:4) %>%
@@ -291,7 +265,6 @@ Les stations ont moins de 40 kilos au départ ont l'air comparable en terme de
 dynamique.
 
 ```{r}
-
 station_summary_biomass <- full_data2 %>%
   group_by(station) %>%
   summarise(bm_med = median(biomass, na.rm = TRUE)) %>%
@@ -331,7 +304,7 @@ rigal_biomass_coeff_dynamics %>%
   ggplot(aes(x = reg_weight)) +
   geom_histogram() +
   facet_wrap(~coeff)
-  
+
 rigal_biomass_coeff_dynamics %>%
   ggplot(aes(x = linear_slope, y = estimate, size = reg_weight, weight = reg_weight)) +
   geom_point() +
@@ -406,13 +379,31 @@ p3
 #### Little and big rivers
 
 ```{r}
+get_stream_group <- function (op_analysis_path = NULL, habitat_press_path = NULL) {
+  load(file = op_analysis_path, envir = environment())
+  load(file = habitat_press_path, envir = environment())
+
+  width_classif_mean <- habitat_press %>%
+    mutate(
+      avg = if_else(width_river_mean < mean(width_river_mean, na.rm = TRUE),
+	"little", "big"),
+      median = if_else(width_river_mean < median(
+	  width_river_mean, na.rm = TRUE), "little", "big")) %>%
+  pivot_longer(cols = c(avg, median), names_to = "group_type", values_to =
+    "group") %>%
+  select(station, width_river_mean, group_type, group)
+
+protocol_station <- op_analysis %>%
+  group_by(station) %>%
+  summarise(protocol_type = unique(protocol_type))
+
+output <- width_classif_mean %>% 
+  left_join(protocol_station, by = "station")
+
+return(output)
+
+}
 #grandes/petites rivières
-myload(habitat_press, habitat_pressure, op_analysis, envir = environment(),
-  dir = get_mypath("data"))
-width_classif_mean <- habitat_press %>%
-    mutate(width_classif_mean  = if_else(width_river_mean < mean(width_river_mean, na.rm = TRUE), "little",
-      "big")) %>%
-    select(station, width_river_mean, width_classif_mean)
 habitat_press %>%
   ggplot(aes(x = width_river_mean)) +
   geom_histogram()
@@ -497,11 +488,6 @@ model_int <- group_results_stream_size %>%
   nest() %>%
   mutate(model = map(data, ~lm(estimate ~ linear_slope * width_river_mean,.x)))
 
-test <- model_int$model[[3]]
-car::vif(test)
-
-
-
 ```
 
 ```{r}
@@ -543,10 +529,10 @@ mydf <- ggpredict(model_int$mod5[[1]], terms = c("linear_slope", "inc_f",
     "median_group"))
 plot(mydf, add.data = TRUE)
 
-plot_final_model <- function (ggpred = NULL, rawdata = NULL) {
+plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE) {
   ggpred %<>%
     as_tibble %>%
-    rename(increasing = group, bm_group = facet)
+    rename(increasing = group, median_group = facet)
 
   ggpred %<>%
     filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
@@ -556,13 +542,22 @@ plot_final_model <- function (ggpred = NULL, rawdata = NULL) {
   }
 
 
-  p <- ggplot(ggpred, aes(x = x , y = predicted, color = bm_group)) +
-    geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = bm_group), alpha =
+  if (!facet) {
+  p <- ggplot(ggpred, aes(x = x , y = predicted, color = median_group)) +
+    geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = median_group), alpha =
       .1) +
     geom_line()
   p + geom_point(data = rawdata, aes(y = estimate, x = linear_slope, color =
       median_group))
+  } else {
+    p <- ggplot(ggpred, aes(x = x , y = predicted)) +
+      geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha =
+	.1) +
+      geom_line() 
+    p + geom_point(data = rawdata, aes(y = estimate, x = linear_slope)) +
+      facet_grid(cols = vars(median_group), scales = "free_x")
   
+  }
 
 }
 ```
@@ -572,10 +567,19 @@ model_int %<>%
   mutate(
     pred5 = map(mod5, ~ggpredict(.x,
 	terms = c("linear_slope [-8, -6, -4,-3, -2, -1, -.5, -.01, .01, .5, 1, 2,3, 4, 6]", "inc_f", "median_group"))),
+    pred5_df = map(pred5, as_tibble),
     plot = map(pred5, ~plot(.x, add.data = TRUE)),
     myplot = map2(pred5, data, ~plot_final_model(ggpred = .x, rawdata = .y))
   )
 plot_grid(plotlist = model_int$myplot, labels = model_int$coeff)
+```
+
+```{r}
+model_int$pred5_df[[1]] %>%
+  ggplot()
+
+plot_final_model(model_int$pred5[[1]], rawdata = model_int$data[[1]], facet =
+  TRUE)
 ```
 
 

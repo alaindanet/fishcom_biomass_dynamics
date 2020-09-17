@@ -7,20 +7,30 @@ plan <- drake_plan(
   full_data = get_full_data(net = net_data, com = com_data, op = op_data),
   full_data2 = add_to_full_data(.data = full_data),
   monotonous_data = get_monotonous_station(.data = full_data2),
-  biomass_group = get_biomass_group(.data = monotonous_data),
+  stream_group = get_stream_group(
+    op_analysis_path = file_in(!!get_mypath("data", "op_analysis.rda")),
+    habitat_press_path = file_in(!!get_mypath("data", "habitat_press.rda"))),
+  #biomass_group = get_biomass_group(.data = monotonous_data),
   temporal_dynamics = get_lm_station(.data = monotonous_data, 
-    var_name = c("biomass", "log_bm", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance"),
-    rhs = " ~ nb_year + surface"),
+    var_name = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance"),
+    rhs = " ~ nb_year"),
   rigal_classification = compute_rigal_classif(data = full_data2, 
-    variable = c("biomass", "bm_std", "log_bm", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance")),
+    variable = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance")),
+  bm_vs_net_trends = get_bm_vs_network_trends(classif = rigal_classification, bm_var = "bm_std"),
+  biomass_group = get_station_biomass_summary(.data = full_data2, bm_var = c("bm_std", "log_bm_std")),
+  log_bm_vs_net_trends = get_bm_vs_network_trends(classif = rigal_classification, bm_var = "log_bm_std"),
+  st_decrease_increase = rigal_classification %>%
+    unnest(classif) %>%
+    filter(variable == "bm_std", shape_class %in% c("increase_constant", "decrease_constant")) %>%
+    select(station, shape_class),
   temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
   temporal_dynamics_coef = get_lm_coeff(
     .data = temporal_dynamics,
-    col_names = c("biomass", "log_bm", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance")),
+    col_names = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance")),
   dyn_group = add_group_station(.data = temporal_dynamics_coef, group = biomass_group),
   net_dyn_lm = compute_lm_temporal_trends(
     .data = dyn_group,
-    x = c("biomass", "log_bm", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance"), 
+    x = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance"), 
     y = c("weighted_connectance", "connectance", "w_trph_lvl_avg", "richness"), group = com_size),
   net_dyn_lm_plot = get_net_dyn_lm_plot(net_dyn_lm = net_dyn_lm),
   net_dyn_lm_coeff = get_lm_coeff(.data = net_dyn_lm, col_names = "model"),

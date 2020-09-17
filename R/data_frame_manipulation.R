@@ -40,7 +40,8 @@ add_to_full_data <- function (.data = NULL) {
   output <- output %>% 
     mutate(
       log_bm = log(biomass),
-      bm_std = biomass / surface
+      bm_std = biomass / surface,
+      log_bm_std = log(bm_std)
     )
   output <- add_relative_biomass_to_start(output) 
 
@@ -56,5 +57,79 @@ add_group_station <- function (.data = NULL, group = NULL) {
     left_join(group, by = "station")
 
   return(output)
+
+}
+
+get_bm_vs_network_trends <- function (classif = NULL, bm_var = NULL,
+  coeff = c("connectance", "w_trph_lvl_avg", "richness", "weighted_connectance")
+  ) {
+
+  var_to_keep <- c("station", "linear_slope", "strd_error")
+
+  bm <- classif[classif$variable == bm_var,] %>%
+    unnest(classif) %>%
+    select(!!!var_to_keep) %>%
+    rename(bm_slope = linear_slope, bm_slope_strd_error = strd_error)
+
+  network <- classif %>%
+    filter(!variable %in% get_biomass_var()) %>%
+    unnest(classif) %>%
+    select(!!!c("variable", var_to_keep))
+
+  output <- bm %>%
+    left_join(network, by = "station")
+
+  # Add regression weight
+  output  %<>%
+    mutate(reg_weight = mean(c(abs(bm_slope / bm_slope_strd_error), abs(linear_slope / strd_error))))
+
+  return(output)
+}
+
+get_station_biomass_summary <- function (.data = NULL, bm_var = c("bm_std", "log_bm_std")) {
+
+  var_to_keep <- c("station", "nb_year", bm_var)
+  # Prepare
+  .data %<>%
+    select(!!!var_to_keep) %>%
+    pivot_longer(cols = -c(station, nb_year), names_to = "bm_var", values_to = "bm") %>%
+    group_by(station, variable)
+
+  # Summarise and make it tidy
+  bm_summary <- .data %>% 
+    summarise(
+      first_year = bm[nb_year == 0],
+      last_year = bm[nb_year == max(nb_year)],
+      first_3_year = mean(bm[nb_year %in% c(0:2)], na.rm = TRUE),
+      last_3_year = mean(bm[nb_year %in% c(max(nb_year) - 2:max(nb_year))], na.rm = TRUE),
+      median = median(bm, na.rm = TRUE),
+      avg = mean(bm, na.rm = TRUE)) %>%
+    pivot_longer(cols = c(first_year:avg), names_to = "summary_type", values_to = "bm")
+
+  # Make station group and make it tidy
+  bm_group <- bm_summary %>%
+    group_by(bm_var, summary_type) %>%
+    mutate(
+      median = ifelse(bm < median(bm, na.rm = TRUE), "little", "big"),
+      avg = ifelse(bm < mean(bm, na.rm = TRUE), "little", "big"),
+      quartile = map_chr(bm, function (x, y) {
+	if (is.na(x)) return(NA)
+
+	if (x <= y[1])
+	  output <- "first_quartile"
+	else if (x > y[1] & x <= y[2])
+	  output <- "second_quartile"
+	else if (x > y[2] & x <= y[3])
+	  output <- "third_quartile"
+	else if (x > y[3])
+	  output <- "fourth_quartile"
+	else
+	  output <- NA
+	return(output)
+}, y = quantile(bm, probs = c(.25, .50, .75), na.rm = TRUE)
+)) %>%
+    pivot_longer(cols = c(median:quartile), names_to = "group_type", values_to = "group") %>%
+    ungroup()
+
 
 }
