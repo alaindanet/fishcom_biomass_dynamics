@@ -80,8 +80,8 @@ get_bm_vs_network_trends <- function (classif = NULL, bm_var = NULL,
     left_join(network, by = "station")
 
   # Add regression weight
-  output  %<>%
-    mutate(reg_weight = mean(c(abs(bm_slope / bm_slope_strd_error), abs(linear_slope / strd_error))))
+  output %<>%
+    mutate(reg_weight = (abs(bm_slope) / bm_slope_strd_error + abs(linear_slope) / strd_error) / 2)
 
   return(output)
 }
@@ -93,7 +93,7 @@ get_station_biomass_summary <- function (.data = NULL, bm_var = c("bm_std", "log
   .data %<>%
     select(!!!var_to_keep) %>%
     pivot_longer(cols = -c(station, nb_year), names_to = "bm_var", values_to = "bm") %>%
-    group_by(station, variable)
+    group_by(station, bm_var)
 
   # Summarise and make it tidy
   bm_summary <- .data %>% 
@@ -131,5 +131,68 @@ get_station_biomass_summary <- function (.data = NULL, bm_var = c("bm_std", "log
     pivot_longer(cols = c(median:quartile), names_to = "group_type", values_to = "group") %>%
     ungroup()
 
+
+}
+
+add_stream_bm_caract_to_model <- function (
+  bm_vs_network_df = NULL,
+  stream_caract = NULL,
+  bm_caract = NULL, 
+  bm_group_var = "bm_std",
+  bm_sumary_type = "median",
+  group_type_caract = "median"
+  ) {
+
+  stream_caract %<>%
+    filter(group_type == group_type_caract) %>%
+    rename(stream_group = group) %>% select(-group_type)
+  bm_caract %<>%
+    filter(
+      group_type == group_type_caract,
+      bm_var == bm_group_var,
+      summary_type == bm_sumary_type
+      ) %>%
+  rename(bm_group = group) %>%
+  select(-bm_var, -summary_type, -group_type, -bm_var)
+
+
+  output <- 
+    bm_vs_network_df %>%
+    left_join(bm_caract, by = "station") %>% 
+    left_join(stream_caract, by = "station")
+  return(output)
+
+}
+
+#' Get VIF
+
+get_vif <- function (.df = NULL, model_cols = c("mod1", "mod2", "mod3", "mod5")) {
+
+  .df %<>% 
+    select(-data) %>%
+    pivot_longer(cols = all_of(model_cols), names_to = "model_type", values_to = "model") %>%
+    mutate(
+      vif_tmp = map(model, ~try(car::vif(.x))),
+      vif = map(vif_tmp, ~try(enframe(.x, name = "term", value = "vif")))
+    )
+
+  .df %<>%
+    mutate(
+      check = map2_lgl(vif, vif_tmp,
+	~all(class(.x) != "try-error" & class(.y) != "try-error"))) %>%
+    filter(check) %>%
+    select(-check)
+
+  if ("protocol_type" %in% names(.df)) {
+    selected_var <- c("variable", "protocol_type", "model_type", "vif")
+  } else {
+    selected_var <- c("variable", "model_type", "vif")
+  }
+
+  .df %<>% 
+    select_at(.vars = vars(all_of(selected_var))) %>%
+    filter(!any(class(vif) %in% "try-error")) %>%
+    unnest(cols = vif)
+  return(.df)
 
 }

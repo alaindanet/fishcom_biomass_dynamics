@@ -94,6 +94,31 @@ get_biomass_group <- function(.data = data) {
   select(station, com_size)
 }
 
+get_stream_group <- function (op_analysis_path = NULL, habitat_press_path = NULL) {
+  load(file = op_analysis_path, envir = environment())
+  load(file = habitat_press_path, envir = environment())
+
+  width_classif_mean <- habitat_press %>%
+    mutate(
+      avg = if_else(width_river_mean < mean(width_river_mean, na.rm = TRUE),
+	"little", "big"),
+      median = if_else(width_river_mean < median(
+	  width_river_mean, na.rm = TRUE), "little", "big")) %>%
+  pivot_longer(cols = c(avg, median), names_to = "group_type", values_to =
+    "group") %>%
+  select(station, width_river_mean, group_type, group)
+
+protocol_station <- op_analysis %>%
+  group_by(station) %>%
+  summarise(protocol_type = unique(protocol_type))
+
+output <- width_classif_mean %>% 
+  left_join(protocol_station, by = "station")
+
+return(output)
+
+}
+
 update_files <- function () {
 
   folder <- "~/Documents/post-these/mnhn/fishcom" 

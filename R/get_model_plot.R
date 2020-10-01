@@ -38,3 +38,37 @@ plot_data_slope_lm <- function (fit) {
 	" Slope =",signif(fit$coef[[2]], 2),
 	" P =",signif(summary(fit)$coef[2,4], 3)))
 }
+
+plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE) {
+  ggpred %<>%
+    as_tibble %>%
+    rename(increasing = group, group = facet)
+  rawdata %<>%
+    rename(group = bm)
+
+  ggpred %<>%
+    filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
+
+  if (is.null(rawdata)) {
+  rawdata <- attr(ggpred, "rawdata")
+  }
+
+
+  if (!facet) {
+  p <- ggplot(ggpred, aes(x = x , y = predicted, color = group)) +
+    geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha =
+      .1) +
+    geom_line()
+  p + geom_point(
+    data = rawdata, aes(y = bm_slope, x = linear_slope, color = group))
+  } else {
+    p <- ggplot(ggpred, aes(x = x , y = predicted)) +
+      geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha =
+	.1) +
+      geom_line() 
+    p + geom_point(data = rawdata, aes(y = bm_slope, x = linear_slope)) +
+      facet_grid(cols = vars(group), scales = "free_x")
+  
+  }
+
+}

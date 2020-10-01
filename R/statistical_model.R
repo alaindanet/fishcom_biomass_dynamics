@@ -109,3 +109,53 @@ compute_lm_temporal_trends <- function (.data = NULL, y = "biomass", x = "connec
   return(output)
 }
 
+#' Linear models bm versus network 
+
+compute_my_lm_vs_net_model <- function (
+  .df = NULL,
+  var_to_group = c("variable", "protocol_type"),
+  var_to_scale = NULL
+  ) {
+
+  .df %<>%
+    mutate(
+      increasing = linear_slope > 0,
+      inc_f = as.factor(increasing),
+      log_bm = log(bm)
+    ) 
+
+  if (!is.null(var_to_scale)) {
+    .df %<>%
+      mutate_at(vars(all_of(var_to_scale)), scale)
+  }
+  
+  .df %<>%
+  group_by_at(vars(all_of(var_to_group))) %>%
+  nest() %>%
+    mutate(
+      mod_all_group = map(data, ~lm(linear_slope ~ bm_slope*inc_f*bm_group, .x, weights = reg_weight)),
+      mod_medium_group = map(data, ~lm(
+	   linear_slope~ bm_slope + bm_slope:inc_f + bm_slope:bm_group +
+	    bm_slope:inc_f:bm_group,
+	  .x, weights = reg_weight)),
+     mod_medium_bm = map(data, ~lm(
+	   linear_slope ~ bm_slope + bm_slope:inc_f + bm_slope:bm +
+	    bm_slope:inc_f:bm,
+	  .x, weights = reg_weight)),
+      mod_min_bm = map(data, ~lm(
+	  linear_slope ~ bm_slope:inc_f + bm_slope:bm +
+	    bm_slope:inc_f:bm,
+	  .x, weights = reg_weight)),
+      mod_all_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f*bm, .x, weights = reg_weight)),
+      mod_all_log_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f*log_bm, .x, weights = reg_weight)),
+      mod_bm = map(data, ~lm(linear_slope ~ bm_slope*bm, .x, weights = reg_weight)),
+      mod_bm_inc = map(data, ~lm(linear_slope ~ bm_slope*bm + inc_f, .x, weights = reg_weight)),
+      mod_log_bm = map(data, ~lm(linear_slope ~ bm_slope*log_bm, .x, weights = reg_weight)),
+      mod_log_bm_inc = map(data, ~lm(linear_slope ~ bm_slope*log_bm + inc_f, .x, weights = reg_weight)),
+      mod_inc = map(data, ~lm(linear_slope ~ bm_slope*inc_f, .x, weights = reg_weight)),
+      mod_inc_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f + bm, .x, weights = reg_weight)),
+      mod_inc_log_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f + log_bm, .x, weights = reg_weight)),
+    )
+
+  return(ungroup(.df))
+}
