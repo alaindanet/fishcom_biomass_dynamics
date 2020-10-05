@@ -64,12 +64,12 @@ get_bm_vs_network_trends <- function (classif = NULL, bm_var = NULL,
   coeff = c("connectance", "w_trph_lvl_avg", "richness", "weighted_connectance")
   ) {
 
-  var_to_keep <- c("station", "linear_slope", "strd_error")
+  var_to_keep <- c("station", "linear_slope", "linear_slope_strd_error")
 
   bm <- classif[classif$variable == bm_var,] %>%
     unnest(classif) %>%
     select(!!!var_to_keep) %>%
-    rename(bm_slope = linear_slope, bm_slope_strd_error = strd_error)
+    rename(bm_slope = linear_slope, bm_slope_strd_error = linear_slope_strd_error)
 
   network <- classif %>%
     filter(!variable %in% get_biomass_var()) %>%
@@ -81,7 +81,8 @@ get_bm_vs_network_trends <- function (classif = NULL, bm_var = NULL,
 
   # Add regression weight
   output %<>%
-    mutate(reg_weight = (abs(bm_slope) / bm_slope_strd_error + abs(linear_slope) / strd_error) / 2)
+    mutate( reg_weight = (1 / bm_slope_strd_error +
+	1 / linear_slope_strd_error) / 2)
 
   return(output)
 }

@@ -72,3 +72,34 @@ plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE) {
   }
 
 }
+
+plot_pred_data <- function(.data = NULL, pred = NULL, std_error = TRUE) {
+
+  p <- .data %>%
+    ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
+    scale_color_viridis() +
+    geom_point() +
+    geom_line(
+      data = pred %>%
+	rename(bm_f = group, bm_slope = x, linear_slope = predicted),
+      aes(y = linear_slope, x = bm_slope, linetype = bm_f),
+      inherit.aes = FALSE)
+
+    if (std_error) {
+    
+      p <- p +
+	geom_errorbar(data = .data, 
+	  aes(xmin = bm_slope - bm_slope_strd_error,
+	    xmax = bm_slope + bm_slope_strd_error),
+	  alpha = .3
+	  ) +
+	geom_errorbar(data = .data, 
+	  aes(ymin = linear_slope - linear_slope_strd_error,
+	    ymax = linear_slope + linear_slope_strd_error), alpha = .3)
+
+    
+    }
+
+  return(p)
+
+}

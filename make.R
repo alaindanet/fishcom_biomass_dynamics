@@ -9,7 +9,8 @@ source_dir("R") # Define your custom code as a bunch of functions.
 source("R/plan.R")      # Create your drake plan.
 # Call make() to run your work.
 # Your targets will be stored in a hidden .drake/ cache,
-make(plan)
+drake::r_make(plan)
+drake::make(plan)
 vis_drake_graph(plan)
 
 # If you do not change any code or data,

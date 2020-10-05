@@ -134,21 +134,25 @@ compute_my_lm_vs_net_model <- function (
   nest() %>%
     mutate(
       mod_all_group = map(data, ~lm(linear_slope ~ bm_slope*inc_f*bm_group, .x, weights = reg_weight)),
-      mod_medium_group = map(data, ~lm(
-	   linear_slope~ bm_slope + bm_slope:inc_f + bm_slope:bm_group +
-	    bm_slope:inc_f:bm_group,
-	  .x, weights = reg_weight)),
-     mod_medium_bm = map(data, ~lm(
-	   linear_slope ~ bm_slope + bm_slope:inc_f + bm_slope:bm +
-	    bm_slope:inc_f:bm,
-	  .x, weights = reg_weight)),
-      mod_min_bm = map(data, ~lm(
-	  linear_slope ~ bm_slope:inc_f + bm_slope:bm +
-	    bm_slope:inc_f:bm,
-	  .x, weights = reg_weight)),
+      #mod_medium_group = map(data, ~lm(
+	   #linear_slope~ bm_slope + bm_slope:inc_f + bm_slope:bm_group +
+	    #bm_slope:inc_f:bm_group,
+	  #.x, weights = reg_weight)),
+     #mod_medium_bm = map(data, ~lm(
+	   #linear_slope ~ bm_slope + bm_slope:inc_f + bm_slope:bm +
+	    #bm_slope:inc_f:bm,
+	  #.x, weights = reg_weight)),
+      #mod_min_bm = map(data, ~lm(
+	  #linear_slope ~ bm_slope:inc_f + bm_slope:bm +
+	    #bm_slope:inc_f:bm,
+	  #.x, weights = reg_weight)),
       mod_all_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f*bm, .x, weights = reg_weight)),
       mod_all_log_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f*log_bm, .x, weights = reg_weight)),
       mod_bm = map(data, ~lm(linear_slope ~ bm_slope*bm, .x, weights = reg_weight)),
+      mod_bm_quad = map(data, ~lm(linear_slope ~ bm_slope*bm + I(bm_slope^2), .x, weights = reg_weight)),
+      mod_bm_quad2 = map(data, ~lm(linear_slope ~ bm_slope*bm + I(bm_slope^2)*bm, .x, weights = reg_weight)),
+      mod_log_bm_quad = map(data, ~lm(linear_slope ~ bm_slope*log_bm + I(bm_slope^2), .x, weights = reg_weight)),
+      mod_log_bm_quad2 = map(data, ~lm(linear_slope ~ bm_slope*log_bm + I(bm_slope^2)*log_bm, .x, weights = reg_weight)),
       mod_bm_inc = map(data, ~lm(linear_slope ~ bm_slope*bm + inc_f, .x, weights = reg_weight)),
       mod_log_bm = map(data, ~lm(linear_slope ~ bm_slope*log_bm, .x, weights = reg_weight)),
       mod_log_bm_inc = map(data, ~lm(linear_slope ~ bm_slope*log_bm + inc_f, .x, weights = reg_weight)),
@@ -158,4 +162,22 @@ compute_my_lm_vs_net_model <- function (
     )
 
   return(ungroup(.df))
+}
+
+
+model_summary <- function (.df) {
+
+  model_var <- tidyselect::vars_select(names(.df), starts_with("mod"))
+
+  .df %<>%
+    select(-data) %>%
+    pivot_longer(cols = c(all_of(model_var)),
+      names_to = "model", values_to = "model_obj") %>%
+    mutate(
+      resume = map(model_obj, summary),
+      anova = map(model_obj, anova)
+    )
+
+  return(.df)
+
 }

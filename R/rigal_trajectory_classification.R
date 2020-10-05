@@ -55,7 +55,8 @@ class.trajectory <- function (Y = NULL, X = NULL, dataset = NULL, interval_size 
   polynomial_orthonormal_basis<-lm(Y2~poly(X,2, raw=T))$coefficients
 
   if(summary(orthogonal_polynomial)$coefficients[3, 4] <= 0.05){                                     # non linear case
-    classification <- data.frame(first_order_coefficient = (delta+2*beta*gammab*eta)*alpha,
+    classification <- data.frame(
+      first_order_coefficient = (delta+2*beta*gammab*eta)*alpha,
       first_order_pvalue = summary(orthogonal_polynomial)$coefficients[2, 4],
       second_order_coefficient = (alpha^2)*gammab*eta,
       second_order_pvalue = summary(orthogonal_polynomial)$coefficients[3, 4],
@@ -66,7 +67,8 @@ class.trajectory <- function (Y = NULL, X = NULL, dataset = NULL, interval_size 
       p2 = (-polynomial_orthonormal_basis[2]+1)/(2*polynomial_orthonormal_basis[3]),
       p3 = (-polynomial_orthonormal_basis[2]-1)/(2*polynomial_orthonormal_basis[3]))
   }else{                                                                                            # linear case
-    classification <- data.frame(first_order_coefficient = delta*alpha,
+    classification <- data.frame(
+      first_order_coefficient = delta*alpha,
       first_order_pvalue = summary(orthogonal_polynomial)$coefficients[2, 4],
       second_order_coefficient = 0,
       second_order_pvalue = summary(orthogonal_polynomial)$coefficients[3, 4],
@@ -122,7 +124,9 @@ class.trajectory <- function (Y = NULL, X = NULL, dataset = NULL, interval_size 
 
   linear.model.summary <- summary(linear.model)                                                       # provide the linear approach results for comparison
 
+  #Just to look: strd_error=summary(orthogonal_polynomial)$coefficients[2, 2],
   classification$linear_slope <- linear.model.summary$coefficients[2, 1]
+  classification$linear_slope_strd_error <- linear.model.summary$coefficients[2, 2]
   classification$linear_slope_pvalue <- linear.model.summary$coefficients[2, 4]
   classification$linear_intercept <- linear.model.summary$coefficients[1, 1]
 
