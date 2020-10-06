@@ -40,8 +40,13 @@ add_to_full_data <- function (.data = NULL) {
   output <- output %>% 
     mutate(
       log_bm = log(biomass),
+      log_rich = log(richness),
       bm_std = biomass / surface,
-      log_bm_std = log(bm_std)
+      rich_std = richness / surface,
+      log_bm_std = log(bm_std),
+      log_rich_std = log(rich_std),
+      nbnode_std = nbnode / surface,
+      log_nbnode_std = log(nbnode_std)
     )
   output <- add_relative_biomass_to_start(output) 
 
@@ -82,6 +87,33 @@ get_bm_vs_network_trends <- function (classif = NULL, bm_var = NULL,
   # Add regression weight
   output %<>%
     mutate( reg_weight = (1 / bm_slope_strd_error +
+	1 / linear_slope_strd_error) / 2)
+
+  return(output)
+}
+
+get_rich_vs_network_trends <- function (classif = NULL, rich_var = NULL,
+  coeff = c("connectance", "w_trph_lvl_avg", "weighted_connectance")
+  ) {
+
+  var_to_keep <- c("station", "linear_slope", "linear_slope_strd_error")
+
+  rich <- classif[classif$variable == rich_var,] %>%
+    unnest(classif) %>%
+    select(!!!var_to_keep) %>%
+    rename(rich_slope = linear_slope, rich_strd_error = linear_slope_strd_error)
+
+  network <- classif %>%
+    filter(!variable %in% get_richness_var()) %>%
+    unnest(classif) %>%
+    select(!!!c("variable", var_to_keep))
+
+  output <- rich %>%
+    left_join(network, by = "station")
+
+  # Add regression weight
+  output %<>%
+    mutate( reg_weight = (1 / rich_strd_error +
 	1 / linear_slope_strd_error) / 2)
 
   return(output)
