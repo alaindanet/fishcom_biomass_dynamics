@@ -22,18 +22,25 @@ get_community_data <- function (
 get_network_data <- function (network_metrics = NULL, 
   path = get_mypath("data", "classes", "network_metrics.rda"), 
 metrics = NULL) {
-
   
   load(path, envir = environment())
+
+  network_metrics %<>%
+    mutate(
+      pisc_stat = map(network, ~try(get_piscivory_stat_from_network(net = .x)))
+    )
 
   if (is.null(metrics)) {
     metrics <- c(
       "connectance", "weighted_connectance",
-      "nbnode", "w_trph_lvl_avg")
+      "nbnode", "w_trph_lvl_avg", "pisc_stat")
   }
 
   col_to_keep <- c("opcod", metrics)
   net <- network_metrics[, colnames(network_metrics) %in% col_to_keep]
+
+  net %<>%
+    unnest(cols = pisc_stat)
 
   net %<>%
     dplyr::filter(!is.na(opcod))

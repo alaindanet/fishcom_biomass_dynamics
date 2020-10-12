@@ -103,3 +103,50 @@ plot_pred_data <- function(.data = NULL, pred = NULL, std_error = TRUE) {
   return(p)
 
 }
+
+labs_log_bm_net_trends <- function ( ) {
+  labs(
+    x = paste("Trend of log of biomass per surface (g.m-2.y-1)"),
+    y = paste("Trend of Networks (U.y-1)")
+    )
+}
+
+labs_bm_net_trends <- function ( ) {
+  labs(
+    x = paste("Trend of biomass per surface (g.m-2.y-1)"),
+    y = paste("Trend of Networks (U.y-1)")
+    )
+}
+
+xylabs <- function (...) {
+  dots <- pryr::named_dots(...)
+  dots <- map(dots, eval) %>% unlist
+
+  lab_list <- list(
+    del = expression(bold(paste("Fraction of global dispersal (", delta, ")"))),
+    nbnode = paste("Number of nodes"),
+    bm = paste("Biomass (g)"),
+    bm_std = paste("Biomass per surface (g.m-2)"),
+    bm_slope = paste("Trend of biomass per surface (g.m-2.y-1)"),
+    linear_slope = paste("Trend of Networks (U.y-1)"),
+    richness = paste("Species richness"),
+    richness_cv = paste("CV of richness"),
+    richness_avg = paste("Average richness"),
+    richness_avg = paste("Median richness"),
+    connectance = paste("Connectance"),
+    connectance_avg = paste("Average connectance"),
+    connectance_med = paste("Median connectance"),
+    connectance_cv = paste("CV of connectance"),
+    diversity = paste("Diversity")
+    )
+  
+  lab_used <- lab_list[dots]
+  names(lab_used) <- names(dots)
+
+  labs(
+    x = lab_used["x"][[1]],
+    y = lab_used["y"][[1]]
+    )
+}
+
+

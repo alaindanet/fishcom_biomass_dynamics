@@ -46,7 +46,11 @@ add_to_full_data <- function (.data = NULL) {
       log_bm_std = log(bm_std),
       log_rich_std = log(rich_std),
       nbnode_std = nbnode / surface,
-      log_nbnode_std = log(nbnode_std)
+      log_nbnode_std = log(nbnode_std),
+      nb_pisc_node_std = nb_pisc_node / surface,
+      log_nb_pisc_node_std = log(nb_pisc_node_std),
+      nb_pisc_rich_std = nb_pisc_rich / surface,
+      log_nb_pisc_rich_std = log(nb_pisc_rich_std)
     )
   output <- add_relative_biomass_to_start(output) 
 

@@ -8,10 +8,10 @@ plan <- drake_plan(
   full_data2 = add_to_full_data(.data = full_data),
   monotonous_data = get_monotonous_station(.data = full_data2),
   temporal_dynamics = get_lm_station(.data = monotonous_data, 
-    var_name = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance", "rich_std", "log_rich_std"),
+    var_name = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance", "rich_std", "log_rich_std", "nbnode_std" ,"nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich"),
     rhs = " ~ nb_year"),
   rigal_classification = compute_rigal_classif(data = full_data2, 
-    variable = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "rich_std", "log_rich_std", "weighted_connectance", "nbnode_std")),
+    variable = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "rich_std", "log_rich_std", "weighted_connectance", "nbnode_std", "nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich")),
   biomass_group = get_station_biomass_summary(.data = full_data2, bm_var = c("bm_std", "log_bm_std")),
   stream_group = get_stream_group(
     op_analysis_path = file_in(!!get_mypath("data", "op_analysis.rda")),
@@ -28,6 +28,14 @@ plan <- drake_plan(
   log_bm_std_st_decrease_increase = rigal_classification %>%
     unnest(classif) %>%
     filter(variable == "log_bm_std", shape_class %in% c("increase_constant", "decrease_constant")) %>%
+    select(station, shape_class),
+  rich_std_st_decrease_increase = rigal_classification %>%
+    unnest(classif) %>%
+    filter(variable == "rich_std", shape_class %in% c("increase_constant", "decrease_constant")) %>%
+    select(station, shape_class),
+  log_rich_std_st_decrease_increase = rigal_classification %>%
+    unnest(classif) %>%
+    filter(variable == "log_rich_std", shape_class %in% c("increase_constant", "decrease_constant")) %>%
     select(station, shape_class),
 
   bm_net_group = 
@@ -66,12 +74,12 @@ plan <- drake_plan(
   temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
   temporal_dynamics_coef = get_lm_coeff(
     .data = temporal_dynamics,
-    col_names = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance")),
+    col_names = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance", "nbnode_std", "nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich")),
   dyn_group = add_group_station(.data = temporal_dynamics_coef, group = biomass_group),
   net_dyn_lm = compute_lm_temporal_trends(
     .data = dyn_group,
-    x = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance"), 
-    y = c("weighted_connectance", "connectance", "w_trph_lvl_avg", "richness"), group = com_size),
+    x = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance", "nbnode_std", "nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich"), 
+    y = c("weighted_connectance", "connectance", "w_trph_lvl_avg", "richness", "nbnode_std", "nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich"), group = com_size),
   net_dyn_lm_plot = get_net_dyn_lm_plot(net_dyn_lm = net_dyn_lm),
   net_dyn_lm_coeff = get_lm_coeff(.data = net_dyn_lm, col_names = "model"),
   report = rmarkdown::render(
