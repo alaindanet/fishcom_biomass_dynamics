@@ -227,7 +227,51 @@ pred_log_bm_quad2 <- model_log_bm_summary %>%
 
 pred_log_bm_quad2_plot <- map2(model_log_bm$data, pred_log_bm_quad2$pred_df,
   plot_pred_data)
-plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm$variable)
+legend_quad2 <- get_legend(pred_log_bm_quad2_plot[[1]])
+pred_log_bm_quad2_plot %<>% map(., ~.x + theme(legend.position = "none"))
+top <- plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm$variable)
+plot_grid(top, legend_quad2, rel_widths = c(1, .1))
+```
+-
+
+## Link biomass dynamic and environment
+
+```{r}
+myload(habitat_press, habitat_pressure,
+  envir = environment(),
+  dir = get_mypath("data"))
+#habitat_press
+```
+
+```{r}
+test <- log_bm_net_group %>%
+  filter(variable == "connectance") %>%
+  left_join(habitat_pressure, by = "station")
+test %>%
+  pivot_longer(
+    cols = c(bm, width_river_mean, temperature_med, alt , RC1, RC2),
+    names_to = "evt_var", values_to = "value") %>%
+ggplot(aes(y = bm_slope, x = value)) +
+geom_point() +
+facet_wrap(~evt_var, scales = "free_x")
+```
+
+```{r}
+library(sf)
+myload(region_polygon, envir = environment(), dir = get_mypath("data"))
+myload(station_analysis,
+  envir = environment(),
+  dir = "~/Documents/post-these/mnhn/fishcom/data")
+
+p <- ggplot() +
+  geom_sf(data = st_geometry(region_polygon)) 
+st_bm_slope <- station_analysis %>%
+  rename(station = id) %>%
+  left_join(select(test, station, bm_slope)) %>%
+  filter(!is.na(bm_slope))
+p + 
+  geom_sf(data = st_bm_slope, aes(color = bm_slope)) +
+  scale_color_viridis()
 ```
 
 
@@ -387,6 +431,8 @@ bm_net_group %>%
   facet_grid(variable~protocol_type, scales = "free") +
   labs(title = "Group as mean biomass")
 ```
+
+
 
 ## Other Statistical model
 

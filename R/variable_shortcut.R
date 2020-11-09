@@ -14,3 +14,7 @@ get_species <- function(node_list) {
   species_resource_list
 
 }
+
+model_type_var <- function() {
+  c("model_bm", "model_bm_f3y", "model_log_bm", "model_log_bm_f3y")
+}

@@ -43,15 +43,45 @@ plan <- drake_plan(
       stream_caract = stream_group, bm_caract = biomass_group,
       bm_group_var = "bm_std", group_type_caract = "median") %>% 
   filter(station %in% bm_std_st_decrease_increase$station),
+  bm_net_group_f3y = 
+    add_stream_bm_caract_to_model(bm_vs_network_df = bm_vs_net_trends,
+      stream_caract = stream_group, bm_caract = biomass_group,
+      bm_group_var = "bm_std", bm_sumary_type = "first_3_year", group_type_caract = "median") %>% 
+  filter(station %in% bm_std_st_decrease_increase$station),
   log_bm_net_group = 
     add_stream_bm_caract_to_model( bm_vs_network_df = log_bm_vs_net_trends,
       stream_caract = stream_group, bm_caract = biomass_group,
       bm_group_var = "bm_std", group_type_caract = "median") %>%
   filter(station %in% log_bm_std_st_decrease_increase$station),
-  
+  log_bm_net_group_f3y = 
+    add_stream_bm_caract_to_model(bm_vs_network_df = log_bm_vs_net_trends,
+      stream_caract = stream_group, bm_caract = biomass_group,
+      bm_group_var = "bm_std", bm_sumary_type = "first_3_year", group_type_caract = "median") %>% 
+  filter(station %in% bm_std_st_decrease_increase$station),
+
+model = target(
+  compute_my_lm_vs_net_model(.df = my_bm_net_group, var_to_group = c("variable")),
+  transform = map(
+    my_bm_net_group = list(bm_net_group, bm_net_group_f3y,
+      log_bm_net_group, log_bm_net_group_f3y),
+    .id = c("model_bm", "model_bm_f3y", "model_log_bm", "model_log_bm_f3y")
+  )
+  ),
+
+model_vif = target(
+  compute_my_lm_vs_net_model(.df = my_bm_model, var_to_group = c("variable")),
+  transform = map(
+    my_bm_model = list(model_bm, model_bm_f3y, model_log_bm, model_log_bm_f3y),
+    .id = paste0(model_type_var(), "_vif") 
+  )
+  ),
+
+
+
   model_bm = compute_my_lm_vs_net_model(bm_net_group, var_to_group = c("variable")),
   model_bm_vif = get_vif(model_bm,
-    model_cols = all_of(tidyselect::vars_select(names(model_bm), starts_with("mod")))),
+    model_cols = all_of(tidyselect::vars_select(names(model_bm),
+	starts_with("mod")))),
   model_bm_summary = model_summary(model_bm),
   model_bm_by_protocol = compute_my_lm_vs_net_model(
     filter(bm_net_group, !is.na(protocol_type)),
@@ -70,6 +100,22 @@ plan <- drake_plan(
   model_log_bm_by_protocol_vif = get_vif(model_log_bm_by_protocol,
     model_cols = all_of(tidyselect::vars_select(names(model_log_bm_by_protocol), starts_with("mod")))),
 
+  bm_group = target(
+    add_stream_bm_caract_to_model(bm_vs_network_df = .data,
+      stream_caract = stream_group, bm_caract = biomass_group,
+      bm_group_var = "bm_std", group_type_caract = "median",
+      bm_summary_type = bm_summary_var) %>% 
+    filter(station %in% st),
+    transform = map(
+      .data = list(bm_vs_net_trends, log_bm_vs_net_trends, bm_vs_net_trends, log_bm_vs_net_trends),
+      st = list(bm_std_st_decrease_increase$station,
+	log_bm_std_st_decrease_increase$station, 
+	bm_std_st_decrease_increase$station,
+	log_bm_std_st_decrease_increase$station),
+      bm_summary_var = c("first_3_year", "first_3_year", "median", "median"),
+      .names = c("bm_group_first_3_year", "log_bm_group_first_3_year", "bm_group_median", "log_bm_group_median")
+      ) 
+  ),
 
   temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
   temporal_dynamics_coef = get_lm_coeff(

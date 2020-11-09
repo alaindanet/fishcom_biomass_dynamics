@@ -10,11 +10,12 @@ source("R/plan.R")      # Create your drake plan.
 # Call make() to run your work.
 # Your targets will be stored in a hidden .drake/ cache,
 #drake::r_make(plan)
-drake::make(plan)
-vis_drake_graph(plan)
+drake::make(plan, keep_going = TRUE)
 
 # If you do not change any code or data,
 # subsequent make()'s do not build targets.
 
 # Load your targets back into your session with loadd() and readd().
 plan
+loadd(bm_net_group_f3y)
+loadd(bm_net_group_f3y)
