@@ -14,14 +14,14 @@ plan <- drake_plan(
   full_data2 = add_to_full_data(.data = full_data),
   monotonous_data = get_monotonous_station(.data = full_data2),
   temporal_dynamics = get_lm_station(.data = monotonous_data, 
-    var_name = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance", "rich_std", "log_rich_std", "nbnode_std" ,"nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich"),
+    var_name = c(get_biomass_var(), get_com_str_var(all = TRUE)),
     rhs = " ~ nb_year"),
   rigal_classification = compute_rigal_classif(data = full_data2, 
-    variable = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "rich_std", "log_rich_std", "weighted_connectance", "nbnode_std", "nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich")),
-  biomass_group = get_station_biomass_summary(.data = full_data2, bm_var = c("bm_std", "log_bm_std")),
+    variable = c(get_biomass_var(), get_com_str_var(all = TRUE))),
+  biomass_group = get_station_biomass_summary(.data = full_data2, bm_var = get_biomass_var()),
   richness_group = get_station_com_summary(
   .data = full_data2,
-  myvar = c("rich_std", "log_rich_std"),
+  myvar = get_richness_var(),
   var_cat = "rich"),
   stream_group = get_stream_group(
     op_analysis_path = file_in(!!get_mypath("data", "op_analysis.rda")),
@@ -29,14 +29,14 @@ plan <- drake_plan(
   bm_vs_net_trend = target(
     get_bm_vs_network_trends(classif = rigal_classification, bm_var = y),
     transform = map(
-      y = c("bm_std", "log_bm_std"),
+      y = !!get_biomass_var(),
       .names = c("bm_vs_net_trends", "log_bm_vs_net_trends")
     )
   ),
   com_vs_net_trend = target(
     get_rich_vs_network_trends(classif = rigal_classification, rich_var = y),
     transform = map(
-      y = c("rich_std", "log_rich_std"),
+      y = !!get_richness_var(),
       .names = c("rich_vs_net_trends", "log_rich_vs_net_trends") 
     )
   ),

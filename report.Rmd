@@ -106,13 +106,13 @@ loadd(biomass_group)
 ```{r}
 temporal_dynamics_coef %>%
   filter(term %in% "slope", coeff %in% c("bm_std", "log_bm_std")) %>%
-  select(1:4) %>%
+  select(station:estimate) %>%
   pivot_wider(names_from = "term", values_from = estimate) %>%
   left_join(biomass_group, by = c("station", "coeff" = "bm_var")) %>%
   filter(group_type == "median", summary_type %in% c("first_3_year", "median")) %>%
   ggplot(aes(x = bm, y = slope)) +
   geom_point(aes(color = group)) +
-  facet_wrap(coeff~summary_type, scales = "free") +
+  facet_wrap(summary_type~coeff, scales = "free") +
   labs(x = "Summary of biomass (g)", y = "Slope (g.y^-1)")
 ```
 
@@ -131,12 +131,16 @@ full_data2 %>%
   - Dynamics of log of the biomass: put big and little station on the same scale
     (% of biomass gained or lost per year)
 
-```{r}
-loadd(log_bm_net_group_median)
+```{r, cache = FALSE}
+loadd(log_bm_net_group_f3y, model_log_bm_f3y, summary_log_bm_f3y, vif_log_bm_f3y)
+loadd(bm_net_group_median, bm_vs_net_trends)
+loadd(habitat_press, habitat_pressure)
+loadd(region_polygon, station_analysis)
+loadd(richness_group)
 ```
 
 ```{r, fig.height = 12, fig.width = 12}
-log_bm_net_group_median %>%
+log_bm_net_group_f3y %>%
   ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
   geom_point() +
   scale_color_viridis() +
@@ -150,7 +154,7 @@ log_bm_net_group_median %>%
 
 
 ```{r, fig.height = 12, fig.width = 12}
-log_bm_net_group_median %>%
+log_bm_net_group_f3y %>%
   filter(!is.na(protocol_type)) %>%
   ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
   geom_point() +
@@ -162,7 +166,7 @@ log_bm_net_group_median %>%
   facet_grid(variable~protocol_type, scales = "free") +
   labs_log_bm_net_trends()
 
-log_bm_net_group_median %>%
+log_bm_net_group_f3y %>%
   filter(variable == "connectance") %>%
   ggplot(aes(x = bm_slope, y = bm)) +
   geom_point()
@@ -172,25 +176,21 @@ log_bm_net_group_median %>%
 
 #### All protocol
 
-```{r}
-loadd(model_log_bm, summary_log_bm)
-```
 
 ```{r, eval = TRUE}
 #https://stackoverflow.com/questions/44457243/regression-tables-in-r-markdown-rmarkdown-html-pdf
 
-unique(summary_log_bm$variable)
-model_log_bm_table <- summary_log_bm %>%
+model_log_bm_f3y_table <- summary_log_bm_f3y %>%
   filter(model == "mod_bm_quad2") %>%
-  filter(!variable %in% c("log_rich_std", "nbnode_std")) %>%
+  filter(variable %in% get_com_str_var(all = FALSE)) %>%
   mutate(
     reg_table = map(model_obj, broom::tidy),
     anova_table = map(anova, broom::tidy)
   )
 
-model_log_bm_table[["reg_table"]] %>% 
+model_log_bm_f3y_table[["reg_table"]] %>% 
   bind_rows(.) %>%
-  mutate(variable = rep(model_log_bm_table[["variable"]], each = 6)) %>%
+  mutate(variable = rep(model_log_bm_f3y_table[["variable"]], each = 6)) %>%
   select(variable, everything()) %>%
   kable(.,
     booktabs = TRUE, 
@@ -198,13 +198,16 @@ model_log_bm_table[["reg_table"]] %>%
       paste0(
       "Regression table for the model: dN =",
       "bm + dBm + dBm^2 + bm*dBm + bm*dBm^2."
-    ) 
-  )
+    )) %>% 
+  kable_styling(latex_options =c("scale_down")) %>%
+  #add_header_above(c(" " = 3, "Indirect effects via" = 5)) %>%
+  #column_spec(1:2, width = "3cm") %>%
+  collapse_rows(columns = 1, valign = "top")
 ```
 
 ```{r}
-bind_rows(model_log_bm_table[["anova_table"]]) %>% 
-  mutate(variable = rep(model_log_bm_table[["variable"]], each = 6)) %>%
+bind_rows(model_log_bm_f3y_table[["anova_table"]]) %>% 
+  mutate(variable = rep(model_log_bm_f3y_table[["variable"]], each = 6)) %>%
   select(variable, everything()) %>%
   kable(., booktabs = TRUE,
     caption = 
@@ -217,8 +220,8 @@ bind_rows(model_log_bm_table[["anova_table"]]) %>%
 ```
 
 ```{r}
-map_dfr(model_log_bm_table[["model_obj"]], broom::glance) %>%
-  mutate(variable = model_log_bm_table[["variable"]]) %>%
+map_dfr(model_log_bm_f3y_table[["model_obj"]], broom::glance) %>%
+  mutate(variable = model_log_bm_f3y_table[["variable"]]) %>%
   select(variable, everything()) %>%
   kable(., booktabs = TRUE,
     caption = 
@@ -233,7 +236,7 @@ map_dfr(model_log_bm_table[["model_obj"]], broom::glance) %>%
 
 
 ```{r, fig.height = 12, fig.width = 12}
-pred_log_bm_quad2 <- summary_log_bm %>%
+pred_log_bm_quad2 <- summary_log_bm_f3y %>%
   filter(model == "mod_bm_quad2") %>%
   mutate(
     pred = map(model_obj, ~ggpredict(.x,
@@ -244,11 +247,11 @@ pred_log_bm_quad2 <- summary_log_bm %>%
     #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
   )
 
-pred_log_bm_quad2_plot <- map2(model_log_bm$data, pred_log_bm_quad2$pred_df,
+pred_log_bm_quad2_plot <- map2(model_log_bm_f3y$data, pred_log_bm_quad2$pred_df,
   plot_pred_data)
 legend_quad2 <- get_legend(pred_log_bm_quad2_plot[[1]])
 pred_log_bm_quad2_plot %<>% map(., ~.x + theme(legend.position = "none"))
-top <- plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm$variable)
+top <- plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm_f3y$variable)
 plot_grid(top, legend_quad2, rel_widths = c(1, .1))
 ```
 -
@@ -256,12 +259,11 @@ plot_grid(top, legend_quad2, rel_widths = c(1, .1))
 ## Link biomass dynamic and environment
 
 ```{r}
-loadd(habitat_press, habitat_pressure)
 #habitat_press
 ```
 
 ```{r}
-test <- log_bm_net_group_median %>%
+test <- log_bm_net_group_f3y %>%
   filter(variable == "connectance") %>%
   left_join(habitat_pressure, by = "station")
 test %>%
@@ -274,7 +276,6 @@ facet_wrap(~evt_var, scales = "free_x")
 ```
 
 ```{r}
-loadd(region_polygon, station_analysis)
 
 p <- ggplot() +
   geom_sf(data = st_geometry(region_polygon)) 
@@ -288,7 +289,7 @@ p +
 ```
 
 ```{r}
-log_bm_net_group_median %>%
+log_bm_net_group_f3y %>%
   filter(variable == "rich_std", bm_slope < 0) %>%
   left_join(habitat_pressure, by = "station") %>%
   pivot_longer(cols = c(bm, width_river_mean, temperature_med, alt , RC1, RC2),
@@ -299,13 +300,12 @@ facet_wrap(~evt_var, scales = "free_x")
 ```
 
 ```{r}
-loadd(richness_group)
 rich_std_f3y <- richness_group %>% 
   filter(rich_var == "rich_std", summary_type == "first_3_year", group_type ==
     "median") %>%
   select(station, rich)
 
-log_bm_net_group_median %>%
+log_bm_net_group_f3y %>%
   filter(variable == "rich_std", bm_slope < 0) %>%
   left_join(rich_std_f3y, by = "station") %>%
   ggplot(aes(y = linear_slope, x = rich)) +
@@ -334,10 +334,10 @@ p_rigal_decrease_increase_slope_st <-
   facet_wrap(~variable)
 p_rigal_decrease_increase_slope_st
 ```
+
 ### Tendancies in rigal increase / decrease 
 
 ```{r}
-loadd(bm_net_group_median, log_bm_net_group_median, bm_vs_net_trends)
 bm_vs_net_trends %>%
   ggplot(aes(x = reg_weight)) +
   geom_histogram() +
@@ -353,7 +353,7 @@ bm_net_group_median %>%
   labs(x = "Biomass trend (g.m-1.y-1)", y = "Network trend (U.y-1)")
 
 
-log_bm_net_group_median %>%
+log_bm_net_group_f3y %>%
   ggplot(aes(x = bm_slope, y = linear_slope, size = reg_weight, weight = reg_weight, color = log(bm))) +
   geom_point() +
   scale_color_viridis() +
@@ -433,9 +433,6 @@ stream_group %>%
 # Patterns
 
 ```{r}
-loadd(bm_net_group_median)
-loadd(log_bm_net_group_median)
-
 bm_net_group_median %>%
   ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm), size = reg_weight, weight = reg_weight)) +
   geom_point() +
@@ -479,7 +476,7 @@ bm_net_group_median %>%
 
 
 ```{r}
-pred_log_bm_quad <- summary_log_bm %>%
+pred_log_bm_quad <- summary_log_bm_f3y %>%
   filter(model == "mod_bm_quad") %>%
   mutate(
     pred = map(model_obj, ~ggpredict(.x,
@@ -491,15 +488,14 @@ pred_log_bm_quad <- summary_log_bm %>%
   )
 
 
-test <- map2(model_log_bm$data, pred_log_bm_quad$pred_df, plot_pred_data,
+test <- map2(model_log_bm_f3y$data, pred_log_bm_quad$pred_df, plot_pred_data,
   std_error = TRUE)
-plot_grid(plotlist = test, labels = model_log_bm$variable)
+plot_grid(plotlist = test, labels = model_log_bm_f3y$variable)
 ```
 
 ```{r}
-loadd(log_bm_net_group_median, vif_log_bm)
 
-vif_log_bm %>%
+vif_log_bm_f3y %>%
   ggplot(aes(y= vif, x = term)) +
   geom_hline(yintercept = 10) +
   geom_bar(stat = "identity") +
@@ -528,11 +524,11 @@ p_vif_protocol[[2]]
 ```
 
 ```{r}
-loadd(model_log_bm_by_protocol, summary_log_bm_by_protocol)
+loadd(model_log_bm_f3y_by_protocol, summary_log_bm_f3y_by_protocol)
 ```
 
 ```{r, eval = FALSE}
-complete_log_quad2 <- summary_log_bm_by_protocol %>%
+complete_log_quad2 <- summary_log_bm_f3y_by_protocol %>%
   filter(model == "mod_bm_quad2", protocol_type == "complete") %>%
   mutate(
     reg_table = map(model_obj, broom::tidy),
@@ -566,17 +562,17 @@ complete_log_quad2[["anova_table"]] %>%
 ```
 
 ```{r, eval = FALSE}
-filter(summary_log_bm_by_protocol, model == "mod_log_bm_inc")[["resume"]]
-filter(summary_log_bm_by_protocol, model == "mod_log_bm_inc")[["anova"]]
+filter(summary_log_bm_f3y_by_protocol, model == "mod_log_bm_inc")[["resume"]]
+filter(summary_log_bm_f3y_by_protocol, model == "mod_log_bm_inc")[["anova"]]
 
-filter(summary_log_bm_by_protocol, model == "mod_bm_quad")[["resume"]]
-filter(summary_log_bm_by_protocol, model == "mod_log_bm_inc")[["anova"]]
+filter(summary_log_bm_f3y_by_protocol, model == "mod_bm_quad")[["resume"]]
+filter(summary_log_bm_f3y_by_protocol, model == "mod_log_bm_inc")[["anova"]]
 ```
 
 #### Quadratic two
 
 ```{r}
-pred_log_bm_quad2 <- summary_log_bm_by_protocol %>%
+pred_log_bm_quad2 <- summary_log_bm_f3y_by_protocol %>%
   filter(model == "mod_bm_quad2", protocol_type == "complete") %>%
   mutate(
     pred = map(model_obj, ~ggpredict(.x,
@@ -586,18 +582,18 @@ pred_log_bm_quad2 <- summary_log_bm_by_protocol %>%
     plot_data = map(pred, ~plot(.x, add.data = TRUE)),
     #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
   )
-model_log_bm_by_protocol %<>% filter(protocol_type == "complete")
+model_log_bm_f3y_by_protocol %<>% filter(protocol_type == "complete")
 
-pred_log_bm_quad2_plot <- map2(model_log_bm_by_protocol$data, pred_log_bm_quad2$pred_df,
+pred_log_bm_quad2_plot <- map2(model_log_bm_f3y_by_protocol$data, pred_log_bm_quad2$pred_df,
   plot_pred_data)
-plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm$variable)
+plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm_f3y$variable)
 ```
 
 #### Quadratic one
 
 
 ```{r}
-pred_log_bm_quad <- summary_log_bm_by_protocol %>%
+pred_log_bm_quad <- summary_log_bm_f3y_by_protocol %>%
   filter(model == "mod_bm_quad", protocol_type == "complete") %>%
   mutate(
     pred = map(model_obj, ~ggpredict(.x,
@@ -607,15 +603,15 @@ pred_log_bm_quad <- summary_log_bm_by_protocol %>%
     plot_data = map(pred, ~plot(.x, add.data = TRUE)),
     #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
   )
-model_log_bm_by_protocol %<>% filter(protocol_type == "complete")
+model_log_bm_f3y_by_protocol %<>% filter(protocol_type == "complete")
 
-pred_log_bm_quad_plot <- map2(model_log_bm$data, pred_log_bm_quad$pred_df, plot_pred_data,
+pred_log_bm_quad_plot <- map2(model_log_bm_f3y$data, pred_log_bm_quad$pred_df, plot_pred_data,
   std_error = TRUE)
-plot_grid(plotlist = pred_log_bm_quad_plot, labels = model_log_bm$variable)
+plot_grid(plotlist = pred_log_bm_quad_plot, labels = model_log_bm_f3y$variable)
 ```
 
 ```{r, eval = FALSE}
-pred <- summary_log_bm_by_protocol %>%
+pred <- summary_log_bm_f3y_by_protocol %>%
   filter(model == "mod_log_bm_inc") %>%
   mutate(
     pred = map(model_obj, ~ggpredict(.x,
@@ -628,7 +624,7 @@ plot_grid(plotlist = pred$plot, labels = pred$variable)
 ```
 
 ```{r, eval = FALSE}
-pred <- summary_log_bm_by_protocol %>%
+pred <- summary_log_bm_f3y_by_protocol %>%
   filter(model == "mod_log_bm_inc") %>%
   mutate(
     pred = map(model_obj, ~ggpredict(.x,
