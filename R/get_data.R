@@ -63,6 +63,11 @@ get_op_data <- function (path = get_mypath("data", "op_analysis.rda")) {
 
   return(op)
 }
+get_data <- function (obj_name = NULL, dir = NULL) {
+  load(paste0(dir,"/", obj_name, ".rda"), envir = environment())
+  assign("x", value = get(obj_name))
+  return(x)
+}
 
 
 #' Get fishing operation data

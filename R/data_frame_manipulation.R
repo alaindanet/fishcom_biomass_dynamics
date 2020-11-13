@@ -171,12 +171,69 @@ get_station_biomass_summary <- function (.data = NULL, bm_var = c("bm_std", "log
 
 }
 
+get_station_com_summary <- function (.data = NULL, myvar = c("bm_std", "log_bm_std"), var_cat = "bm") {
+
+  var_to_keep <- c("station", "nb_year", myvar)
+  var_cat_sym <- rlang::sym(var_cat)
+  cat_var <- paste0(var_cat, "_var")
+  cat_var_sym <- rlang::sym(cat_var)
+  # Prepare
+  .data %<>%
+    select(!!!var_to_keep) %>%
+    pivot_longer(cols = -c(station, nb_year),
+      names_to = cat_var,
+      values_to = var_cat) %>%
+    group_by(station, !!cat_var_sym)
+
+  
+  nb_year_sym <- rlang::sym("nb_year")
+  # Summarise and make it tidy
+  bm_summary <- .data %>% 
+    summarise(
+      first_year = (!!var_cat_sym)[!!nb_year_sym == 0],
+      last_year = (!!var_cat_sym)[!!nb_year_sym == max(!!nb_year_sym)],
+      first_3_year = mean((!!var_cat_sym)[!!nb_year_sym %in% c(0:2)], na.rm = TRUE),
+      last_3_year = mean((!!var_cat_sym)[!!nb_year_sym %in% c(max(!!nb_year_sym) - 2:max(!!nb_year_sym))], na.rm = TRUE),
+      median = median(!!var_cat_sym, na.rm = TRUE),
+      avg = mean(!!var_cat_sym, na.rm = TRUE)) %>%
+    pivot_longer(cols = c(first_year:avg),
+      names_to = "summary_type",
+      values_to = var_cat)
+
+  # Make station group and make it tidy
+  output <- bm_summary %>%
+    group_by(!!cat_var_sym, summary_type) %>%
+    mutate(
+      median = ifelse(!!var_cat_sym < median(!!var_cat_sym, na.rm = TRUE), "little", "big"),
+      avg = ifelse(!!var_cat_sym < mean(!!var_cat_sym, na.rm = TRUE), "little", "big"),
+      quartile = map_chr(!!var_cat_sym, function (x, y) {
+	if (is.na(x)) return(NA)
+
+	if (x <= y[1])
+	  output <- "first_quartile"
+	else if (x > y[1] & x <= y[2])
+	  output <- "second_quartile"
+	else if (x > y[2] & x <= y[3])
+	  output <- "third_quartile"
+	else if (x > y[3])
+	  output <- "fourth_quartile"
+	else
+	  output <- NA
+	return(output)
+}, y = quantile(!!var_cat_sym, probs = c(.25, .50, .75), na.rm = TRUE)
+)) %>%
+    pivot_longer(cols = c(median:quartile), names_to = "group_type", values_to = "group") %>%
+    ungroup()
+
+  return(output)
+}
+
 add_stream_bm_caract_to_model <- function (
   bm_vs_network_df = NULL,
   stream_caract = NULL,
   bm_caract = NULL, 
   bm_group_var = "bm_std",
-  bm_sumary_type = "median",
+  bm_summary_type = "median",
   group_type_caract = "median"
   ) {
 
@@ -187,7 +244,7 @@ add_stream_bm_caract_to_model <- function (
     filter(
       group_type == group_type_caract,
       bm_var == bm_group_var,
-      summary_type == bm_sumary_type
+      summary_type == bm_summary_type
       ) %>%
   rename(bm_group = group) %>%
   select(-bm_var, -summary_type, -group_type, -bm_var)
@@ -198,7 +255,6 @@ add_stream_bm_caract_to_model <- function (
     left_join(bm_caract, by = "station") %>% 
     left_join(stream_caract, by = "station")
   return(output)
-
 }
 
 #' Get VIF
