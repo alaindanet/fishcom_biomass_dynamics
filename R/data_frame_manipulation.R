@@ -289,3 +289,74 @@ get_vif <- function (.df = NULL, model_cols = c("mod1", "mod2", "mod3", "mod5"))
   return(.df)
 
 }
+
+#' get regression table from model summary
+#'
+#' @param .data
+#' @param model chr name of a model 
+#' @param protocol chr 
+#' @return list of length two
+get_table_from_summary <- function (
+  .data = NULL,
+  model = NULL,
+  protocol = NULL,
+  variable = NULL
+  ) {
+
+  model_chr <- model 
+  variable_chr <- variable 
+
+  if (is.null(protocol)) {
+    .data %<>% filter(model == model_chr)
+  } else {
+    .data %<>% filter(model == model_chr, protocol_type == protocol)
+  }
+
+  if (!is.null(variable_chr)) {
+    .data %<>% filter(variable %in% variable_chr)
+  }
+
+  .data %<>%
+    mutate(
+      reg_table = map(model_obj, broom::tidy),
+      anova_table = map(anova, broom::tidy)
+    )
+
+  nb_coeff <- length(coefficients(.data$model_obj[[1]]))
+  nb_coeff <- length(coefficients(.data$model_obj[[1]]))
+
+  make_summary_table <- function (.df, type, nb_rep) {
+      .df[[type]] %>% 
+	bind_rows(.) %>%
+	mutate(variable = rep(.df[["variable"]], each = nb_rep)) %>%
+	select(variable, everything())
+    }
+
+  tables <- c("reg_table", "anova_table")
+
+  output <- purrr::map(tables,
+  ~make_summary_table(.df = .data, nb_rep = nb_coeff, type = .x)
+  )
+  names(output) <- tables
+
+  return(output)
+} 
+
+get_coef_from_terms <- function (
+  mydata = NULL,
+  variable = NULL,
+  model = NULL,
+  term = NULL, type = "coeff") {
+
+  var_chr <- variable
+  term_chr <- term 
+
+  mydata %<>% filter(variable == var_chr)
+
+  ml <- mydata[mydata$variable == var_chr, ][[model]][[1]]
+  ml_summary <- broom::tidy(ml)
+
+  vec <- deframe(ml_summary[, c("term", type)])
+  vec[term_chr]
+  
+}

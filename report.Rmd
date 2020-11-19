@@ -179,19 +179,13 @@ log_bm_net_group_f3y %>%
 
 ```{r, eval = TRUE}
 #https://stackoverflow.com/questions/44457243/regression-tables-in-r-markdown-rmarkdown-html-pdf
-
-model_log_bm_f3y_table <- summary_log_bm_f3y %>%
-  filter(model == "mod_bm_quad2") %>%
-  filter(variable %in% get_com_str_var(all = FALSE)) %>%
-  mutate(
-    reg_table = map(model_obj, broom::tidy),
-    anova_table = map(anova, broom::tidy)
-  )
+model_log_bm_f3y_table <- get_table_from_summary(
+  .data = summary_log_bm_f3y,
+  model =  "mod_bm_quad2",
+  variable = get_com_str_var(all = FALSE)
+)
 
 model_log_bm_f3y_table[["reg_table"]] %>% 
-  bind_rows(.) %>%
-  mutate(variable = rep(model_log_bm_f3y_table[["variable"]], each = 6)) %>%
-  select(variable, everything()) %>%
   kable(.,
     booktabs = TRUE, 
     caption = 
@@ -205,30 +199,25 @@ model_log_bm_f3y_table[["reg_table"]] %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
+
+
 ```{r}
-bind_rows(model_log_bm_f3y_table[["anova_table"]]) %>% 
-  mutate(variable = rep(model_log_bm_f3y_table[["variable"]], each = 6)) %>%
-  select(variable, everything()) %>%
+model_log_bm_f3y_table[["anova_table"]] %>% 
   kable(., booktabs = TRUE,
     caption = 
       paste0(
       "ANOVA table for the model: dN =",
       "bm + dBm + dBm^2 + bm*dBm + bm*dBm^2."
     )
-  )
-
+  ) %>%
+  collapse_rows(columns = 1, valign = "top")
 ```
 
 ```{r}
-map_dfr(model_log_bm_f3y_table[["model_obj"]], broom::glance) %>%
-  mutate(variable = model_log_bm_f3y_table[["variable"]]) %>%
-  select(variable, everything()) %>%
+model_log_bm_f3y_table[["model_obj"]] %>%
   kable(., booktabs = TRUE,
-    caption = 
-      paste0(
-      "Model summary for the model: dN =",
-      "bm + dBm + dBm^2 + bm*dBm + bm*dBm^2."
-    )
+    caption = paste0( "Model summary for the model: dN =",
+      "bm + dBm + dBm^2 + bm*dBm + bm*dBm^2.")
   )
 ```
 
@@ -254,7 +243,64 @@ pred_log_bm_quad2_plot %<>% map(., ~.x + theme(legend.position = "none"))
 top <- plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm_f3y$variable)
 plot_grid(top, legend_quad2, rel_widths = c(1, .1))
 ```
--
+
+### Compare Quad2 and piecewiseregression 
+
+```{r}
+effect_quad2_piece <- tibble(
+  effect = c("Dynamic of biomass", "disassembly/assembly", "com size", "Effect of bm dyn dep on com size?", "Effect of bm dyn dep on disassembly/assembly context?", "Effect of bm dyn dep on both dis/assembly and com size ?"),
+  mod_bm_quad2 = c("bm_slope", "I(bm_slope^2)", "bm", "bm_slope:bm", "I(bm_slope^2)", "bm:I(bm_slope^2)"),
+  mod_all_bm = c("bm_slope", "inc_fTRUE", "bm", "bm_slope:bm", "bm_slope:inc_fTRUE", "bm_slope:inc_fTRUE:bm")
+)
+
+combin <- expand.grid(
+  variable = get_com_str_var(),
+  mod_bm_quad2 = unique(effect_quad2_piece$mod_bm_quad2), 
+  stat = c("estimate", "p.value")
+) %>%
+left_join(select(effect_quad2_piece, 2:3)) %>%
+pivot_longer(cols = c(mod_bm_quad2, mod_all_bm), names_to = "model", values_to = "term") %>%
+mutate_all(as.character)
+
+
+
+comparison_table <- distinct(combin) %>%
+  mutate(
+    coeff = pmap_dbl(list(variable, stat, model, term),
+      ~get_coef_from_terms(mydata = model_log_bm_f3y,
+	variable = ..1, model = ..3, term = ..4, type = ..2
+	) 
+  )) %>%
+arrange(variable)
+unique(comparison_table$term)
+ 
+test <- comparison_table %>%
+  left_join(
+    pivot_longer(effect_quad2_piece, cols = c(mod_bm_quad2, mod_all_bm),
+      names_to = "model", values_to = "term")
+  ) %>%
+  select(variable:model, coeff, effect) %>%
+  pivot_wider(names_from = stat, values_from = coeff) %>%
+  pivot_wider(names_from = model, values_from = c(estimate, p.value))
+
+test2 <- comparison_table %>%
+  left_join(
+    pivot_longer(effect_quad2_piece, cols = c(mod_bm_quad2, mod_all_bm),
+      names_to = "model", values_to = "term")) %>%
+  filter(stat == "p.value") %>%
+  select(variable:model, coeff, effect) %>%
+  pivot_wider(names_from = stat, values_from = coeff) %>%
+  pivot_wider(names_from = model, values_from = c(p.value)) %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "Comparison of the two Statistical model"
+    )
+  ) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+
 
 ## Link biomass dynamic and environment
 
@@ -528,17 +574,9 @@ loadd(model_log_bm_f3y_by_protocol, summary_log_bm_f3y_by_protocol)
 ```
 
 ```{r, eval = FALSE}
-complete_log_quad2 <- summary_log_bm_f3y_by_protocol %>%
-  filter(model == "mod_bm_quad2", protocol_type == "complete") %>%
-  mutate(
-    reg_table = map(model_obj, broom::tidy),
-    anova_table = map(anova, broom::tidy)
-  )
+complete_log_quad2 <- get_table_from_summary(.data = summary_log_bm_f3y_by_protocol, model = "mod_bm_quad2", protocol = "complete")
 
 complete_log_quad2[["reg_table"]] %>% 
-  bind_rows(.) %>%
-  mutate(variable = rep(complete_log_quad2[["variable"]], each = 6)) %>%
-  select(variable, everything()) %>%
   kable(.,
     booktabs = TRUE, 
     caption = 
@@ -549,9 +587,6 @@ complete_log_quad2[["reg_table"]] %>%
   )
 
 complete_log_quad2[["anova_table"]] %>% 
-  bind_rows(.) %>%
-  mutate(variable = rep(complete_log_quad2[["variable"]], each = 6)) %>%
-  select(variable, everything()) %>%
   kable(., booktabs = TRUE,
     caption = 
       paste0(
