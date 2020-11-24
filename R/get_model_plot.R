@@ -43,8 +43,6 @@ plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE) {
   ggpred %<>%
     as_tibble %>%
     rename(increasing = group, group = facet)
-  rawdata %<>%
-    rename(group = bm)
 
   ggpred %<>%
     filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
@@ -53,20 +51,33 @@ plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE) {
   rawdata <- attr(ggpred, "rawdata")
   }
 
+  p <- rawdata %>%
+    ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
+    scale_color_viridis() +
+    geom_point() +
+    geom_line(
+      data = ggpred %>%
+	rename(bm_f = group, bm_slope = x, linear_slope = predicted),
+      aes(y = linear_slope, x = bm_slope, linetype = bm_f),
+      inherit.aes = FALSE)
+    return(p)
+  
 
   if (!facet) {
-  p <- ggplot(ggpred, aes(x = x , y = predicted, color = group)) +
-    geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha =
-      .1) +
+  p <- ggplot(ggpred, aes(x = x , y = predicted, linetype = group)) +
+    #geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha =
+      #.1) +
     geom_line()
+  #p
   p + geom_point(
-    data = rawdata, aes(y = bm_slope, x = linear_slope, color = group))
+    data = rawdata, aes(y = response, x = x))
   } else {
     p <- ggplot(ggpred, aes(x = x , y = predicted)) +
-      geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha =
-	.1) +
-      geom_line() 
-    p + geom_point(data = rawdata, aes(y = bm_slope, x = linear_slope)) +
+      #geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha =
+	#.1) +
+      geom_line()
+    p +
+      #geom_point(data = rawdata, aes(y = bm_slope, x = linear_slope)) +
       facet_grid(cols = vars(group), scales = "free_x")
   
   }

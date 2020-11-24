@@ -83,6 +83,14 @@ plan <- drake_plan(
 	)
     )
     ),
+  model_pred = target(
+    get_mod_pred(model_summary),
+    transform = map(model_summary,
+    .names = paste0("pred_",
+	model_type_var(cut_prefix = TRUE, add_protocol = TRUE)
+	)
+    )
+    ),
 
 
   bm_group = target(

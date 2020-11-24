@@ -21,5 +21,3 @@ drake::vis_drake_graph(plan)
 # Load your targets back into your session with loadd() and readd().
 plan
 print(plan, n = 40)
-
-loadd(log_bm_net_group_f3y)

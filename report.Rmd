@@ -1,6 +1,7 @@
 ---
 title: "Report"
 author: "Alain Danet"
+self_contained: yes
 date: "`r Sys.Date()`"
 tables: yes
 output:
@@ -131,8 +132,24 @@ full_data2 %>%
   - Dynamics of log of the biomass: put big and little station on the same scale
     (% of biomass gained or lost per year)
 
+
+## The three model
+
+1. $dN = dB + dB \times B + dB^2 + dB^2 \times B$
+
+2. $dN = dB + B + dB \times B + Inc \times B + dB \times Inc \times B$
+
+3. $dN = dB + B + dB \times B + Inc + Inc \times dB + dB \times B \times Inc$
+
+with:
+- $dN$: temporal trend of network structure
+- $dB$: temporal trend of total (log) biomass
+- $B$: total median biomass or total biomass of the first three year
+- $Inc$: Is $dB > 0$?
+
 ```{r, cache = FALSE}
-loadd(log_bm_net_group_f3y, model_log_bm_f3y, summary_log_bm_f3y, vif_log_bm_f3y)
+loadd(log_bm_net_group_f3y, model_log_bm_f3y,
+  summary_log_bm_f3y, vif_log_bm_f3y)
 loadd(bm_net_group_median, bm_vs_net_trends)
 loadd(habitat_press, habitat_pressure)
 loadd(region_polygon, station_analysis)
@@ -140,42 +157,101 @@ loadd(richness_group)
 ```
 
 ```{r, fig.height = 12, fig.width = 12}
-log_bm_net_group_f3y %>%
-  ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
-  geom_point() +
-  scale_color_viridis() +
-  geom_errorbar(aes(xmin = bm_slope - bm_slope_strd_error,
-      xmax = bm_slope + bm_slope_strd_error), alpha = .3) +
-  geom_errorbar(aes(ymin = linear_slope - linear_slope_strd_error,
-      ymax = linear_slope + linear_slope_strd_error), alpha = .3) +
-  facet_wrap(~variable, scales = "free") +
-  labs_log_bm_net_trends()
+pred_log_bm_quad2 <- summary_log_bm_f3y %>%
+  filter(model == "mod_bm_quad2", variable %in% get_com_str_var()) %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope", "bm [quart2]"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+    #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+pred_log_bm_quad2_plot <- map2(
+  filter(model_log_bm_f3y, variable %in% get_com_str_var())$data,
+  pred_log_bm_quad2$pred_df,
+  plot_pred_data)
+legend_quad2 <- get_legend(pred_log_bm_quad2_plot[[1]])
+pred_log_bm_quad2_plot %<>% map(., ~.x + theme(legend.position = "none"))
+top <- plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm_f3y$variable)
+quad2_plot <- plot_grid(top, legend_quad2, rel_widths = c(1, .1))
+```
+
+```{r}
+pred_log_bm_medium <- summary_log_bm_f3y %>%
+  filter(model == "mod_medium_bm", variable %in% get_com_str_var()) %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope [-0.2,-0.00001,0.00001,.2]", "inc_f", "bm [quart2]"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    #myplot = map2(pred, , ~plot_final_model(ggpred = .x))
+  )
+plot_inc <- map2(
+  pred_log_bm_medium$pred,
+  filter(model_log_bm_f3y, variable %in% get_com_str_var())$data,
+  ~plot_final_model(ggpred = .x, rawdata = .y))
+
+plot_inc %<>% map(., ~.x + theme(legend.position = "none"))
+medium_plot <- plot_grid(plotlist = plot_inc, labels = pred_log_bm_medium$variable)
+```
+
+```{r, fig.height = 12}
+plot_grid(quad2_plot, medium_plot, nrow = 2, labels = c("poly", "piecereg"))
+```
+
+### Compare Quad2 and piecewiseregression 
+
+```{r}
+loadd(model_log_bm, summary_model_log_bm,
+  summary_log_bm, vif_model_log_bm)
+```
+
+```{r}
+effect_quad2_piece <- tibble(
+  effect = c("Dynamic of biomass", "disassembly/assembly", "com size", "bm dyn dep on com size?", "bm dyn dep on disassembly/assembly?", "bm dyn dep on both dis/assembly and com size ?"),
+  mod_bm_quad2 = c("bm_slope", "I(bm_slope^2)", "bm", "bm_slope:bm", "I(bm_slope^2)", "bm:I(bm_slope^2)"),
+  mod_medium_bm = c("bm_slope", "bm_slope:inc_fTRUE", "bm", "bm_slope:bm", "bm_slope:inc_fTRUE", "bm_slope:bm:inc_fTRUE")
+)
+effect_quad2_piece %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "Hypothesis and matching coefficients."
+    )
+    )
 ```
 
 
-```{r, fig.height = 12, fig.width = 12}
-log_bm_net_group_f3y %>%
-  filter(!is.na(protocol_type)) %>%
-  ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
-  geom_point() +
-  scale_color_viridis() +
-  geom_errorbar(aes(xmin = bm_slope - bm_slope_strd_error,
-      xmax = bm_slope + bm_slope_strd_error), alpha = .3) +
-  geom_errorbar(aes(ymin = linear_slope - linear_slope_strd_error,
-      ymax = linear_slope + linear_slope_strd_error), alpha = .3) +
-  facet_grid(variable~protocol_type, scales = "free") +
-  labs_log_bm_net_trends()
+```{r}
+hyp_table_f3y <- make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_f3y)
 
-log_bm_net_group_f3y %>%
-  filter(variable == "connectance") %>%
-  ggplot(aes(x = bm_slope, y = bm)) +
-  geom_point()
-  labs(x = "Biomass trends (log biomass per year)", y = "Biomass")
+hyp_table_f3y %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "Comparison of the two Statistical model for first three year"
+    )
+  ) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+
+
+```{r}
+hyp_table <- make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm)
+hyp_table %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "Comparison of the two Statistical model for the median biomass model"
+    )
+  ) %>%
+  collapse_rows(columns = 1, valign = "top")
 ```
 
 
 #### All protocol
-
 
 ```{r, eval = TRUE}
 #https://stackoverflow.com/questions/44457243/regression-tables-in-r-markdown-rmarkdown-html-pdf
@@ -213,92 +289,42 @@ model_log_bm_f3y_table[["anova_table"]] %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
-```{r}
-model_log_bm_f3y_table[["model_obj"]] %>%
-  kable(., booktabs = TRUE,
-    caption = paste0( "Model summary for the model: dN =",
-      "bm + dBm + dBm^2 + bm*dBm + bm*dBm^2.")
-  )
-```
 
-#### Quadratic two
-
-
-```{r, fig.height = 12, fig.width = 12}
-pred_log_bm_quad2 <- summary_log_bm_f3y %>%
-  filter(model == "mod_bm_quad2") %>%
-  mutate(
-    pred = map(model_obj, ~ggpredict(.x,
-	terms = c("bm_slope", "bm [quart2]"))),
-    pred_df = map(pred, as_tibble),
-    plot = map(pred, ~plot(.x, add.data = FALSE)),
-    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
-    #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
-  )
-
-pred_log_bm_quad2_plot <- map2(model_log_bm_f3y$data, pred_log_bm_quad2$pred_df,
-  plot_pred_data)
-legend_quad2 <- get_legend(pred_log_bm_quad2_plot[[1]])
-pred_log_bm_quad2_plot %<>% map(., ~.x + theme(legend.position = "none"))
-top <- plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm_f3y$variable)
-plot_grid(top, legend_quad2, rel_widths = c(1, .1))
-```
-
-### Compare Quad2 and piecewiseregression 
 
 ```{r}
-effect_quad2_piece <- tibble(
-  effect = c("Dynamic of biomass", "disassembly/assembly", "com size", "Effect of bm dyn dep on com size?", "Effect of bm dyn dep on disassembly/assembly context?", "Effect of bm dyn dep on both dis/assembly and com size ?"),
-  mod_bm_quad2 = c("bm_slope", "I(bm_slope^2)", "bm", "bm_slope:bm", "I(bm_slope^2)", "bm:I(bm_slope^2)"),
-  mod_all_bm = c("bm_slope", "inc_fTRUE", "bm", "bm_slope:bm", "bm_slope:inc_fTRUE", "bm_slope:inc_fTRUE:bm")
+model_log_bm_f3y_table_medium <- get_table_from_summary(
+  .data = summary_log_bm_f3y,
+  model =  "mod_medium_bm",
+  variable = get_com_str_var(all = FALSE)
 )
 
-combin <- expand.grid(
-  variable = get_com_str_var(),
-  mod_bm_quad2 = unique(effect_quad2_piece$mod_bm_quad2), 
-  stat = c("estimate", "p.value")
-) %>%
-left_join(select(effect_quad2_piece, 2:3)) %>%
-pivot_longer(cols = c(mod_bm_quad2, mod_all_bm), names_to = "model", values_to = "term") %>%
-mutate_all(as.character)
+model_log_bm_f3y_table_medium[["reg_table"]] %>% 
+  kable(.,
+    booktabs = TRUE, 
+    caption = 
+      paste0(
+      "Regression table for the model: dN =",
+      "bm + dBm + dBm^2 + bm*dBm + bm*dBm^2."
+    )) %>% 
+  kable_styling(latex_options =c("scale_down")) %>%
+  #add_header_above(c(" " = 3, "Indirect effects via" = 5)) %>%
+  #column_spec(1:2, width = "3cm") %>%
+  collapse_rows(columns = 1, valign = "top")
+```
 
-
-
-comparison_table <- distinct(combin) %>%
-  mutate(
-    coeff = pmap_dbl(list(variable, stat, model, term),
-      ~get_coef_from_terms(mydata = model_log_bm_f3y,
-	variable = ..1, model = ..3, term = ..4, type = ..2
-	) 
-  )) %>%
-arrange(variable)
-unique(comparison_table$term)
- 
-test <- comparison_table %>%
-  left_join(
-    pivot_longer(effect_quad2_piece, cols = c(mod_bm_quad2, mod_all_bm),
-      names_to = "model", values_to = "term")
-  ) %>%
-  select(variable:model, coeff, effect) %>%
-  pivot_wider(names_from = stat, values_from = coeff) %>%
-  pivot_wider(names_from = model, values_from = c(estimate, p.value))
-
-test2 <- comparison_table %>%
-  left_join(
-    pivot_longer(effect_quad2_piece, cols = c(mod_bm_quad2, mod_all_bm),
-      names_to = "model", values_to = "term")) %>%
-  filter(stat == "p.value") %>%
-  select(variable:model, coeff, effect) %>%
-  pivot_wider(names_from = stat, values_from = coeff) %>%
-  pivot_wider(names_from = model, values_from = c(p.value)) %>%
+```{r}
+model_log_bm_f3y_table_medium[["anova_table"]] %>% 
   kable(., booktabs = TRUE,
     caption = 
       paste0(
-      "Comparison of the two Statistical model"
+      "ANOVA table for the model: dN =",
+      "bm + dBm + dBm^2 + bm*dBm + bm*dBm^2."
     )
   ) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
+
+
 
 
 
@@ -514,6 +540,25 @@ bm_net_group_median %>%
   labs(title = "Group as mean biomass")
 ```
 
+```{r, fig.height = 12, fig.width = 12}
+log_bm_net_group_f3y %>%
+  filter(!is.na(protocol_type)) %>%
+  ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
+  geom_point() +
+  scale_color_viridis() +
+  geom_errorbar(aes(xmin = bm_slope - bm_slope_strd_error,
+      xmax = bm_slope + bm_slope_strd_error), alpha = .3) +
+  geom_errorbar(aes(ymin = linear_slope - linear_slope_strd_error,
+      ymax = linear_slope + linear_slope_strd_error), alpha = .3) +
+  facet_grid(variable~protocol_type, scales = "free") +
+  labs_log_bm_net_trends()
+```
+
+```{r}
+knitr::opts_chunk$set(
+  eval = FALSE 
+)
+```
 
 
 ## Other Statistical model
@@ -538,6 +583,7 @@ test <- map2(model_log_bm_f3y$data, pred_log_bm_quad$pred_df, plot_pred_data,
   std_error = TRUE)
 plot_grid(plotlist = test, labels = model_log_bm_f3y$variable)
 ```
+
 
 ```{r}
 

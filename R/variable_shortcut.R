@@ -50,3 +50,8 @@ get_com_str_var <- function (all = FALSE) {
   }
   return(x)
 }
+
+get_model_terms <- function ( ) {
+  c("bm_slope", "inc_f", "bm", "log_bm")
+
+} 

@@ -138,21 +138,21 @@ compute_my_lm_vs_net_model <- function (
 	   #linear_slope~ bm_slope + bm_slope:inc_f + bm_slope:bm_group +
 	    #bm_slope:inc_f:bm_group,
 	  #.x, weights = reg_weight)),
-     #mod_medium_bm = map(data, ~lm(
-	   #linear_slope ~ bm_slope + bm_slope:inc_f + bm_slope:bm +
-	    #bm_slope:inc_f:bm,
-	  #.x, weights = reg_weight)),
+     mod_medium_bm = map(data, ~lm(
+	   linear_slope ~ bm_slope + bm + bm_slope:inc_f + bm_slope:bm +
+	    bm_slope:inc_f:bm,
+	  .x, weights = reg_weight)),
       #mod_min_bm = map(data, ~lm(
 	  #linear_slope ~ bm_slope:inc_f + bm_slope:bm +
 	    #bm_slope:inc_f:bm,
 	  #.x, weights = reg_weight)),
       mod_all_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f*bm, .x, weights = reg_weight)),
-      mod_all_log_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f*log_bm, .x, weights = reg_weight)),
+      #mod_all_log_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f*log_bm, .x, weights = reg_weight)),
       #mod_bm = map(data, ~lm(linear_slope ~ bm_slope*bm, .x, weights = reg_weight)),
       mod_bm_quad = map(data, ~lm(linear_slope ~ bm_slope*bm + I(bm_slope^2), .x, weights = reg_weight)),
       mod_bm_quad2 = map(data, ~lm(linear_slope ~ bm_slope*bm + I(bm_slope^2)*bm, .x, weights = reg_weight)),
-      mod_log_bm_quad = map(data, ~lm(linear_slope ~ bm_slope*log_bm + I(bm_slope^2), .x, weights = reg_weight)),
-      mod_log_bm_quad2 = map(data, ~lm(linear_slope ~ bm_slope*log_bm + I(bm_slope^2)*log_bm, .x, weights = reg_weight)),
+      #mod_log_bm_quad = map(data, ~lm(linear_slope ~ bm_slope*log_bm + I(bm_slope^2), .x, weights = reg_weight)),
+      #mod_log_bm_quad2 = map(data, ~lm(linear_slope ~ bm_slope*log_bm + I(bm_slope^2)*log_bm, .x, weights = reg_weight)),
       #mod_bm_inc = map(data, ~lm(linear_slope ~ bm_slope*bm + inc_f, .x, weights = reg_weight)),
       #mod_log_bm = map(data, ~lm(linear_slope ~ bm_slope*log_bm, .x, weights = reg_weight)),
       #mod_log_bm_inc = map(data, ~lm(linear_slope ~ bm_slope*log_bm + inc_f, .x, weights = reg_weight)),
@@ -163,7 +163,6 @@ compute_my_lm_vs_net_model <- function (
 
   return(ungroup(.df))
 }
-
 
 model_summary <- function (.df) {
 
@@ -180,4 +179,62 @@ model_summary <- function (.df) {
 
   return(.df)
 
+}
+
+get_mod_pred <- function (summary_mod = NULL) {
+  summary_mod %>%
+    mutate(
+      term = map(model_obj,
+	function (x) {
+	  term <- attr(x$terms , "term.labels") %>%
+	    .[. %in% get_model_terms()]
+	  paste0(term, c(rep("", length(term) - 1), " [quart2]"))
+	}
+      ),
+      pred = map2(model_obj, term, ~ggpredict(.x,
+	  terms = .y)),
+      pred_df = map(pred, as_tibble),
+      plot = map(pred, ~plot(.x, add.data = FALSE))
+    )
+}
+
+
+pval2lgl <- function (x = NULL, thld = 0.05) {
+
+  x <- ifelse(x <= thld, TRUE, FALSE)
+  return(as.logical(x))
+}
+
+make_hyp_table <- function (hyp_table = NULL, mod = NULL) {
+
+  combin <- expand.grid(
+    variable = get_com_str_var(),
+    mod_bm_quad2 = unique(hyp_table$mod_bm_quad2), 
+    stat = c("estimate", "p.value")) %>%
+  left_join(select(hyp_table, 2:3)) %>%
+  pivot_longer(
+    cols = c(mod_bm_quad2, mod_medium_bm),
+    names_to = "model", values_to = "term"
+    ) %>%
+  mutate_all(as.character)
+
+  comparison_table <- distinct(combin) %>%
+    mutate(
+      coeff = pmap_dbl(list(variable, stat, model, term),
+	~get_coef_from_terms(mydata = mod,
+	  variable = ..1, model = ..3, term = ..4, type = ..2
+	  ))) %>%
+  arrange(variable)
+
+test2 <- comparison_table %>%
+  left_join(
+    pivot_longer(hyp_table, cols = c(mod_bm_quad2, mod_medium_bm),
+      names_to = "model", values_to = "term")) %>%
+  filter(stat == "p.value") %>%
+  select(variable:model, coeff, effect) %>%
+  pivot_wider(names_from = stat, values_from = coeff) %>%
+  mutate(p.value = pval2lgl(p.value, thld = 0.05)) %>%
+  pivot_wider(names_from = model, values_from = c(p.value)) 
+
+return(test2)
 }
