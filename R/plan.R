@@ -128,6 +128,47 @@ plan <- drake_plan(
       input = drake::knitr_in("report.Rmd"),
       output_file = drake::file_out("report.html")
     )
-  ) 
+  ),
+  #4. The plots
+  p_bm_vs_bm_slope = plot_bm_vs_bm_slope(
+    tps_dyn_coef = temporal_dynamics_coef,
+    bm_group = biomass_group  
+    ),
+  p_hist_med_bm = plot_hist_med_bm(.data = full_data2),
+  p_pred_medium_f3y = get_pred_model(
+    summary_model = summary_log_bm_f3y,
+    model_name = "mod_medium_bm",
+    model_data = model_log_bm_f3y
+  ),
+  p_pred_quad2_f3y = get_pred_model(
+    summary_model = summary_log_bm_f3y,
+    model_name = "mod_bm_quad2",
+    model_data = model_log_bm_f3y
+  ),
+  pred_plot_signif = get_model_plot_from_signif_term(
+    anova_table = model_log_bm_f3y_table_medium[["anova_table"]],
+    model = model_log_bm_f3y 
+    ),
+
+  #5. Tables 
+  effect_quad2_piece = tibble(
+    effect = c("Dynamic of biomass", "disassembly/assembly", "com size", "bm dyn dep on com size?", "bm dyn dep on disassembly/assembly?", "bm dyn dep on both dis/assembly and com size ?"),
+    mod_bm_quad2 = c("bm_slope", "I(bm_slope^2)", "bm", "bm_slope:bm", "I(bm_slope^2)", "bm:I(bm_slope^2)"),
+    mod_medium_bm = c("bm_slope", "bm_slope:inc_fTRUE", "bm", "bm_slope:bm", "bm_slope:inc_fTRUE", "bm_slope:bm:inc_fTRUE")
+    ),
+  hyp_table_f3y = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_f3y),
+  hyp_table = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm),
+  model_log_bm_f3y_table = get_table_from_summary(
+    .data = summary_log_bm_f3y,
+    model =  "mod_bm_quad2",
+    variable = NULL 
+  ),
+  model_log_bm_f3y_table_medium = get_table_from_summary(
+    .data = summary_log_bm_f3y,
+    model =  "mod_medium_bm",
+    variable = NULL
+  ),
+
+
 )
 

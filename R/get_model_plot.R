@@ -39,10 +39,18 @@ plot_data_slope_lm <- function (fit) {
 	" P =",signif(summary(fit)$coef[2,4], 3)))
 }
 
-plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE) {
-  ggpred %<>%
-    as_tibble %>%
-    rename(increasing = group, group = facet)
+plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE, std_error = FALSE) {
+
+  ggpred %<>% as_tibble
+
+
+  if ("facet" %in% names(ggpred)) {
+  ggpred %<>% rename(increasing = group, group = facet)
+  } else{
+    ggpred %<>% rename(increasing = group)
+  }
+
+
 
   ggpred %<>%
     filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
@@ -53,13 +61,41 @@ plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE) {
 
   p <- rawdata %>%
     ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
-    scale_color_viridis() +
-    geom_point() +
-    geom_line(
-      data = ggpred %>%
-	rename(bm_f = group, bm_slope = x, linear_slope = predicted),
-      aes(y = linear_slope, x = bm_slope, linetype = bm_f),
-      inherit.aes = FALSE)
+    viridis::scale_color_viridis() +
+    geom_point() 
+
+  if ("group" %in% colnames(ggpred)) {
+    p <- p +
+      geom_line(
+	data = ggpred %>%
+	  rename(bm_f = group, bm_slope = x, linear_slope = predicted),
+	aes(y = linear_slope, x = bm_slope, linetype = bm_f),
+	inherit.aes = FALSE)
+  } else {
+    p <- p +
+      geom_line(
+	data = ggpred %>%
+	  rename(bm_slope = x, linear_slope = predicted),
+	aes(y = linear_slope, x = bm_slope),
+	inherit.aes = FALSE)
+  }
+
+
+  if (std_error) {
+
+    p <- p +
+      geom_errorbar(data = rawdata, 
+	aes(xmin = bm_slope - bm_slope_strd_error,
+	  xmax = bm_slope + bm_slope_strd_error),
+	alpha = .3
+	) +
+      geom_errorbar(data = rawdata, 
+	aes(ymin = linear_slope - linear_slope_strd_error,
+	  ymax = linear_slope + linear_slope_strd_error), alpha = .3)
+
+
+  }
+
     return(p)
   
 
@@ -88,7 +124,7 @@ plot_pred_data <- function(.data = NULL, pred = NULL, std_error = TRUE) {
 
   p <- .data %>%
     ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
-    scale_color_viridis() +
+    viridis::scale_color_viridis() +
     geom_point() +
     geom_line(
       data = pred %>%
@@ -161,3 +197,28 @@ xylabs <- function (...) {
 }
 
 
+model_single_term <- function () {
+  c("bm_slope", "inc_f", "bm")
+}
+get_mod_single_term <- function (model_term = NULL) {
+  single_term <- model_single_term()
+
+ out <- str_extract_all( string = model_term,
+    pattern = paste0(single_term,collapse = "|"),
+    simplify = TRUE) %>% as.vector(.) %>% unique()
+
+ out[out %in% single_term]
+}
+
+from_term_to_predict_term <- function (term = NULL) {
+
+  term <- term[order(match(term, model_single_term()))]
+
+  if ("bm_slope" %in% term) {
+    term[term == "bm_slope"] <- "bm_slope [-0.2,-0.00001,0.00001,.2]"
+  }
+  if ("bm" %in% term) {
+    term[term == "bm"] <- "bm [quart2]"
+  }
+  term
+}

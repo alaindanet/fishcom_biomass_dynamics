@@ -198,7 +198,6 @@ get_mod_pred <- function (summary_mod = NULL) {
     )
 }
 
-
 pval2lgl <- function (x = NULL, thld = 0.05) {
 
   x <- ifelse(x <= thld, TRUE, FALSE)
