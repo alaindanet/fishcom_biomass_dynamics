@@ -1,0 +1,169 @@
+---
+title: "Temporal dynamics"
+author: "Alain Danet"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+    math: katex
+---
+
+```{r}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  #fig.dim = c(7, 7),
+  fig.fullwidth = TRUE,
+  fig.show = "hold",
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  results = TRUE 
+)
+
+library(drake)
+library(tidyverse)
+library(magrittr)
+library(cowplot)
+library(viridis)
+source("R/misc.R") # Define your custom code as a bunch of functions.
+source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
+
+#theme_set(theme_cowplot())
+```
+
+```{r}
+loadd(rigal_classification, full_data2, temporal_dynamics_plot)
+```
+
+
+```{r}
+myload(biomass_ts_sax, envir = globalenv(),dir = get_mypath("data"))
+
+biomass_classif_rigal <- rigal_classification %>%
+  filter(variable %in% c("bm_std", "log_bm_std")) %>%
+  unnest(classif) %>%
+  mutate(station = as.character(station)) %>%
+  select(station, variable,shape_class)
+
+p_biomass_classif_rigal <- biomass_classif_rigal %>%
+  ggplot(aes(x = shape_class)) +
+  geom_bar() +
+  facet_wrap(~variable) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+# Temporal dynamics
+
+```{r}
+p_cap <- paste0(
+  "Temporal dynamics of biomass and temporal dynamics of
+  metrics for 10 randomly selected communities."
+)
+```
+
+```{r p-tmp-dyn, cache = TRUE, eval = FALSE}
+
+p <- vector(mode = "list", length = 10)
+for (i in seq_len(length(p))) {
+  to_plot <- temporal_dynamics_plot %>% 
+    filter(station == sample(temporal_dynamics_plot$station, 1))
+  p[[i]] <- cowplot::plot_grid(plotlist = to_plot$plot, labels = to_plot$station)
+}
+p
+```
+
+
+## Temporal dynamics decrease/increase constant
+
+### Log biomass
+
+```{r, cache = TRUE, fig.height = 45}
+st_decrease_increase_rigal <- biomass_classif_rigal %>%
+  filter(variable == "log_bm_std") %>%
+  filter(shape_class %in% c("increase_constant", "decrease_constant"))
+data_decrease_increase <- full_data2 %>%
+  filter(station %in% st_decrease_increase_rigal$station)
+
+log_bm_min_max <- map_dbl(c(min, max),
+  ~.x(data_decrease_increase$log_bm_std, na.rm = TRUE))
+nb_year_min_max <- map_dbl(c(min, max),
+  ~.x(data_decrease_increase$nb_year, na.rm = TRUE))
+temporal_dynamics_plot$plot %<>%
+  map(., ~ .x + lims(y = log_bm_min_max, x = nb_year_min_max))
+
+temporal_dynamics_plot %>%
+  filter(variable == "log_bm_std", station %in% st_decrease_increase_rigal$station) %>%
+  plot_grid(plotlist = .$plot, ncol = 3, labels = st_decrease_increase_rigal$station)
+```
+
+### Raw Biomass
+
+```{r, cache = TRUE, fig.height = 45}
+st_decrease_increase_rigal_biomass <- rigal_classification %>%
+  filter(variable == "bm_std") %>%
+  unnest(classif) %>%
+  filter(shape_class %in% c("increase_constant", "decrease_constant"))
+
+bm_min_max <- map_dbl(
+  c(min, max),
+  ~.x(data_decrease_increase$bm_std, na.rm = TRUE))
+nb_year_min_max <- map_dbl(
+  c(min, max),
+  ~.x(data_decrease_increase$nb_year, na.rm = TRUE))
+temporal_dynamics_plot[temporal_dynamics_plot$variable == "bm_std",]$plot %<>%
+  map(., ~ .x + lims(y = bm_min_max, x = nb_year_min_max))
+
+temporal_dynamics_plot %>%
+  filter(variable == "bm_std", station %in% st_decrease_increase_rigal_biomass$station) %>%
+  plot_grid(plotlist = .$plot, ncol = 3, labels = st_decrease_increase_rigal_biomass$station)
+```
+
+### Richness 
+
+```{r, cache = TRUE, fig.height = 45}
+var_tmp <- "rich_std"
+st_decrease_increase_rigal <- rigal_classification %>%
+  filter(variable == var_tmp) %>%
+  unnest(classif) %>%
+  filter(shape_class %in% c("increase_constant", "decrease_constant"))
+
+min_max <- map_dbl(
+  c(min, max),
+  ~.x(data_decrease_increase[[var_tmp]], na.rm = TRUE))
+nb_year_min_max <- map_dbl(
+  c(min, max),
+  ~.x(data_decrease_increase$nb_year, na.rm = TRUE))
+temporal_dynamics_plot[temporal_dynamics_plot$variable == var_tmp,]$plot %<>%
+  map(., ~ .x + lims(y = min_max, x = nb_year_min_max))
+
+temporal_dynamics_plot %>%
+  filter(variable == var_tmp, station %in% st_decrease_increase_rigal$station) %>%
+  plot_grid(plotlist = .$plot, ncol = 3, labels = st_decrease_increase_rigal$station)
+```
+
+### Number of nodes
+
+```{r, cache = TRUE, fig.height = 45}
+var_tmp <- "nbnode_std"
+st_decrease_increase_rigal <- rigal_classification %>%
+  filter(variable == var_tmp) %>%
+  unnest(classif) %>%
+  filter(shape_class %in% c("increase_constant", "decrease_constant"))
+
+min_max <- map_dbl(
+  c(min, max),
+  ~.x(data_decrease_increase[[var_tmp]], na.rm = TRUE))
+nb_year_min_max <- map_dbl(
+  c(min, max),
+  ~.x(data_decrease_increase$nb_year, na.rm = TRUE))
+temporal_dynamics_plot[temporal_dynamics_plot$variable == var_tmp,]$plot %<>%
+  map(., ~ .x + lims(y = min_max, x = nb_year_min_max))
+
+temporal_dynamics_plot %>%
+  filter(variable == var_tmp, station %in% st_decrease_increase_rigal$station) %>%
+  plot_grid(plotlist = .$plot, ncol = 3, labels = st_decrease_increase_rigal$station)
+```
+
