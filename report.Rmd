@@ -5,10 +5,7 @@ self_contained: yes
 date: "`r Sys.Date()`"
 tables: yes
 output:
-  prettydoc::html_pretty:
-    theme: cayman
-    highlight: github
-    math: katex
+  html_document
 ---
 
 ```{r, echo = FALSE}
@@ -118,6 +115,222 @@ loadd(log_bm_net_group_f3y, model_log_bm_f3y,
 #loadd(bm_net_group_median, bm_vs_net_trends)
 ```
 
+
+#### All protocol
+
+```{r, eval = TRUE}
+#https://stackoverflow.com/questions/44457243/regression-tables-in-r-markdown-rmarkdown-html-pdf
+loadd(model_log_bm_f3y_table_medium)
+model_log_bm_f3y_table_medium[["reg_table"]] %>% 
+  filter(variable %in% get_com_str_var(all = FALSE)) %>%
+  kable(.,
+    booktabs = TRUE, 
+    caption = 
+      paste0(
+      "Regression table for the model: dN =",
+      "dB + B + dB*B + Inc*B + dB*Inc*B."
+    )) %>% 
+  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+```{r}
+model_log_bm_f3y_table_medium[["anova_table"]] %>% 
+  filter(variable %in% get_com_str_var(all = FALSE)) %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "ANOVA table for the model: dN =",
+      "dB + B + dB*B + Inc*B + dB*Inc*B."
+    )
+  ) %>%
+  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+### Summary
+
+- Lien entre dynamique du réseau et de biomasse signicatif pour tous sauf la
+  connectance.
+  - Pour la connectance, le lien est dépendant de la biomasse
+- Effect of dis/assembly for connectance, avg trophic level, weighted
+  connectance
+- La dynamique du réseau n'est pas affecté par la biomasse de la
+  communauté (effet biomasse non significatif)
+- Il y a un effet biomasse qui est dépendant de dis/assembly.
+
+- Species richness:
+  - decreases a lot in time when biomass decreases
+  - increases slightly in time when biomass increases
+
+- Avg trophic level:
+  - decreases simultaneously with biomass decreases 
+  - increase simultaneously with biomass increases but increases less for bigger
+    communities
+  - meaning that biomass loss and gain are located in the highest trophic level
+    (except gain of biomass in biggest communities)
+
+### Interpretation
+
+- Richness:
+  - when biomass increases, competitive interactions may prevent the increase in
+    species richness.
+  - when biomass decreases conjointly to species richness, it may reflect...
+    haaaa: difficult because we do not know if the chicken or the egg was first.
+  - Implication for conservation: looks easiest to loose species than gain them.
+
+- Avg trophic level: 
+  - Higest trophic level concentrates most of the biomass, so gain and loss are
+    statistically more linked to them 
+
+```{r}
+loadd(pred_plot_signif)
+pred_plot_signif_com <- pred_plot_signif %>%
+  filter(variable %in% get_com_str_var())
+legend_signif <- get_legend(
+  pred_plot_signif_com$myplot[[1]] +
+    theme(legend.position = "bottom")
+)
+pred_plot_signif_com$myplot %<>% map(., ~.x + theme(legend.position = "none"))
+top <- plot_grid(
+  plotlist = pred_plot_signif_com$myplot,
+  labels = pred_plot_signif_com$variable
+)
+plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+```
+
+## Other variables 
+
+```{r}
+model_log_bm_f3y_table_medium[["anova_table"]] %>% 
+  filter(!variable %in% get_com_str_var(all = FALSE)) %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "ANOVA table for the model: dN =",
+      "dB + B + dB*B + Inc*B + dB*Inc*B."
+    )
+  ) %>%
+  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+
+```
+
+```{r pred-other-com}
+plot_signif <- pred_plot_signif %>%
+  filter(!variable %in% get_com_str_var())
+legend_signif <- get_legend(
+  plot_signif$myplot[[1]] +
+    theme(legend.position = "bottom")
+)
+plot_signif$myplot %<>% map(., ~.x + theme(legend.position = "none"))
+top <- plot_grid(
+  plotlist = plot_signif$myplot,
+  labels = plot_signif$variable
+)
+plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+```
+
+```{r}
+pred_plot_signif %>%
+  select(variable, data) %>%
+  unnest(data) %>%
+  ggplot() %>%
+  geom_errorbar(aes(xmin = bm_slope - bm_slope_strd_error, xmax = bm_slope +
+      bm_slope_strd_error), alpha = .3) +
+  geom_errorbar(aes(ymin = linear_slope - linear_slope_strd_error,
+      ymax = linear_slope + linear_slope_strd_error), alpha = .3)
+  }
+  ggplot()
+plot_final_model
+```
+
+
+## Link biomass dynamic and environment
+
+
+```{r}
+loadd(habitat_pressure, region_polygon, station_analysis)
+loadd(richness_group)
+loadd(log_bm_net_group_f3y)  
+test <- log_bm_net_group_f3y %>%
+  filter(variable == "connectance") %>%
+  left_join(habitat_pressure, by = "station")
+test %>%
+  pivot_longer(
+    cols = c(bm, width_river_mean, temperature_med, alt , RC1, RC2),
+    names_to = "evt_var", values_to = "value") %>%
+  ggplot(aes(y = bm_slope, x = value)) +
+  geom_smooth(method = "lm") +
+  geom_point() +
+  facet_wrap(~evt_var, scales = "free_x")
+```
+
+```{r}
+p <- ggplot() +
+  geom_sf(data = st_geometry(region_polygon)) 
+st_bm_slope <- station_analysis %>%
+  rename(station = id) %>%
+  left_join(select(test, station, bm_slope)) %>%
+  filter(!is.na(bm_slope)) %>%
+  mutate(trend = ifelse(bm_slope < 0, "negative", "positive"))
+p_col_bm_slope <- p + 
+  geom_sf(data = st_bm_slope, aes(color = bm_slope)) +
+  scale_color_viridis()
+p_trend_bm_trend <- p +
+  geom_sf(data = st_bm_slope, aes(color = trend))
+plot_grid(p_col_bm_slope, p_trend_bm_trend, nrow = 1)
+```
+
+```{r}
+loadd(habitat_press)
+hab_press <- habitat_press %>%
+  select(station, long, lat, slope, alt, d_source, strahler, width_river_mean,
+    avg_depth_station_mean, DBO_med, flow_med)
+dyn_press <- log_bm_net_group_f3y %>%
+  filter(variable == "connectance") %>%
+  select(station, bm_slope) %>%
+  left_join(hab_press, by = "station") %>%
+  na.omit
+corrplot::corrplot(cor(dyn_press[, -1], method = "spearman"))
+```
+
+## Richness and dynamics
+
+```{r}
+log_bm_net_group_f3y %>%
+  filter(variable == "rich_std", bm_slope < 0) %>%
+  left_join(habitat_pressure, by = "station") %>%
+  pivot_longer(cols = c(bm, width_river_mean, temperature_med, alt , RC1, RC2),
+    names_to = "evt_var", values_to = "value") %>%
+ggplot(aes(y = linear_slope, x = value)) +
+geom_smooth(method = "lm") +
+geom_point() +
+facet_wrap(~evt_var, scales = "free_x")
+```
+
+```{r}
+rich_std_f3y <- richness_group %>% 
+  filter(rich_var == "rich_std", summary_type == "first_3_year", group_type ==
+    "median") %>%
+  select(station, rich)
+
+log_bm_net_group_f3y %>%
+  filter(variable == "rich_std") %>%
+  left_join(rich_std_f3y, by = "station") %>%
+  ggplot(aes(y = linear_slope, x = rich)) +
+  geom_smooth(method = "lm") +
+  labs( x = "Species richness (by m2)",
+    y = "Species richness trend") +
+  geom_point()
+```
+
+##
+
+
+
+## The two models
+
 ```{r, fig.height = 12, fig.width = 12}
 loadd(p_pred_quad2_f3y)
 legend_quad2 <- get_legend(p_pred_quad2_f3y[[1]])
@@ -141,131 +354,11 @@ plot_grid(quad2_plot, medium_plot, nrow = 2, labels = c("poly", "piecereg"))
 ```
 
 Finally, both models does not disagree that much, for the tendancies according
-to the biomass
-
-#### All protocol
-
-```{r, eval = TRUE}
-#https://stackoverflow.com/questions/44457243/regression-tables-in-r-markdown-rmarkdown-html-pdf
-loadd(model_log_bm_f3y_table_medium)
-model_log_bm_f3y_table_medium[["reg_table"]] %>% 
-  filter(variable %in% get_com_str_var(all = FALSE)) %>%
-  kable(.,
-    booktabs = TRUE, 
-    caption = 
-      paste0(
-      "Regression table for the model: dN =",
-      "dB + B + dB*B + Inc*B + dB*Inc*B."
-    )) %>% 
-  kable_styling(latex_options =c("scale_down")) %>%
-  #add_header_above(c(" " = 3, "Indirect effects via" = 5)) %>%
-  #column_spec(1:2, width = "3cm") %>%
-  collapse_rows(columns = 1, valign = "top")
-```
+to the biomass.
 
 ```{r}
-model_log_bm_f3y_table_medium[["anova_table"]] %>% 
-  filter(variable %in% get_com_str_var(all = FALSE)) %>%
-  kable(., booktabs = TRUE,
-    caption = 
-      paste0(
-      "ANOVA table for the model: dN =",
-      "dB + B + dB*B + Inc*B + dB*Inc*B."
-    )
-  ) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
-loadd(pred_plot_signif)
-pred_plot_signif %<>% filter(variable %in% get_com_str_var())
-legend_signif <- get_legend(
-  pred_plot_signif$myplot[[1]] +
-    theme(legend.position = "bottom")
-)
-pred_plot_signif$myplot %<>% map(., ~.x + theme(legend.position = "none"))
-top <- plot_grid(
-  plotlist = pred_plot_signif$myplot,
-  labels = pred_plot_signif$variable
-)
-plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
-```
-
-## Link biomass dynamic and environment
-
-
-```{r}
-
-loadd(habitat_pressure, region_polygon, station_analysis)
-loadd(richness_group)
-loadd(log_bm_net_group_f3y)  
-test <- log_bm_net_group_f3y %>%
-  filter(variable == "connectance") %>%
-  left_join(habitat_pressure, by = "station")
-test %>%
-  pivot_longer(
-    cols = c(bm, width_river_mean, temperature_med, alt , RC1, RC2),
-    names_to = "evt_var", values_to = "value") %>%
-ggplot(aes(y = bm_slope, x = value)) +
-geom_point() +
-facet_wrap(~evt_var, scales = "free_x")
-```
-
-```{r}
-p <- ggplot() +
-  geom_sf(data = st_geometry(region_polygon)) 
-st_bm_slope <- station_analysis %>%
-  rename(station = id) %>%
-  left_join(select(test, station, bm_slope)) %>%
-  filter(!is.na(bm_slope))
-p + 
-  geom_sf(data = st_bm_slope, aes(color = bm_slope)) +
-  scale_color_viridis()
-```
-
-```{r}
-loadd(habitat_press)
-hab_press <- habitat_press %>%
-  select(station, long, lat, slope, alt, d_source, strahler, width_river_mean,
-    avg_depth_station_mean, DBO_med, flow_med)
-dyn_press <- log_bm_net_group_f3y %>%
-  filter(variable == "connectance") %>%
-  select(station, bm_slope) %>%
-  left_join(hab_press, by = "station") %>%
-  na.omit
-
-corrplot::corrplot(cor(dyn_press[, -1]))
-```
-
-```{r}
-
-```
-
-
-
-## Richness and dynamics
-
-```{r}
-log_bm_net_group_f3y %>%
-  filter(variable == "rich_std", bm_slope < 0) %>%
-  left_join(habitat_pressure, by = "station") %>%
-  pivot_longer(cols = c(bm, width_river_mean, temperature_med, alt , RC1, RC2),
-    names_to = "evt_var", values_to = "value") %>%
-ggplot(aes(y = linear_slope, x = value)) +
-geom_point() +
-facet_wrap(~evt_var, scales = "free_x")
-```
-
-```{r}
-rich_std_f3y <- richness_group %>% 
-  filter(rich_var == "rich_std", summary_type == "first_3_year", group_type ==
-    "median") %>%
-  select(station, rich)
-
-log_bm_net_group_f3y %>%
-  filter(variable == "rich_std", bm_slope < 0) %>%
-  left_join(rich_std_f3y, by = "station") %>%
-  ggplot(aes(y = linear_slope, x = rich)) +
-  geom_point()
+loadd(log_bm_net_group_f3y, model_log_bm_f3y,
+  summary_log_bm_f3y, vif_log_bm_f3y)
+loadd(vif_log_bm)
 ```
 
