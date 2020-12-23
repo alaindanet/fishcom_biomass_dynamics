@@ -46,7 +46,7 @@ get_com_str_var <- function (all = FALSE) {
   "weighted_connectance", "rich_std")
 
   if (all) {
-    x <- c(x, "richness", "log_rich_std", "nbnode_std" ,"nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich")
+    x <- c(x, "richness", "log_rich_std", "nbnode_std" ,"nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich", "l", "ld", "m", "A", "avg_IS", "gini", "ct_ff", "l_ff", "ld_ff")
   }
   return(x)
 }

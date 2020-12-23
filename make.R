@@ -15,6 +15,8 @@ drake::make(plan, keep_going = TRUE)
 drake::make(plan)
 drake::vis_drake_graph(plan)
 
+#make(plan, parallelism = "future", jobs = 3)
+
 # If you do not change any code or data,
 # subsequent make()'s do not build targets.
 

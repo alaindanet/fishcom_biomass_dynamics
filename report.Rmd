@@ -162,6 +162,7 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
 - Species richness:
   - decreases a lot in time when biomass decreases
   - increases slightly in time when biomass increases
+  - No effect of community size! (same for the number of nodes)
 
 - Avg trophic level:
   - decreases simultaneously with biomass decreases 
@@ -170,18 +171,61 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
   - meaning that biomass loss and gain are located in the highest trophic level
     (except gain of biomass in biggest communities)
 
+- Connectance:
+  - do not decrease when biomass decreases in little communities
+  - decreases when biomass decreases in big communities
+  - do not vary when biomass increases 
+
+- Weighted connectance:
+  - increases when biomass decreases in little communities
+  - decreases when biomass decreases in big communities
+  - decreases when biomass increases
+
+
 ### Interpretation
 
 - Richness:
-  - when biomass increases, competitive interactions may prevent the increase in
-    species richness.
-  - when biomass decreases conjointly to species richness, it may reflect...
-    haaaa: difficult because we do not know if the chicken or the egg was first.
-  - Implication for conservation: looks easiest to loose species than gain them.
+  - When biomass increases, one can that species richness increases as well
+    as when biomass decreases conjointly to species richness.
+  - Increase in species richness necessitates colonization events, i.e.
+    stochastic events while decreases in species richness necessitates
+    disparition of species already in the community. Thus, the colonization
+    process
+  - second explanation: when biomass increases, competitive interactions may prevent the increase in
+    species richness. We expect that processes based on competition would raise
+    the role of community size.  
 
 - Avg trophic level: 
   - Higest trophic level concentrates most of the biomass, so gain and loss are
-    statistically more linked to them 
+    statistically more linked to them
+  - In biggest communities, there was no link between biomass and avg trophic
+    level dyn because those communities already contain high trophic
+    levels (There is a positive correlation between the number of pisc node and
+    biomass of the community). So, there is a saturation at the top of the
+    chain.
+    - The observation that the number of link and link density follow the same
+      pattern confirm this interpretation.
+
+- Connectance:
+  - In little communities, few piscivorous species and so loss of biomass do not
+    change the foodwebs because fish-resource links are quite redondant.
+    - there is a positive correlation between nb of pisc node and biomass.
+    - In bigger communities, the loss of the highest piscivorous nodes/species
+      (see average trophic level), which have a lot of interactions, leads to a
+      decrease of connectance over time.
+  - Increase in biomass was weakly related to an increase in node number or species
+    richness, so it is not surprising that connectance to not vary.
+   
+- Weighted connectance:
+  - When biomass decreases in little communities, loss of highest trophic level
+    and so less big predators and weighted connectance become more even
+    - In big communities, the highest number can make the absence of such an effect 
+  - When Biomass increases, the number of predator nodes increases (especially
+    in little communities), and ...
+    the biomass 
+
+The key to understand the difference between little and big communities is the
+number of piscivorous nodes.
 
 ```{r}
 loadd(pred_plot_signif)
@@ -198,6 +242,30 @@ top <- plot_grid(
 )
 plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
 ```
+
+### Further analysis
+
+```{r}
+loadd(summary_var_f3y)
+
+summary_var_f3y %>%
+  na.omit() %>%
+  select(bm_std, avg_IS, l, ld, m, A, gini, log_bm_std, connectance, log_rich_std, rich_std, w_trph_lvl_avg,
+    weighted_connectance, nbnode_std, nb_pisc_node_std, prop_pisc_node) %>%
+  cor() %>%
+  corrplot::corrplot(corr = .)
+
+summary_var_f3y %>%
+  ggplot(aes(x = bm_std, y = prop_pisc_node)) +
+  geom_point() 
+#summary_var_f3y %>%
+  #ggplot(aes(x = log_bm_std, y = nb_pisc_node_std))+
+  #geom_point() 
+#summary_var_f3y %>%
+  #ggplot(aes(x = , y = nb_pisc_node_std))+
+  #geom_point() 
+```
+
 
 ## Other variables 
 
@@ -216,7 +284,7 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
 
 ```
 
-```{r pred-other-com}
+```{r pred-other-com, fig.dim = c(12, 10)}
 plot_signif <- pred_plot_signif %>%
   filter(!variable %in% get_com_str_var())
 legend_signif <- get_legend(
@@ -224,30 +292,156 @@ legend_signif <- get_legend(
     theme(legend.position = "bottom")
 )
 plot_signif$myplot %<>% map(., ~.x + theme(legend.position = "none"))
-top <- plot_grid(
+top_signif_other <- plot_grid(
   plotlist = plot_signif$myplot,
   labels = plot_signif$variable
 )
-plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+plot_grid(top_signif_other, legend_signif, nrow = 2, rel_heights = c(1, .1))
 ```
 
-```{r}
+```{r eval = FALSE}
 pred_plot_signif %>%
   select(variable, data) %>%
   unnest(data) %>%
-  ggplot() %>%
-  geom_errorbar(aes(xmin = bm_slope - bm_slope_strd_error, xmax = bm_slope +
+  ggplot(aes(x = bm_slope, y = linear_slope, color = bm)) +
+  geom_errorbar(
+    aes(xmin = bm_slope - bm_slope_strd_error, xmax = bm_slope +
       bm_slope_strd_error), alpha = .3) +
-  geom_errorbar(aes(ymin = linear_slope - linear_slope_strd_error,
-      ymax = linear_slope + linear_slope_strd_error), alpha = .3)
-  }
-  ggplot()
-plot_final_model
+  geom_errorbar(
+    aes(ymin = linear_slope - linear_slope_strd_error,
+      ymax = linear_slope + linear_slope_strd_error),
+    alpha = .3)
 ```
 
+##
+
+```{r}
+loadd(log_bm_net_group_f3y)
+st_id_plot <- log_bm_net_group_f3y %>%
+  filter(variable %in% get_com_str_var()) %>%
+  ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
+  scale_color_viridis() +
+  geom_text(aes(label = station)) +
+  facet_wrap(~variable, scales = "free_y")
+st_id_plot
+st_network_to_plot <- c(513, 1453, 16654, 6020)
+```
+
+- Station ploted: `r st_network_to_plot`
+
+```{r}
+library(tidygraph)
+library(ggraph)
+#source(mypath("R", "plot_methods.R"))
+myload(network_analysis,
+  envir = environment(),
+  dir = get_mypath("data", "classes"))
+myload(op_analysis,
+  metaweb_analysis,
+  envir = environment(),
+  dir = get_mypath("data"))
+meta <- metaweb_analysis; rm(metaweb_analysis)
+st_sp_node <- network_analysis %>%
+  select(opcod, composition) %>%
+  left_join(dplyr::select(op_analysis, opcod, station, date), by = "opcod") %>%
+  unnest(cols = c(composition)) %>%
+  group_by(station) %>%
+  summarise(
+    nbnode = length(unique(sp_class)),
+    nbsp = length(unique(str_extract(sp_class, "[A-Z]+")))
+  ) %>%
+  arrange(nbsp)
+
+net <- network_analysis %>%
+  dplyr::select(opcod, network) %>%
+  unnest(cols = c(network)) %>%
+  left_join(., dplyr::select(op_analysis, opcod, station, date)) %>%
+  mutate(date = lubridate::year(date)) 
+
+myload(species_color_temporal_plot,
+  envir = environment(),
+  dir = get_mypath("data"))
+```
+
+```{r}
+#st_id_plot
+temporal_network <- map(st_network_to_plot, function (st) {
+  net_ex <- filter(net, station == st)
+  p <- my_crap_temporal_network(
+    net = net_ex,
+    metaweb = meta$metaweb,
+    network_data = network_analysis,
+    nrow_sp_legend = 2,
+    return_data = TRUE,
+    my_y_lim = c(0, 4.1),
+    bm_var = "bm_std",
+    color_node = species_color_temporal_plot
+  )
+  plot_grid(plotlist = p$plots)
+  })
+temporal_network[[1]]
+temporal_network[[2]]
+temporal_network[[3]]
+temporal_network[[4]]
+```
+
+```{r}
+loadd(rigal_species)
+species_trends <- rigal_species %>%
+  unnest(classif) %>%
+  select(station, species = variable, linear_slope, linear_slope_strd_error, linear_slope_pvalue)
+
+species_trends2 <- species_trends %>%
+  left_join(filter(log_bm_net_group_f3y, variable == "connectance") %>%
+    select(station, bm_slope),
+    by = "station")
+species_trends2 %<>% na.omit
+
+species_trends2 %>%
+  filter(linear_slope_pvalue < 0.05) %>%
+  ggplot(aes(y = linear_slope, x = bm_slope, color = species)) +
+  geom_point()
+
+species_trend_cor <-
+  species_trends2 %>%
+  group_by(species) %>%
+  summarise(
+    spear = cor(linear_slope, bm_slope, method = c("spearman"), use = "pairwise.complete.obs"),
+    n = n()
+  ) 
+
+species_trend_cor %>%
+  filter(n >= 20) %>%
+  ggplot(aes(y = spear, x = species)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 45))
+```
+
+```{r}
+# Obtain avg troph lvl by species
+dead_material <- c("det", "biof")
+tlvl <- NetIndices::TrophInd(meta$metaweb, Dead = dead_material)$TL
+names(tlvl) <- colnames(meta$metaweb) 
+tlvl <- enframe(tlvl, name = "sp_class", value = "tlvl")
+
+species_tlvl <- 
+  tlvl %>%
+  filter(str_detect(sp_class, "[A-Z]{3}.")) %>%
+  mutate(species = str_sub(sp_class, 1, 3)) %>%
+  group_by(species) %>%
+  summarise(tlvl = mean(tlvl, na.rm = TRUE))
+```
+
+```{r}
+species_trend_cor %>%
+  left_join(species_tlvl, by = "species") %>%
+  filter(n > 20) %>%
+  ggplot(aes(x = tlvl, y = spear)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
 
 ## Link biomass dynamic and environment
-
 
 ```{r}
 loadd(habitat_pressure, region_polygon, station_analysis)

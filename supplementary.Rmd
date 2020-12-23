@@ -1,0 +1,850 @@
+---
+title: "Supplementary methods and results"
+author: "Alain Danet"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+    math: katex
+---
+
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  #fig.dim = c(7, 7),
+  fig.fullwidth = TRUE,
+  fig.show = "hold",
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  results = TRUE 
+)
+```
+
+```{r}
+library(drake)
+library(tidyverse)
+library(magrittr)
+library(cowplot)
+library(viridis)
+library(kableExtra)
+library(sf)
+source("R/misc.R") # Define your custom code as a bunch of functions.
+source("R/variable_shortcut.R")
+source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
+
+#theme_set(theme_cowplot())
+```
+
+```{r}
+loadd(temporal_dynamics_coef)
+loadd(temporal_dynamics_plot)
+loadd(full_data2)
+loadd(biomass_group)
+```
+
+# Methods
+
+## Station grouping
+
+### Rigal station increase / decrease
+
+Les stations ont moins de 40 kilos au départ ont l'air comparable en terme de
+dynamique.
+
+```{r, eval=FALSE}
+
+p_rigal_decrease_increase_slope_st <- 
+  st_decrease_increase_rigal_biomass %>%
+  left_join(biomass_group, by = "station") %>%
+  ggplot(aes(y = linear_slope, x = bm_slope, color = shape_class)) +
+  geom_point() +
+  facet_wrap(~variable)
+p_rigal_decrease_increase_slope_st
+```
+
+### Tendancies in rigal increase / decrease 
+
+```{r}
+bm_vs_net_trends %>%
+  ggplot(aes(x = reg_weight)) +
+  geom_histogram() +
+  facet_wrap(~variable)
+
+bm_net_group_median %>%
+  ggplot(aes(x = bm_slope, y = linear_slope, size = reg_weight, weight = reg_weight, color = log(bm))) +
+  geom_point() +
+  scale_color_viridis() +
+  geom_vline(xintercept = 0, color = "red") +
+  geom_smooth() +
+  facet_wrap(~variable, scales = "free_y") +
+  labs(x = "Biomass trend (g.m-1.y-1)", y = "Network trend (U.y-1)")
+
+
+log_bm_net_group_f3y %>%
+  ggplot(aes(x = bm_slope, y = linear_slope, size = reg_weight, weight = reg_weight, color = log(bm))) +
+  geom_point() +
+  scale_color_viridis() +
+  geom_vline(xintercept = 0, color = "red") +
+  geom_smooth() +
+  facet_wrap(~variable, scales = "free_y") +
+  labs(x = "Log Biomass trend (g.m-1.y-1)", y = "Network trend (U.y-1)")
+```
+
+### With group 
+
+#### Median
+
+```{r}
+##Summary of group 
+biomass_group %>%
+  filter(group_type == "median") %>%
+  ggplot(aes(x = bm)) +
+  geom_histogram() +
+  facet_wrap(bm_var~summary_type, scales = "free_x")
+```
+```{r, eval = FALSE}
+group_results <- 
+  rigal_biomass_coeff_dynamics %>%
+  left_join(biomass_group, by = "station") %>% 
+  filter(group_type == "median", bm_var == "bm_std")
+
+p1 <- group_results %>%
+  filter(summary_type == "first_3_year") %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = group,
+      size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free_y")
+
+p3 <- group_results  %>%
+  filter(summary_type == "median") %>%
+  ggplot(aes(x = linear_slope, y = estimate, color = group, size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~coeff, scales = "free_y")
+
+
+p1
+p3
+```
+
+#### Little and big rivers
+
+```{r}
+loadd(stream_group)
+#grandes/petites rivières
+stream_group %>%
+  ggplot(aes(x = width_river_mean, fill = group)) +
+  geom_histogram() +
+  facet_grid(~group_type)
+  
+stream_group %>%
+  filter(group_type == "median") %>%
+  ggplot(aes(x = width_river_mean, fill = protocol_type)) +
+  geom_histogram()
+
+stream_group %>%
+  filter(group_type == "median") %>%
+  left_join(
+    biomass_group %>%
+    filter(group_type == "median", summary_type == "median") %>%
+    select(-group_type, -summary_type, -group),
+  by = "station"
+  ) %>%
+  filter(!is.na(protocol_type)) %>%
+  ggplot(aes(x = bm, fill = protocol_type)) +
+  geom_histogram() +
+  facet_wrap(~bm_var, scales = "free_x")
+```
+
+# Patterns
+
+```{r}
+bm_net_group_median %>%
+  ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm), size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  scale_color_viridis() +
+  #geom_smooth(method = "lm") +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Group as mean biomass")
+ 
+bm_net_group_median %>%
+  ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
+  geom_point() +
+  scale_color_viridis() +
+  geom_errorbar(aes(
+      xmin = bm_slope - bm_slope_strd_error,
+      xmax = bm_slope + bm_slope_strd_error),
+    alpha = .2
+    ) +
+  geom_errorbar(aes(
+      ymin = linear_slope - linear_slope_strd_error,
+      ymax = linear_slope + linear_slope_strd_error),
+    alpha = .2
+    ) +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Group as mean biomass")
+
+bm_net_group_median %>%
+  filter(!is.na(protocol_type)) %>%
+  ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm), size = reg_weight, weight = reg_weight)) +
+  geom_point() +
+  scale_color_viridis() +
+  #geom_smooth(method = "lm") +
+  facet_grid(variable~protocol_type, scales = "free") +
+  labs(title = "Group as mean biomass")
+```
+
+```{r, fig.height = 12, fig.width = 12}
+log_bm_net_group_f3y %>%
+  filter(!is.na(protocol_type)) %>%
+  ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
+  geom_point() +
+  scale_color_viridis() +
+  geom_errorbar(aes(xmin = bm_slope - bm_slope_strd_error,
+      xmax = bm_slope + bm_slope_strd_error), alpha = .3) +
+  geom_errorbar(aes(ymin = linear_slope - linear_slope_strd_error,
+      ymax = linear_slope + linear_slope_strd_error), alpha = .3) +
+  facet_grid(variable~protocol_type, scales = "free") +
+  labs_log_bm_net_trends()
+```
+
+```{r}
+knitr::opts_chunk$set(
+  eval = FALSE 
+)
+```
+
+
+## Other Statistical model
+
+#### Quadratic one
+
+
+```{r}
+pred_log_bm_quad <- summary_log_bm_f3y %>%
+  filter(model == "mod_bm_quad") %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope", "bm [quart2]"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+    #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+
+
+test <- map2(model_log_bm_f3y$data, pred_log_bm_quad$pred_df, plot_pred_data,
+  std_error = TRUE)
+plot_grid(plotlist = test, labels = model_log_bm_f3y$variable)
+```
+
+
+```{r}
+
+vif_log_bm_f3y %>%
+  ggplot(aes(y= vif, x = term)) +
+  geom_hline(yintercept = 10) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_grid(model_type~variable, scales = "free")
+```
+
+### By protocol 
+
+```{r}
+loadd(vif_log_bm_by_protocol)
+
+protocol_vec <- vif_log_bm_by_protocol$protocol_type %>% unique
+p_vif_protocol <- map(protocol_vec, function (x) {
+  vif_log_bm_by_protocol %>%
+    filter(protocol_type == x) %>%
+    ggplot(aes(y= vif, x = term)) +
+    geom_hline(yintercept = 10) +
+    geom_bar(stat = "identity") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    labs(title = paste0("Protocol type: ", x)) +
+    facet_grid(model_type~variable, scales = "free_y")
+  })
+p_vif_protocol[[1]]
+p_vif_protocol[[2]]
+```
+
+```{r}
+loadd(model_log_bm_f3y_by_protocol, summary_log_bm_f3y_by_protocol)
+```
+
+```{r, eval = FALSE}
+complete_log_quad2 <- get_table_from_summary(.data = summary_log_bm_f3y_by_protocol, model = "mod_bm_quad2", protocol = "complete")
+
+complete_log_quad2[["reg_table"]] %>% 
+  kable(.,
+    booktabs = TRUE, 
+    caption = 
+      paste0(
+      "Regression table for the model: dN =",
+      "bm + dBm + dBm^2 + bm*dBm + bm*dBm^2."
+    ) 
+  )
+
+complete_log_quad2[["anova_table"]] %>% 
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "ANOVA table for the model: dN =",
+      "bm + dBm + dBm^2 + bm*dBm + bm*dBm^2."
+    )
+  )
+```
+
+```{r, eval = FALSE}
+filter(summary_log_bm_f3y_by_protocol, model == "mod_log_bm_inc")[["resume"]]
+filter(summary_log_bm_f3y_by_protocol, model == "mod_log_bm_inc")[["anova"]]
+
+filter(summary_log_bm_f3y_by_protocol, model == "mod_bm_quad")[["resume"]]
+filter(summary_log_bm_f3y_by_protocol, model == "mod_log_bm_inc")[["anova"]]
+```
+
+#### Quadratic two
+
+```{r}
+pred_log_bm_quad2 <- summary_log_bm_f3y_by_protocol %>%
+  filter(model == "mod_bm_quad2", protocol_type == "complete") %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope", "bm [quart2]"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+    #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+model_log_bm_f3y_by_protocol %<>% filter(protocol_type == "complete")
+
+pred_log_bm_quad2_plot <- map2(model_log_bm_f3y_by_protocol$data, pred_log_bm_quad2$pred_df,
+  plot_pred_data)
+plot_grid(plotlist = pred_log_bm_quad2_plot, labels = model_log_bm_f3y$variable)
+```
+
+#### Quadratic one
+
+
+```{r}
+pred_log_bm_quad <- summary_log_bm_f3y_by_protocol %>%
+  filter(model == "mod_bm_quad", protocol_type == "complete") %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope", "bm [quart2]"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+    #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+model_log_bm_f3y_by_protocol %<>% filter(protocol_type == "complete")
+
+pred_log_bm_quad_plot <- map2(model_log_bm_f3y$data, pred_log_bm_quad$pred_df, plot_pred_data,
+  std_error = TRUE)
+plot_grid(plotlist = pred_log_bm_quad_plot, labels = model_log_bm_f3y$variable)
+```
+
+```{r, eval = FALSE}
+pred <- summary_log_bm_f3y_by_protocol %>%
+  filter(model == "mod_log_bm_inc") %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope", "log_bm [quart2]", "inc_f"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+  )
+plot_grid(plotlist = pred$plot, labels = pred$variable)
+```
+
+```{r, eval = FALSE}
+pred <- summary_log_bm_f3y_by_protocol %>%
+  filter(model == "mod_log_bm_inc") %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope", "log_bm [quart2]", "inc_f"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+  )
+plot_grid(plotlist = pred$plot, labels = pred$variable)
+```
+
+
+
+### Can we predict the model without all simple effects?  
+
+```{r, eval = FALSE}
+# Perform a valid model 
+pred <- model_int %>%
+  select(-data, -mod4) %>%
+  pivot_longer(cols = c(mod1:mod5), names_to = "model_type", values_to =
+    "mod_obj") %>%
+  mutate(
+    pred_ref = map2(mod_obj, model_type, function (x, y) {
+       if (y %in% c("mod3", "mod5"))
+	 terms_spec <- c("bm_slope", "inc_f", "bm")
+       else
+	 terms_spec <- c("bm_slope", "inc_f", "bm_group") 
+      ggpredict(x, terms = terms_spec)
+      }
+    ),
+    pred_cte = map2(mod_obj, model_type, function (x, y) {
+       if (y %in% c("mod3", "mod5"))
+	 terms_spec <- c("linear_slope", "inc_f", "bm")
+       else
+	 terms_spec <- c("linear_slope", "inc_f", "bm_group") 
+      ggeffect(x, terms = terms_spec)
+      }
+    )
+  )
+
+pred %<>%
+  mutate(
+  plot_pred_ref = map(pred_ref, plot, add.data = TRUE),
+  plot_pred_cte = map(pred_cte, plot, add.data = TRUE)
+  )
+pred_richness <- pred %>%
+  filter(variable == "richness", model_type == "mod3")
+
+pred$plot_pred_ref[[1]]
+pred$plot_pred_cte[[1]]
+pred$plot_pred[[2]]
+pred$plot_pred[[3]]
+pred$plot_pred_ref[[4]]
+```
+
+
+```{r, eval = FALSE}
+library(ggeffects)
+mydf <- ggpredict(model_int$mod3[[1]], terms = c("linear_slope", "inc_f",
+    "bm"))
+plot(mydf, add.data = TRUE)
+
+```
+
+```{r, eval = FALSE}
+model_log %<>%
+  mutate(
+    pred5 = map(mod3, ~ggpredict(.x,
+	terms = c("linear_slope [-8, -6, -4,-3, -2, -1, -.5, -.01, .01, .5, 1, 2, 3, 4, 6]", "inc_f", "bm"))),
+    pred5_df = map(pred5, as_tibble),
+    plot = map(pred5, ~plot(.x, add.data = TRUE)),
+    myplot = map2(pred5, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+
+#plot_final_model(model_int$pred5[[1]], model_int$data[[1]])
+plot_grid(plotlist = model_int$plot, labels = model_int$variable)
+model_int$plot[[1]]
+summary(model_int$mod3[[1]])
+test <- model_int$data[[1]]
+model_int$pred5_df[[1]]
+test %>%
+  ggplot(aes(x = bm_slope, y = linear_slope, weight = reg_weight, size = reg_weight)) +
+  geom_smooth(method = "lm") +
+  geom_point()
+
+pred_test <-
+  model_int$pred5_df[[1]] %>%
+  as_tibble %>%
+  rename(increasing = group, group = facet) %>%
+  filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
+
+p <- ggplot(pred_test, aes(x = x , y = predicted, color = group)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha =
+    .1) +
+  geom_line() +
+  geom_point(data = rename(test,
+      predicted = linear_slope, x = bm_slope),
+    aes(x = x, y = predicted),
+    inherit.aes = FALSE)
+```
+
+```{r, eval = FALSE}
+model_int$pred5_df[[1]] %>%
+  ggplot()
+
+plot_final_model(model_int$pred5[[1]], rawdata = model_int$data[[1]], facet =
+  TRUE)
+```
+
+# Correlation
+
+```{r}
+cor_bm_net <- bm_net_group_median %>%
+  select(bm_slope, variable, linear_slope, bm, width_river_mean) %>%
+  pivot_wider(names_from = variable, values_from = linear_slope) 
+corrplot::corrplot(cor(na.omit(cor_bm_net)), type = "upper")
+
+library(ade4)
+library(factoextra)
+res.pca <- dudi.pca(na.omit(cor_bm_net),
+                    scannf = FALSE,   # Cacher le scree plot
+                    nf = 3            # Nombre d'axes gardés
+                    )
+screeplot(res.pca, main = "Screeplot - Eigenvalues")
+p1 <- fviz_pca_var(res.pca,
+  col.var = "contrib", 
+  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+  repel = TRUE     
+)
+p2 <- fviz_pca_var(res.pca,
+  axes = c(1, 3),
+  col.var = "contrib", 
+  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+  repel = TRUE     
+)
+
+p3 <- fviz_pca_var(res.pca,
+  axes = c(2, 3),
+  col.var = "contrib", 
+  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+  repel = TRUE     
+)
+plot_grid(p1, p2, p3)
+```
+
+## Richness
+
+```{r}
+knitr::opts_chunk$set(
+  eval = FALSE 
+)
+```
+
+
+```{r}
+st_big_bm_tendancies <- group_results %>%
+  filter(abs(linear_slope) > 5000) %>%
+  .$station %>%
+  unique
+plot_big_bm_tendancies <- temporal_dynamics_plot %>%
+  filter(variable == "biomass", station %in% st_big_bm_tendancies) %>%
+  .$plot
+plot_grid(
+  plotlist = map(plot_big_bm_tendancies, 
+    ~.x + lims(x = c(0, 10), y = c(0, 155000)))
+)
+```
+
+
+```{r}
+rigal_shape_var <- rigal_classification %>%
+  unnest(classif) %>%
+  select(station, variable, shape_class) %>%
+  mutate(station = as.character(station))
+
+rigal_shape_var %>%
+  filter(station %in% st_decrease_increase_rigal_biomass$station) %>%
+  ggplot(aes(x = shape_class)) +
+  geom_bar() +
+  facet_wrap(~ variable) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+## SAX
+
+```{r, eval = FALSE}
+library(jmotif)
+loadd(full_data2)
+sax_all_variable <- full_data2 %>%
+  select(station, nb_year, biomass:log_bm) %>%
+  pivot_longer(cols = biomass:log_bm, names_to = "variable", values_to = "value") %>%
+  group_by(station, variable) %>%
+  arrange(nb_year) %>%
+  nest() %>%
+  mutate(
+    zts = map(data, function(x) znorm(x$value, threshold = 0.01)),
+    paa = map(zts, ~paa(., 3)),
+    sax = map_chr(paa, ~series_to_string(., 3))
+  ) %>%
+  ungroup()
+
+# CBA:
+sax_all_variable %>%
+  filter(station %in% cba_rigal_sax$station, !variable %in% c("biomass", "nbnode")) %>%
+  ggplot(aes(x = sax)) +
+  geom_bar() +
+  facet_wrap(facets = ~variable)
+
+sax_all_variable %>%
+  filter(
+    station %in% cba_rigal_sax$station,
+    !variable %in% c("biomass", "nbnode")
+    ) %>%
+  ggplot(aes(x = sax)) +
+  geom_bar() +
+  facet_wrap(facets = ~variable)
+```
+
+
+```{r}
+loadd(hyp_table)
+hyp_table <- make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm)
+hyp_table %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "Comparison of the two Statistical model for the median biomass model"
+    )
+  ) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+### Compare Quad2 and piecewiseregression 
+
+```{r}
+loadd(model_log_bm, summary_model_log_bm,
+  summary_log_bm, vif_model_log_bm)
+```
+
+```{r}
+loadd(effect_quad2_piece)
+effect_quad2_piece %>%
+  kable(., booktabs = TRUE,
+    caption = paste0(
+      "Hypothesis and matching coefficients."))
+```
+
+
+```{r}
+loadd(hyp_table_f3y)
+hyp_table_f3y <- make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_f3y)
+
+hyp_table_f3y %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "Comparison of the two Statistical model for first three year"
+    )
+  ) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+## Raw bm
+
+```{r, eval = TRUE}
+loadd(model_bm, model_bm_vif)
+
+model_bm_vif %>%
+  ggplot(aes(y = vif, x = term)) +
+  geom_hline(yintercept = 10) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_grid(model_type~variable, scales = "free")
+```
+
+```{r, eval = FALSE}
+library(yhat)
+test <- model_int$mod3[[1]]
+CCData <- commonalityCoefficients(model_int$data[[1]],
+  "linear_slope",
+  list("bm_slope", "inc_f", "bm"), "F")
+CCData
+
+test_data <- model_int$data[[1]]
+lm_test <- lm(
+  formula = linear_slope ~ bm_slope*inc_f*bm,
+  weights = reg_weight
+)
+test <- regr(lm_test)
+```
+
+### Effect of protocol type on the model validity 
+
+```{r}
+loadd(model_bm_by_protocol, model_bm_by_protocol_vif)
+
+protocol_vec <- model_bm_by_protocol_vif$protocol_type %>% unique
+p_vif_protocol <- map(protocol_vec, function (x) {
+  model_bm_by_protocol_vif %>%
+    filter(protocol_type == x) %>%
+    ggplot(aes(y= vif, x = term)) +
+    geom_hline(yintercept = 10) +
+    geom_bar(stat = "identity") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    labs(title = paste0("Protocol type: ", x)) +
+    facet_grid(model_type~variable, scales = "free_y")
+  })
+p_vif_protocol[[1]]
+p_vif_protocol[[2]]
+```
+
+```{r, eval = FALSE}
+filter(model_bm_by_protocol_vif, model_type == "mod_bm_quad")
+```
+
+
+```{r}
+loadd(bm_net_group)
+bm_net_group %>%
+  filter(variable == "connectance") %>%
+  ggplot(aes(x = bm_slope, y = bm)) +
+  geom_point()
+```
+
+
+### Current best model
+
+$$
+Y = \alpha + \beta_1D_b + \beta_2D_bI_b + \beta_3D_bI_bB
+$$
+
+```{r, eval = TRUE}
+loadd(model_bm_by_protocol_summary)
+model_bm_by_protocol_summary %<>%
+  filter(protocol_type == "complete")
+```
+
+```{r, eval = FALSE}
+filter(model_bm_by_protocol_summary, model == "mod_inc_bm")[["resume"]]
+filter(model_bm_by_protocol_summary, model == "mod_inc_bm")[["anova"]]
+
+filter(model_bm_by_protocol_summary, model == "mod_bm_inc")[["resume"]]
+filter(model_bm_by_protocol_summary, model == "mod_bm_inc")[["anova"]]
+
+filter(model_bm_by_protocol_summary, model == "mod_bm_quad")[["resume"]]
+filter(model_bm_by_protocol_summary, model == "mod_bm_quad")[["anova"]]
+
+filter(model_bm_by_protocol_summary, model == "mod_bm_quad2")[["resume"]]
+filter(model_bm_by_protocol_summary, model == "mod_bm_quad2")[["anova"]]
+```
+
+```{r, eval = TRUE}
+pred <- model_bm_by_protocol_summary %>%
+  filter(model == "mod_bm_inc") %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope [-8, -6, -4,-3, -2, -1, -.5, -.01, .01, .5, 1, 2, 3, 4, 6]", "bm [quart2]", "inc_f"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+    #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+plot_grid(plotlist = pred$plot, labels = pred$variable)
+```
+
+
+
+```{r}
+pred <- model_bm_by_protocol_summary %>%
+  filter(model == "mod_bm_quad2") %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope [-8, -6, -4,-3, -2, -1, -.5, -.01, .01, .5, 1, 2, 3, 4, 6]", "bm [quart2]"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+    #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+plot_grid(plotlist = pred$plot_data, labels = pred$variable)
+```
+
+#### All protocol
+
+```{r}
+loadd(model_bm_summary)
+```
+
+```{r, eval = FALSE}
+filter(model_bm_summary, model == "mod_inc_bm")[["resume"]]
+filter(model_bm_summary, model == "mod_inc_bm")[["anova"]]
+
+filter(model_bm_summary, model == "mod_bm_inc")[["resume"]]
+filter(model_bm_summary, model == "mod_bm_inc")[["anova"]]
+
+filter(model_bm_summary, model == "mod_bm_quad")[["resume"]]
+filter(model_bm_summary, model == "mod_bm_quad")[["anova"]]
+
+filter(model_bm_summary, model == "mod_bm_quad2")[["resume"]]
+filter(model_bm_summary, model == "mod_bm_quad2")[["anova"]]
+```
+
+
+```{r}
+pred_bm_quad2 <- model_bm_summary %>%
+  filter(model == "mod_bm_quad2") %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope", "bm [quart2]"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+    #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+plot_grid(plotlist = pred_bm_quad2$plot, labels = pred_bm_quad2$variable)
+pred_bm_quad2_plot <- map2(model_bm$data, pred_bm_quad2$pred_df, plot_pred_data)
+
+plot_grid(plotlist = pred_bm_quad2_plot, labels = pred_bm_quad2$variable)
+
+pred_bm_quad <- model_bm_summary %>%
+  filter(model == "mod_bm_quad") %>%
+  mutate(
+    pred = map(model_obj, ~ggpredict(.x,
+	terms = c("bm_slope", "bm [quart2]"))),
+    pred_df = map(pred, as_tibble),
+    plot = map(pred, ~plot(.x, add.data = FALSE)),
+    plot_data = map(pred, ~plot(.x, add.data = TRUE)),
+    #myplot = map2(pred, data, ~plot_final_model(ggpred = .x, rawdata = .y))
+  )
+
+pred_bm_quad_plot <- map2(model_bm$data, pred_bm_quad$pred_df, plot_pred_data)
+plot_grid(plotlist = pred_bm_quad_plot, labels = pred_bm_quad2$variable)
+```
+
+#### Quadratic two
+
+```{r}
+#model_bm$data[[1]] %>%
+  #ggplot(aes(x = bm_slope, y = linear_slope, fill = log(bm)), shape = 23, size = 4) +
+  #scale_fill_viridis() +
+  #geom_point() +
+  #geom_line(
+    #data = pred_bm_quad2$pred_df[[1]] %>%
+      #rename(bm_f = group, bm_slope = x, linear_slope = predicted),
+    #aes(y = linear_slope, x = bm_slope, color = bm_f),
+    #inherit.aes = FALSE)
+
+test <- map2(model_bm$data, pred_bm_quad2$pred_df, function (.data, pred) {
+  
+  .data %>%
+    ggplot(aes(x = bm_slope, y = linear_slope, fill = log(bm)), shape = 23, size = 4) +
+    scale_fill_viridis() +
+    geom_point() +
+    geom_line(
+      data = pred %>%
+	rename(bm_f = group, bm_slope = x, linear_slope = predicted),
+      aes(y = linear_slope, x = bm_slope, color = bm_f),
+      inherit.aes = FALSE)
+  
+    })
+plot_grid(plotlist = test)
+```
+
+#### Quadratic one
+
+```{r}
+test <- map2(model_bm$data, pred_bm_quad$pred_df, function (.data, pred) {
+  
+  .data %>%
+    ggplot(aes(x = bm_slope, y = linear_slope, fill = log(bm)), shape = 23, size = 4) +
+    scale_fill_viridis() +
+    geom_point() +
+    geom_line(
+      data = pred %>%
+	rename(bm_f = group, bm_slope = x, linear_slope = predicted),
+      aes(y = linear_slope, x = bm_slope, color = bm_f),
+      inherit.aes = FALSE)
+  
+    })
+plot_grid(plotlist = test, labels = model_bm$variable)
+```

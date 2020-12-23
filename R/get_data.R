@@ -16,6 +16,25 @@ get_community_data <- function (
   
 }
 
+get_community_analysis_data <- function (
+  path = get_mypath("data", "community_analysis.rda"),
+  op = op_data
+  ) {
+
+  load(path, envir = environment())
+
+  com_std <-
+    community_analysis %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(dplyr::select(op, opcod, surface), by = "opcod") %>%
+    dplyr::mutate(
+      nind = nind / surface, 
+      length = length / surface, 
+      biomass = biomass / surface
+    )
+  return(com_std)
+}
+
 #' Get network metrics
 #'
 #' @param dir path to the data
@@ -46,6 +65,24 @@ metrics = NULL) {
     dplyr::filter(!is.na(opcod))
 
   return(net)
+}
+get_network_analysis_data <- function (
+  path = get_mypath("data", "classes", "network_analysis.rda"),
+  metrics = NULL) {
+
+  load(path, envir = environment())
+
+  net_tmp <- network_analysis %>%
+    dplyr::select(opcod, network, weighted_fish_fish_net) %>%
+    mutate(
+      network = furrr::future_map(network, igraph::graph_from_data_frame, directed = TRUE),
+      network = furrr::future_map(network, igraph::as_adjacency_matrix, sparse = FALSE),
+      metrics = furrr::future_map(network, NetIndices::GenInd)
+    )
+
+    return(net_tmp)
+  
+
 }
 
 #' Get fishing operation data
@@ -86,6 +123,24 @@ get_full_data <- function (net = NULL, com = NULL, op = NULL) {
     dplyr::filter(!is.na(opcod) | !is.na(station))
 
   return(full)
+
+}
+get_species_full_data <- function (
+  com = com_analysis_data,
+  op = op_data) {
+
+  pop <- get_sync_cv_mat(
+    com_analysis = com,
+    op_analysis = op,
+    presence_threshold = NA
+  )
+  full_pop <- pop %>%
+    select(station, com_mat_year) %>%
+    unnest(cols = com_mat_year) %>%
+    group_by(station) %>%
+    mutate(nb_year = year - year[1]) %>%
+    select(nb_year, everything())
+  return(full_pop)
 
 }
 

@@ -1,28 +1,60 @@
 # This is where you write your drake plan.
 # Details: https://books.ropensci.org/drake/plans.html
 plan <- drake_plan(
+  net_analysis_data = target(
+    get_network_analysis_data(
+    path = file_in(!!get_mypath("data", "classes", "network_analysis.rda"))
+    ), resources = list(cores = 3, gpus = 0)),
   net_data = get_network_data(path = file_in(!!get_mypath("data", "classes", "network_metrics.rda"))),
   com_data = get_community_data(path = file_in(!!get_mypath("data", "community_metrics.rda"))),
+  com_analysis_data = get_community_analysis_data( path =
+    file_in(!!get_mypath("data", "community_analysis.rda")), op = op_data),
   op_data = get_op_data(path = file_in(!!get_mypath("data", "op_analysis.rda"))),
   habitat_press = get_data(obj_name = "habitat_press", dir = get_mypath("data")),
   habitat_pressure = get_data(obj_name = "habitat_pressure", dir = get_mypath("data")),
   region_polygon = get_data(obj_name = "region_polygon", dir = get_mypath("data")),
   station_analysis = get_data(obj_name = "station_analysis",
     dir = "~/Documents/post-these/mnhn/fishcom/data"),
-
-  full_data = get_full_data(net = net_data, com = com_data, op = op_data),
+  net_l_ld_IS = get_l_ld_IS(net = net_analysis_data),
+  metrics_fishfish_only = get_network_metric_fish_only(net = net_analysis_data),
+  net_data2 = left_join(net_data, net_l_ld_IS, by = "opcod") %>%
+    left_join(select(metrics_fishfish_only, opcod, ct_ff, l_ff, ld_ff), by = "opcod"),
+  full_data = get_full_data(net = net_data2, com = com_data, op = op_data),
   full_data2 = add_to_full_data(.data = full_data),
+  species_full_data = get_species_full_data(com = com_analysis_data, op =
+    op_data),
   monotonous_data = get_monotonous_station(.data = full_data2),
   temporal_dynamics = get_lm_station(.data = monotonous_data, 
     var_name = c(get_biomass_var(), get_com_str_var(all = TRUE)),
     rhs = " ~ nb_year"),
   rigal_classification = compute_rigal_classif(data = full_data2, 
     variable = c(get_biomass_var(), get_com_str_var(all = TRUE))),
+  rigal_species = compute_rigal_classif(
+  data = species_full_data,
+  variable = colnames(species_full_data)[!is.na(str_extract(colnames(species_full_data), "[A-Z]{3}"))]  
+  ),
+
   biomass_group = get_station_biomass_summary(.data = full_data2, bm_var = get_biomass_var()),
   richness_group = get_station_com_summary(
   .data = full_data2,
   myvar = get_richness_var(),
   var_cat = "rich"),
+  summary_var = monotonous_data %>%
+    select(-opcod, -surface, -rel_bm, -rel_log_bm) %>%
+    pivot_longer(
+      cols = biomass:log_nb_pisc_rich_std,
+      names_to = "variable",
+      values_to = "value") %>%
+    group_by(station, variable) %>%
+    arrange(year) %>%
+    summarise(med = median(value), f3y = median(value[1:3])) %>%
+    ungroup(),
+  summary_var_med = summary_var %>% 
+    select(-f3y) %>%
+    pivot_wider(names_from = "variable", values_from = "med"),
+  summary_var_f3y = summary_var %>% 
+    select(-med) %>%
+    pivot_wider(names_from = variable, values_from = "f3y"),
   stream_group = get_stream_group(
     op_analysis_path = file_in(!!get_mypath("data", "op_analysis.rda")),
     habitat_press_path = file_in(!!get_mypath("data", "habitat_press.rda"))),
