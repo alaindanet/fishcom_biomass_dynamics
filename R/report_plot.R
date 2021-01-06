@@ -81,12 +81,13 @@ get_model_plot_from_signif_term <- function (
       predict_term = map(single_var_term, from_term_to_predict_term))
 
     model_test <- model %>%
+      filter(variable %in% term_model$variable) %>%
       select(variable, data) %>%
       left_join(term_model, by = "variable")%>%
       mutate(model_formula = paste0("linear_slope ~", signif_term)) %>%
       mutate(
 	mod = map2(data, model_formula,
-	  ~compute_linear_model(formulas = .y, .data = .x))
+	  ~try(compute_linear_model(formulas = .y, .data = .x)))
       )
       model_test %<>%
 	mutate(pred = pmap(list(mod, predict_term),

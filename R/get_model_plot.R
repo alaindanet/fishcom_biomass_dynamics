@@ -43,7 +43,6 @@ plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE, std_
 
   ggpred %<>% as_tibble
 
-
   if ("facet" %in% names(ggpred)) {
   ggpred %<>% rename(increasing = group, group = facet)
   } else{
@@ -56,44 +55,55 @@ plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE, std_
     filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
 
   if (is.null(rawdata)) {
-  rawdata <- attr(ggpred, "rawdata")
+    rawdata <- attr(ggpred, "rawdata")
   }
 
+  if ("bm_slope" %in% colnames(rawdata)) {
+    x_var <- "bm_slope"
+    x_var_error <- "bm_slope_strd_error"
+  } else if ("rich_slope" %in% colnames(rawdata)) {
+    x_var <- "rich_slope" 
+    x_var_error <- "rich_slope_strd_error"
+  } else {
+    stop("X var cannot be defined")
+  }
+  
   p <- rawdata %>%
-    ggplot(aes(x = bm_slope, y = linear_slope, color = log(bm))) +
+    ggplot(aes_string(x = x_var, y = "linear_slope", color = "log(bm)")) +
     viridis::scale_color_viridis() +
     geom_point() 
 
+  renaming_vector <- c( "x", "predicted")
+  names(renaming_vector) <- c(x_var, "linear_slope")
+
   if ("group" %in% colnames(ggpred)) {
+    renaming_vector <- c(renaming_vector, bm_f = "group")
     p <- p +
       geom_line(
 	data = ggpred %>%
-	  rename(bm_f = group, bm_slope = x, linear_slope = predicted),
-	aes(y = linear_slope, x = bm_slope, linetype = bm_f),
+	  rename(!!!renaming_vector),
+	aes_string(y = "linear_slope", x = x_var, linetype = "bm_f"),
 	inherit.aes = FALSE)
   } else {
     p <- p +
       geom_line(
-	data = ggpred %>%
-	  rename(bm_slope = x, linear_slope = predicted),
-	aes(y = linear_slope, x = bm_slope),
-	inherit.aes = FALSE)
+	data = ggpred %>% rename(!!!renaming_vector),
+	aes_string(y = "linear_slope", x = x_var), inherit.aes = FALSE)
   }
 
-
   if (std_error) {
-
     p <- p +
       geom_errorbar(data = rawdata, 
-	aes(xmin = bm_slope - bm_slope_strd_error,
-	  xmax = bm_slope + bm_slope_strd_error),
+	aes_string(
+	  xmin = paste0(x_var, " - ", x_var_error),
+	  xmax = paste0(x_var, " + ", x_var_error)),
 	alpha = .3
 	) +
       geom_errorbar(data = rawdata, 
-	aes(ymin = linear_slope - linear_slope_strd_error,
-	  ymax = linear_slope + linear_slope_strd_error), alpha = .3)
-
-
+	aes(
+	  ymin = linear_slope - linear_slope_strd_error,
+	  ymax = linear_slope + linear_slope_strd_error),
+	alpha = .3)
   }
 
     return(p)
@@ -198,7 +208,7 @@ xylabs <- function (...) {
 
 
 model_single_term <- function () {
-  c("bm_slope", "inc_f", "bm")
+  c("rich_slope", "bm_slope", "inc_f", "bm")
 }
 get_mod_single_term <- function (model_term = NULL) {
   single_term <- model_single_term()
@@ -212,10 +222,14 @@ get_mod_single_term <- function (model_term = NULL) {
 
 from_term_to_predict_term <- function (term = NULL) {
 
+  # Needed for predict term to be in order for ggpredict
   term <- term[order(match(term, model_single_term()))]
 
   if ("bm_slope" %in% term) {
     term[term == "bm_slope"] <- "bm_slope [-0.2,-0.00001,0.00001,.2]"
+  }
+  if ("rich_slope" %in% term) {
+    term[term == "rich_slope"] <- "rich_slope [-0.1,-0.00001,0.00001,.2]"
   }
   if ("bm" %in% term) {
     term[term == "bm"] <- "bm [quart2]"

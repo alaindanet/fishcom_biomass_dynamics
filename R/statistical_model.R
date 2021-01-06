@@ -114,8 +114,13 @@ compute_lm_temporal_trends <- function (.data = NULL, y = "biomass", x = "connec
 compute_my_lm_vs_net_model <- function (
   .df = NULL,
   var_to_group = c("variable", "protocol_type"),
-  var_to_scale = NULL
+  var_to_scale = NULL,
+  x = "bm_slope"
   ) {
+
+  #x_sym <- enquo(x)
+  x_sym <- x
+  #x_sym <- quo_name(x_sym)
 
   .df %<>%
     mutate(
@@ -133,32 +138,12 @@ compute_my_lm_vs_net_model <- function (
   group_by_at(vars(all_of(var_to_group))) %>%
   nest() %>%
     mutate(
-      #mod_all_group = map(data, ~lm(linear_slope ~ bm_slope*inc_f*bm_group, .x, weights = reg_weight)),
-      #mod_medium_group = map(data, ~lm(
-	   #linear_slope~ bm_slope + bm_slope:inc_f + bm_slope:bm_group +
-	    #bm_slope:inc_f:bm_group,
-	  #.x, weights = reg_weight)),
-     mod_medium_bm = map(data, ~lm(
-	   linear_slope ~ bm_slope + bm + bm_slope:inc_f + bm_slope:bm +
-	    bm_slope:inc_f:bm,
-	  .x, weights = reg_weight)),
-      #mod_min_bm = map(data, ~lm(
-	  #linear_slope ~ bm_slope:inc_f + bm_slope:bm +
-	    #bm_slope:inc_f:bm,
-	  #.x, weights = reg_weight)),
-      mod_all_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f*bm, .x, weights = reg_weight)),
-      #mod_all_log_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f*log_bm, .x, weights = reg_weight)),
-      #mod_bm = map(data, ~lm(linear_slope ~ bm_slope*bm, .x, weights = reg_weight)),
-      mod_bm_quad = map(data, ~lm(linear_slope ~ bm_slope*bm + I(bm_slope^2), .x, weights = reg_weight)),
-      mod_bm_quad2 = map(data, ~lm(linear_slope ~ bm_slope*bm + I(bm_slope^2)*bm, .x, weights = reg_weight)),
-      #mod_log_bm_quad = map(data, ~lm(linear_slope ~ bm_slope*log_bm + I(bm_slope^2), .x, weights = reg_weight)),
-      #mod_log_bm_quad2 = map(data, ~lm(linear_slope ~ bm_slope*log_bm + I(bm_slope^2)*log_bm, .x, weights = reg_weight)),
-      #mod_bm_inc = map(data, ~lm(linear_slope ~ bm_slope*bm + inc_f, .x, weights = reg_weight)),
-      #mod_log_bm = map(data, ~lm(linear_slope ~ bm_slope*log_bm, .x, weights = reg_weight)),
-      #mod_log_bm_inc = map(data, ~lm(linear_slope ~ bm_slope*log_bm + inc_f, .x, weights = reg_weight)),
-      #mod_inc = map(data, ~lm(linear_slope ~ bm_slope*inc_f, .x, weights = reg_weight)),
-      #mod_inc_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f + bm, .x, weights = reg_weight)),
-      #mod_inc_log_bm = map(data, ~lm(linear_slope ~ bm_slope*inc_f + log_bm, .x, weights = reg_weight)),
+     mod_medium_bm = map(data, 
+       ~lm(as.formula(paste("linear_slope ~", !!(x_sym), "+ bm +",!!(x_sym), ":inc_f + ",!!(x_sym), ":bm +
+	     ", !!(x_sym),":inc_f:bm")), .x, weights = reg_weight)),
+      mod_all_bm = map(data, ~lm(as.formula(paste("linear_slope ~ ", !!(x_sym), "*inc_f*bm")), .x, weights = reg_weight)),
+      mod_bm_quad = map(data, ~lm(as.formula(paste("linear_slope ~ ", !!(x_sym), "*bm + I(", !!(x_sym), "^2)")), .x, weights = reg_weight)),
+      mod_bm_quad2 = map(data, ~lm(as.formula(paste("linear_slope ~ ", !!(x_sym),"*bm + I(", !!(x_sym), "^2)*bm")), .x, weights = reg_weight))
     )
 
   return(ungroup(.df))

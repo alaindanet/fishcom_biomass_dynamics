@@ -105,7 +105,7 @@ get_rich_vs_network_trends <- function (classif = NULL, rich_var = NULL,
   rich <- classif[classif$variable == rich_var,] %>%
     unnest(classif) %>%
     select(!!!var_to_keep) %>%
-    rename(rich_slope = linear_slope, rich_strd_error = linear_slope_strd_error)
+    rename(rich_slope = linear_slope, rich_slope_strd_error = linear_slope_strd_error)
 
   network <- classif %>%
     filter(!variable %in% get_richness_var()) %>%
@@ -117,7 +117,7 @@ get_rich_vs_network_trends <- function (classif = NULL, rich_var = NULL,
 
   # Add regression weight
   output %<>%
-    mutate( reg_weight = (1 / rich_strd_error +
+    mutate( reg_weight = (1 / rich_slope_strd_error +
 	1 / linear_slope_strd_error) / 2)
 
   return(output)

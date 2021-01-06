@@ -113,6 +113,14 @@ We kept the second model.
 loadd(log_bm_net_group_f3y, model_log_bm_f3y,
   summary_log_bm_f3y, vif_log_bm_f3y)
 #loadd(bm_net_group_median, bm_vs_net_trends)
+loadd(bm_net_group_f3y)
+loadd(bm_net_group_f3y)
+loadd(rich_vs_net_trends)
+
+#compute_my_lm_vs_net_model(
+      #.df = filter(my_bm_net_group, !is.na(protocol_type)),
+      #var_to_group = "variable"
+#)
 ```
 
 
@@ -468,12 +476,14 @@ all(com$station == bm_slope_df$station)
 com <- com[, colSums(com != 0) > 0] %>%
   select(-station)
 
-nmds <- metaMDS(com, k = 2, trymax = 100)
-
-
 ```
 
-```{r}
+```{r, cache = TRUE}
+nmds <- metaMDS(com, k = 2, trymax = 100)
+```
+
+
+```{r, fig.width = 8}
 diverging_pal <- c("#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7",
   "#f7f7f7", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061")
 
@@ -488,9 +498,7 @@ orditorp(nmds, display="sites",
    cex = findInterval(bm_slope_df$bm, seq(1, 4, 1))/2,
   air=0.01, pch = "+", labels = "+")
 title("Color = ; Size of points = biomass")
-
 ```
-
 
 
 ## Link biomass dynamic and environment

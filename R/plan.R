@@ -86,16 +86,20 @@ plan <- drake_plan(
       .names = paste0(c("bm_std", "log_bm_std", "rich_std", "log_rich_std"), "_st_decrease_increase")
     )
   ),
-
   model = target(
     compute_my_lm_vs_net_model(
       .df = filter(my_bm_net_group, !is.na(protocol_type)),
-      var_to_group = grouped_var),
+      var_to_group = grouped_var,
+      x = ifelse("bm_slope" %in% colnames(my_bm_net_group), "bm_slope", "rich_slope")
+      ),
     transform = cross(
-      my_bm_net_group = list(bm_net_group_median, bm_net_group_f3y,
-	log_bm_net_group_median, log_bm_net_group_f3y),
+      my_bm_net_group = list(
+	bm_net_group_median, bm_net_group_f3y,
+	log_bm_net_group_median, log_bm_net_group_f3y,
+	rich_net_group_median, rich_net_group_f3y,
+	log_rich_net_group_median, log_rich_net_group_f3y),
       grouped_var = list(c("variable"), c("variable", "protocol_type")),
-      .names = model_type_var(add_protocol = TRUE)
+      .names = model_type_var(add_protocol = TRUE, add_rich = TRUE) #add rich
     )
     ),
   vif = target(
@@ -103,7 +107,7 @@ plan <- drake_plan(
       all_of(tidyselect::vars_select(names(model), starts_with("mod")))),
     transform = map(model,
       .names = paste0("vif_",
-	model_type_var(cut_prefix = TRUE, add_protocol = TRUE)
+	model_type_var(cut_prefix = TRUE, add_protocol = TRUE, add_rich = TRUE)
       )
     )
     ),
@@ -111,7 +115,7 @@ plan <- drake_plan(
     model_summary(model),
     transform = map(model,
     .names = paste0("summary_",
-	model_type_var(cut_prefix = TRUE, add_protocol = TRUE)
+	model_type_var(cut_prefix = TRUE, add_protocol = TRUE, add_rich = TRUE)
 	)
     )
     ),
@@ -119,11 +123,10 @@ plan <- drake_plan(
     get_mod_pred(model_summary),
     transform = map(model_summary,
     .names = paste0("pred_",
-	model_type_var(cut_prefix = TRUE, add_protocol = TRUE)
+	model_type_var(cut_prefix = TRUE, add_protocol = TRUE, add_rich = TRUE)
 	)
     )
     ),
-
 
   bm_group = target(
     add_stream_bm_caract_to_model(bm_vs_network_df = dataset,
@@ -131,15 +134,20 @@ plan <- drake_plan(
       bm_group_var = "bm_std", group_type_caract = "median",
       bm_summary_type = bm_summary_var) %>% 
     filter(station %in% st),
-    transform = map(
-      dataset = list(bm_vs_net_trends, log_bm_vs_net_trends, bm_vs_net_trends, log_bm_vs_net_trends),
-      st = list(bm_std_st_decrease_increase$station,
-	log_bm_std_st_decrease_increase$station, 
-	bm_std_st_decrease_increase$station,
-	log_bm_std_st_decrease_increase$station),
-      bm_summary_var = c("first_3_year", "first_3_year", "median", "median"),
-      .names = c("bm_net_group_f3y", "log_bm_net_group_f3y", "bm_net_group_median", "log_bm_net_group_median")
-      ) 
+  transform = map(
+    dataset = list(bm_vs_net_trends, log_bm_vs_net_trends, rich_vs_net_trends, log_rich_vs_net_trends, bm_vs_net_trends, log_bm_vs_net_trends, rich_vs_net_trends, log_rich_vs_net_trends),
+    st = list(bm_std_st_decrease_increase$station,
+      log_bm_std_st_decrease_increase$station,
+      rich_std_st_decrease_increase$station,
+      log_rich_std_st_decrease_increase$station,
+      bm_std_st_decrease_increase$station,
+      log_bm_std_st_decrease_increase$station,
+      rich_std_st_decrease_increase$station,
+      log_rich_std_st_decrease_increase$station
+      ),
+    bm_summary_var = c("first_3_year", "first_3_year", "first_3_year", "first_3_year", "median", "median", "median", "median"),
+    .names = c("bm_net_group_f3y", "log_bm_net_group_f3y", "rich_net_group_f3y", "log_rich_net_group_f3y", "bm_net_group_median", "log_bm_net_group_median", "rich_net_group_median", "log_rich_net_group_median")
+  ) 
   ),
 
   temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
@@ -181,6 +189,10 @@ plan <- drake_plan(
     anova_table = model_log_bm_f3y_table_medium[["anova_table"]],
     model = model_log_bm_f3y 
     ),
+  pred_plot_signif_log_rich = get_model_plot_from_signif_term(
+    anova_table = model_log_rich_f3y_table_medium[["anova_table"]],
+    model = model_log_rich_f3y
+    ),
 
   #5. Tables 
   effect_quad2_piece = tibble(
@@ -200,6 +212,12 @@ plan <- drake_plan(
     model =  "mod_medium_bm",
     variable = NULL
   ),
+  model_log_rich_f3y_table_medium = get_table_from_summary(
+    .data = summary_log_rich_f3y,
+    model =  "mod_medium_bm",
+    variable = NULL
+    ),
+
 
 
 )

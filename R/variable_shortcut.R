@@ -25,7 +25,10 @@ get_species <- function(node_list) {
 
 }
 
-model_type_var <- function(cut_prefix = FALSE, add_protocol = FALSE) {
+model_type_var <- function(
+  cut_prefix = FALSE,
+  add_protocol = FALSE,
+  add_rich = FALSE) {
 
   x <- c("model_bm", "model_bm_f3y", "model_log_bm", "model_log_bm_f3y")
 
@@ -33,10 +36,15 @@ model_type_var <- function(cut_prefix = FALSE, add_protocol = FALSE) {
     x %<>% str_remove_all("model_")
   }
 
+  if (add_rich) {
+    x <- c(x, str_replace(x, "bm", "rich"))
+  }
+
   if (add_protocol) {
     x <- map(c("", "_by_protocol"), ~paste0(x, .x)) %>%
       unlist
   }
+
   return(x)
 }
 
