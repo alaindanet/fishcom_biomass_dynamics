@@ -218,7 +218,5 @@ plan <- drake_plan(
     variable = NULL
     ),
 
-
-
 )
 

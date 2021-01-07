@@ -156,16 +156,8 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
-### Summary
 
-- Lien entre dynamique du réseau et de biomasse signicatif pour tous sauf la
-  connectance.
-  - Pour la connectance, le lien est dépendant de la biomasse
-- Effect of dis/assembly for connectance, avg trophic level, weighted
-  connectance
-- La dynamique du réseau n'est pas affecté par la biomasse de la
-  communauté (effet biomasse non significatif)
-- Il y a un effet biomasse qui est dépendant de dis/assembly.
+### Results
 
 - Species richness:
   - decreases a lot in time when biomass decreases
@@ -185,10 +177,35 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
   - do not vary when biomass increases 
 
 - Weighted connectance:
-  - increases when biomass decreases in little communities
-  - decreases when biomass decreases in big communities
+  - increases (more even flux distribution) when biomass decreases in little communities
+  - decreases (more skewed flux distribution) when biomass decreases in big communities
   - decreases when biomass increases
 
+### Summary of result
+
+- There are a significant link between the dynamics of community biomass and the
+  dynamics of community structure for all the variables: species richness,
+  average trophic level, connectance and weighted connectance.
+
+- We found that the link between network temporal dynamics and biomass temporal
+  dynamics change according if the community loses or gain biomass, for all
+  variables.
+
+- We found that the biomass of the community at the beginning of the temporal
+  series, i.e. community size, had an effect on the link between network
+  dynamics and biomass expect for species richness. We also found that the
+  effect of biomass was stronger in communities losing biomass for connectance and
+  weighted connectance but stronger in communities gaining biomass for average
+  trophic level
+
+
+### Answer to research questions 
+
+- Lost and gain of biomass result in different network structure dynamics,
+  suggesting that the two processes are not symmetric.
+- The effect of community size suggests that the architecture of the community
+  in terms of species richness, number of piscivorous species, plays a role in
+  its dynamics
 
 ### Interpretation
 
@@ -198,10 +215,10 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
   - Increase in species richness necessitates colonization events, i.e.
     stochastic events while decreases in species richness necessitates
     disparition of species already in the community. Thus, the colonization
-    process
+    process needs element exterior to the community.  
   - second explanation: when biomass increases, competitive interactions may prevent the increase in
     species richness. We expect that processes based on competition would raise
-    the role of community size.  
+    the role of community size.
 
 - Avg trophic level: 
   - Higest trophic level concentrates most of the biomass, so gain and loss are
@@ -216,7 +233,7 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
 
 - Connectance:
   - In little communities, few piscivorous species and so loss of biomass do not
-    change the foodwebs because fish-resource links are quite redondant.
+    change the foodwebs that much because fish-resource links are quite redondant.
     - there is a positive correlation between nb of pisc node and biomass.
     - In bigger communities, the loss of the highest piscivorous nodes/species
       (see average trophic level), which have a lot of interactions, leads to a
@@ -228,12 +245,17 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
   - When biomass decreases in little communities, loss of highest trophic level
     and so less big predators and weighted connectance become more even
     - In big communities, the highest number can make the absence of such an effect 
-  - When Biomass increases, the number of predator nodes increases (especially
-    in little communities), and ...
-    the biomass 
+  - When Biomass increases:
+    - but species richness and number of nodes increases and gini coefficient
+      does not move: so it is ninly due to the number of species
+    - Gini decrease (more even link distribution) and number of species
+      decrease also, so weighted_connectance should increase (it is what we see
+      for low biomass communities). No idea for the difference between little
+      and big communites.
 
 The key to understand the difference between little and big communities is the
 number of piscivorous nodes.
+
 
 ```{r}
 loadd(pred_plot_signif)
@@ -320,8 +342,6 @@ pred_plot_signif %>%
       ymax = linear_slope + linear_slope_strd_error),
     alpha = .3)
 ```
-
-
 
 ## Temporal series of networks
 
@@ -457,7 +477,7 @@ species_trend_cor %>%
 
 ```{r}
 library(vegan)
-myload(nmds, com_mat,envir = environment(), dir = get_mypath("data"))
+myload(com_mat, envir = environment(), dir = get_mypath("data"))
 
 bm_slope_df <- log_bm_net_group_f3y %>% 
   filter(variable == "connectance") %>%
@@ -483,7 +503,7 @@ nmds <- metaMDS(com, k = 2, trymax = 100)
 ```
 
 
-```{r, fig.width = 8}
+```{r, fig.width = 10, fig.height = 8}
 diverging_pal <- c("#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7",
   "#f7f7f7", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061")
 
@@ -498,6 +518,42 @@ orditorp(nmds, display="sites",
    cex = findInterval(bm_slope_df$bm, seq(1, 4, 1))/2,
   air=0.01, pch = "+", labels = "+")
 title("Color = ; Size of points = biomass")
+```
+
+## Species richness dynamics and network dynamics 
+
+```{r}
+loadd(model_log_rich_f3y_table_medium)
+```
+
+```{r}
+model_log_rich_f3y_table_medium[["anova_table"]] %>% 
+  filter(variable %in% get_com_str_var(all = FALSE)) %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "ANOVA table for the model: dN =",
+      "dB + B + dB*B + Inc*B + dB*Inc*B."
+    )
+  ) %>%
+  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+```{r}
+loadd(pred_plot_signif_log_rich)
+pred_plot_signif_log_rich_com <- pred_plot_signif_log_rich %>%
+  filter(variable %in% get_com_str_var())
+legend_signif <- get_legend(
+  pred_plot_signif_log_rich_com$myplot[[1]] +
+    theme(legend.position = "bottom")
+)
+pred_plot_signif_log_rich_com$myplot %<>% map(., ~.x + theme(legend.position = "none"))
+top <- plot_grid(
+  plotlist = pred_plot_signif_log_rich_com$myplot,
+  labels = pred_plot_signif_log_rich_com$variable
+)
+plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
 ```
 
 

@@ -23,33 +23,16 @@ drake::vis_drake_graph(plan)
 # Load your targets back into your session with loadd() and readd().
 plan
 print(plan, n = 40)
-loadd(my_bm_net_group)
-rep(list(c(2,6)),8)
-loadd(log_rich_net_group_f3y, log_bm_net_group_f3y)
-loadd(model_log_rich_f3y)
-
-debugonce(get_model_plot_from_signif_term)
-make(plan)
-
-debugonce(from_term_to_predict_term)
-
-term_model$indiv_term
-term_model$predict_term
-
-filter(model_test, variable == "A")
-filter(term_model, variable == "A")
 
 loadd(pred_plot_signif_log_rich)
 loadd(pred_plot_signif)
-pred_plot_signif$pred[[3]]
-pred_plot_signif$data[[3]]
-pred_plot_signif$predict_term[[3]]
-pred_plot_signif_log_rich$predict_term[[3]]
+pred_plot_signif[4, ]$pred
+pred_plot_signif[3, ]$predict_term
+pred_plot_signif[4, ]$predict_term
+pred_plot_signif[4, ]$myplot
+
+debugonce(plot_final_model)
 plot_final_model(
-  ggpred = pred_plot_signif_log_rich$pred[[3]],
-  rawdata = pred_plot_signif_log_rich$data[[3]],
-  facet = FALSE,
-  std_error = TRUE)
-pred_plot_signif_log_rich$myplot[[1]]
-pred_plot_signif_log_rich$pred[[7]]
-select(pred_plot_signif_log_rich, variable, model_formula, mod)
+  rawdata = pred_plot_signif[4, ]$data[[1]],
+  ggpred = pred_plot_signif[4, ]$pred[[1]]
+)

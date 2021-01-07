@@ -45,14 +45,15 @@ plot_final_model <- function (ggpred = NULL, rawdata = NULL, facet = FALSE, std_
 
   if ("facet" %in% names(ggpred)) {
   ggpred %<>% rename(increasing = group, group = facet)
-  } else{
-    ggpred %<>% rename(increasing = group)
-  }
-
-
-
   ggpred %<>%
     filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
+  } else if (is.factor(ggpred$group) & !any(c("TRUE", "FALSE") %in% levels(ggpred$group))) {
+
+  } else {
+    ggpred %<>% rename(increasing = group)
+    ggpred %<>%
+      filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
+  }
 
   if (is.null(rawdata)) {
     rawdata <- attr(ggpred, "rawdata")
