@@ -123,6 +123,39 @@ get_rich_vs_network_trends <- function (classif = NULL, rich_var = NULL,
   return(output)
 }
 
+get_y_versus_x_trends <- function(
+  classif = NULL,
+  x_var = "log_rich_std",
+  y_var = c("connectance", "w_trph_lvl_avg", "weighted_connectance")) {
+
+  var_to_keep <- c("station", "linear_slope", "linear_slope_strd_error")
+
+  x_data <- classif[classif$variable == x_var,] %>%
+    unnest(classif) %>%
+    select(!!!var_to_keep)
+  
+  # Rename according to the variable
+  colnames(x_data)[colnames(x_data) %in% var_to_keep[2:3]] <- paste0(x_var, c("_slope", "_strd_error")) 
+
+  #return(x_data)
+
+  y_data <- classif %>%
+    filter(variable %in% y_var) %>%
+    unnest(classif) %>%
+    select(!!!c("variable", var_to_keep))
+
+  output <- x_data %>%
+    left_join(y_data, by = "station")
+
+  # Add regression weight
+  output %<>%
+    mutate(reg_weight = (1 / !!sym(paste0(x_var, "_strd_error")) +
+	1 / linear_slope_strd_error) / 2)
+
+  return(output)
+
+} 
+
 get_station_biomass_summary <- function (.data = NULL, bm_var = c("bm_std", "log_bm_std")) {
 
   var_to_keep <- c("station", "nb_year", bm_var)
@@ -171,7 +204,11 @@ get_station_biomass_summary <- function (.data = NULL, bm_var = c("bm_std", "log
 
 }
 
-get_station_com_summary <- function (.data = NULL, myvar = c("bm_std", "log_bm_std"), var_cat = "bm") {
+get_station_com_summary <- function (.data = NULL, myvar = c("bm_std",
+    "log_bm_std"), var_cat = "bm",
+  summary_type = "all", group = TRUE) {
+
+  stopifnot(summary_type %in% c("all", "median", "first_3_year"))
 
   var_to_keep <- c("station", "nb_year", myvar)
   var_cat_sym <- rlang::sym(var_cat)
@@ -188,6 +225,8 @@ get_station_com_summary <- function (.data = NULL, myvar = c("bm_std", "log_bm_s
   
   nb_year_sym <- rlang::sym("nb_year")
   # Summarise and make it tidy
+
+  if (summary_type == "all") {
   bm_summary <- .data %>% 
     summarise(
       first_year = (!!var_cat_sym)[!!nb_year_sym == 0],
@@ -199,9 +238,22 @@ get_station_com_summary <- function (.data = NULL, myvar = c("bm_std", "log_bm_s
     pivot_longer(cols = c(first_year:avg),
       names_to = "summary_type",
       values_to = var_cat)
+  } else if (summary_type == "median") {
+    bm_summary <- .data %>% 
+      summarise(
+	median = median(!!var_cat_sym, na.rm = TRUE)
+	)
+  
+  } else if (summary_type == "first_3_year") {
+    bm_summary <- .data %>% 
+      summarise(
+	first_3_year = mean((!!var_cat_sym)[!!nb_year_sym %in% c(0:2)], na.rm = TRUE)
+      )
+  }
 
+  if (group) {
   # Make station group and make it tidy
-  output <- bm_summary %>%
+  bm_summary %<>%
     group_by(!!cat_var_sym, summary_type) %>%
     mutate(
       median = ifelse(!!var_cat_sym < median(!!var_cat_sym, na.rm = TRUE), "little", "big"),
@@ -224,8 +276,9 @@ get_station_com_summary <- function (.data = NULL, myvar = c("bm_std", "log_bm_s
 )) %>%
     pivot_longer(cols = c(median:quartile), names_to = "group_type", values_to = "group") %>%
     ungroup()
+  }
 
-  return(output)
+  return(bm_summary)
 }
 
 add_stream_bm_caract_to_model <- function (
@@ -233,27 +286,38 @@ add_stream_bm_caract_to_model <- function (
   stream_caract = NULL,
   bm_caract = NULL, 
   bm_group_var = "bm_std",
-  bm_summary_type = "median",
-  group_type_caract = "median"
+  bm_summary_type = NULL,
+  group_type_caract = NULL 
   ) {
+
+  if (!is.null(stream_caract)) {
 
   stream_caract %<>%
     filter(group_type == group_type_caract) %>%
-    rename(stream_group = group) %>% select(-group_type)
-  bm_caract %<>%
-    filter(
-      group_type == group_type_caract,
-      bm_var == bm_group_var,
-      summary_type == bm_summary_type
-      ) %>%
-  rename(bm_group = group) %>%
-  select(-bm_var, -summary_type, -group_type, -bm_var)
+    rename(stream_group = group) %>%
+    select(-group_type)
 
-
-  output <- 
-    bm_vs_network_df %>%
-    left_join(bm_caract, by = "station") %>% 
+    bm_vs_network_df %<>%
     left_join(stream_caract, by = "station")
+  }
+
+
+  stopifnot(any(!is.null(bm_summary_type), !is.null(bm_summary_type)))
+  if (!is.null(bm_summary_type) & !is.null(bm_summary_type)) {
+
+    bm_caract %<>%
+      filter(
+	group_type == group_type_caract,
+	bm_var == bm_group_var,
+	summary_type == bm_summary_type
+	) %>%
+    rename(bm_group = group) %>%
+    select(-bm_var, -summary_type, -group_type, -bm_var)
+  }
+
+  output <- bm_vs_network_df %>% 
+    left_join(bm_caract, by = "station")
+    
   return(output)
 }
 

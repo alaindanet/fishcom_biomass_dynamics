@@ -72,7 +72,6 @@ plan <- drake_plan(
       .names = c("rich_vs_net_trends", "log_rich_vs_net_trends") 
     )
   ),
-
   st_decrease_increase = target(
     rigal_classification %>%
       unnest(classif) %>%

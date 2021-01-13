@@ -41,23 +41,45 @@ source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
 
 # Research questions
 
-## State of the art
+## Abstract
 
-- Report of community biomass (or number of individual) collapses in many
-  ecosystems
-- Modification of community are linked to modification in network structure 
-- Studies have been interested in how network assembles or disassembles
-  themselves.
-- However, the lack of availability of such empirical dataset have prevented the
-answering to this question.  
-  
-- Questions:
-  1. Is a decrease or a increase in biomass related to a network
-     structure modification?
-     1.1 Is a contant decrease/increase in biomass correspond the same dynamic
-     in network? Or there are non linear dynamics ?
-  2. Are assembly and disassembly of networks symmetric processes?
+Determine how community structure will respond to ongoing change remains an ongoing
+challenge. Studies reported strong temporal trends in community biomass, notably
+strong decline in insects and vertebrate populations. 
 
+However, those studies says nothing about how empirical findings about how
+different aspects of community structure such as species richness react
+to a change in community biomass. 
+
+Ecological theory might provide insight on how community structure varies
+according to biomass. Especially BEF predicts a positive link between species richness and
+community biomass especially in grassland.
+
+However, communities used in BEF experiments might not be relevant to get
+insight about what happens in natural settings. Firstly there are statics, i.e.
+not temporal. Secondly, community composition are set to randomly and thus do
+not reflect real perturbations which do not affect communities randomly. 
+(to be fair one could argue that random communities can mimic an average outcome
+over a set of possible perturbations, as perturbation 1 would cause extinction of species
+C, perturbation 2 for species A, etc...).
+
+Overall, we miss empirical findings about the link between biomass and
+community structure.
+
+We investigated the link between the temporal dynamics of community biomass at one side and 
+species richness, connectance and average trophic level at another side using a
+1995-2018 standardized monitoring of fish communities. We questionned the shape
+of the link between both temporal trends.  More specifically, we questionned if
+(2) the link between foodweb structure and biomass dynamics vary between growing
+and shrinking communities, and if the size of the community can modulate this
+response.
+
+We found significant positive relationships the dynamics of community biomass
+and the dynamics of species richness, average trophic level and connectance but
+a negative one for weighted connectance. We also found this relationship was
+different depending on if the community biomass was growing or shrinking through
+time for all variables, suggesting that assembly processes such as colonization
+processes might.
 
 
 ## Links betwenn temporal dynamics
@@ -161,7 +183,7 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
 
 - Species richness:
   - decreases a lot in time when biomass decreases
-  - increases slightly in time when biomass increases
+  - increases slightly in time when biomass increases (immigration debt)
   - No effect of community size! (same for the number of nodes)
 
 - Avg trophic level:
@@ -215,7 +237,8 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
   - Increase in species richness necessitates colonization events, i.e.
     stochastic events while decreases in species richness necessitates
     disparition of species already in the community. Thus, the colonization
-    process needs element exterior to the community.  
+    process needs element exterior to the community.
+    - Immigration debt: (might be relevant if low availability of new species)
   - second explanation: when biomass increases, competitive interactions may prevent the increase in
     species richness. We expect that processes based on competition would raise
     the role of community size.
@@ -240,7 +263,13 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
       decrease of connectance over time.
   - Increase in biomass was weakly related to an increase in node number or species
     richness, so it is not surprising that connectance to not vary.
-   
+
+- Connectance (fish-fish interactions):
+  - Globally positive relationship
+  - when biomass increases: communities gains higher trophic level that might
+    explain this relationship (but species richness increase as well)
+  - When biomass decreases: communities  
+
 - Weighted connectance:
   - When biomass decreases in little communities, loss of highest trophic level
     and so less big predators and weighted connectance become more even
@@ -260,7 +289,7 @@ number of piscivorous nodes.
 ```{r}
 loadd(pred_plot_signif)
 pred_plot_signif_com <- pred_plot_signif %>%
-  filter(variable %in% get_com_str_var())
+  filter(variable %in% c(get_com_str_var(), "ct_ff"))
 legend_signif <- get_legend(
   pred_plot_signif_com$myplot[[1]] +
     theme(legend.position = "bottom")
@@ -280,20 +309,10 @@ loadd(summary_var_f3y)
 
 summary_var_f3y %>%
   na.omit() %>%
-  select(bm_std, avg_IS, l, ld, m, A, gini, log_bm_std, connectance, log_rich_std, rich_std, w_trph_lvl_avg,
+  select(bm_std, avg_IS, l, ld, m, A, gini, log_bm_std, connectance, ct_ff, rich_std, w_trph_lvl_avg,
     weighted_connectance, nbnode_std, nb_pisc_node_std, prop_pisc_node) %>%
   cor() %>%
   corrplot::corrplot(corr = .)
-
-summary_var_f3y %>%
-  ggplot(aes(x = bm_std, y = prop_pisc_node)) +
-  geom_point() 
-#summary_var_f3y %>%
-  #ggplot(aes(x = log_bm_std, y = nb_pisc_node_std))+
-  #geom_point() 
-#summary_var_f3y %>%
-  #ggplot(aes(x = , y = nb_pisc_node_std))+
-  #geom_point() 
 ```
 
 
