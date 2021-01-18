@@ -1,5 +1,10 @@
 # This is where you write your drake plan.
 # Details: https://books.ropensci.org/drake/plans.html
+
+# Variable:
+model_x_var <- c("log_bm_std", "rich_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg")
+#model_y_var <- c("ct_ff", "w_trph_lvl_avg", "rich_std", "log_rich_std", "w_trph_lvl_avg")
+
 plan <- drake_plan(
   net_analysis_data = target(
     get_network_analysis_data(
@@ -39,7 +44,7 @@ plan <- drake_plan(
   .data = full_data2,
   myvar = get_richness_var(),
   var_cat = "rich"),
-  summary_var = monotonous_data %>%
+  summary_var = full_data2 %>%
     select(-opcod, -surface, -rel_bm, -rel_log_bm) %>%
     pivot_longer(
       cols = biomass:log_nb_pisc_rich_std,
@@ -72,82 +77,55 @@ plan <- drake_plan(
       .names = c("rich_vs_net_trends", "log_rich_vs_net_trends") 
     )
   ),
-  st_decrease_increase = target(
+  st_mono_trends = target(
     rigal_classification %>%
       unnest(classif) %>%
       filter(
 	variable == y,
 	shape_class %in% c("increase_constant", "decrease_constant")
 	) %>%
-      select(station, shape_class),
+      select(variable, station, shape_class),
     transform = map(
-      y = c("bm_std", "log_bm_std", "rich_std", "log_rich_std"),
-      .names = paste0(c("bm_std", "log_bm_std", "rich_std", "log_rich_std"), "_st_decrease_increase")
+      y = !!model_x_var
     )
+  ),
+  st_mono_trends_combined = target(
+    rbind(st_mono_trends),
+    transform = combine(st_mono_trends)
+    ),
+  st_mono_trends_combined_list = st_mono_trends_combined %>%
+  group_by(variable) %>%
+  summarise(station = list(station)),
+  slope_x_bound = get_slope_x_bound(
+    classif = rigal_classification,
+    st_mono = st_mono_trends_combined_list, type = "min_max"),
+  data_model = target(
+    get_y_versus_x_trends(classif = rigal_classification,
+      x_var = my_x_var, y_var = model_x_var) %>%
+    filter(station %in% get_st_mono_trends(.df = rigal_classification, xvar = my_x_var)$station) %>%
+    left_join(summary_var_f3y, by = "station"),
+  transform = map(my_x_var = !!model_x_var, .id = my_x_var)
   ),
   model = target(
     compute_my_lm_vs_net_model(
-      .df = filter(my_bm_net_group, !is.na(protocol_type)),
-      var_to_group = grouped_var,
-      x = ifelse("bm_slope" %in% colnames(my_bm_net_group), "bm_slope", "rich_slope")
+      .df = data_model,
+      var_to_group = "variable",
       ),
-    transform = cross(
-      my_bm_net_group = list(
-	bm_net_group_median, bm_net_group_f3y,
-	log_bm_net_group_median, log_bm_net_group_f3y,
-	rich_net_group_median, rich_net_group_f3y,
-	log_rich_net_group_median, log_rich_net_group_f3y),
-      grouped_var = list(c("variable"), c("variable", "protocol_type")),
-      .names = model_type_var(add_protocol = TRUE, add_rich = TRUE) #add rich
-    )
+    transform = map(data_model, .id = my_x_var)
     ),
   vif = target(
     get_vif(model, model_cols =
       all_of(tidyselect::vars_select(names(model), starts_with("mod")))),
-    transform = map(model,
-      .names = paste0("vif_",
-	model_type_var(cut_prefix = TRUE, add_protocol = TRUE, add_rich = TRUE)
-      )
-    )
+    transform = map(model, .id = my_x_var)
     ),
   model_summary = target(
     model_summary(model),
-    transform = map(model,
-    .names = paste0("summary_",
-	model_type_var(cut_prefix = TRUE, add_protocol = TRUE, add_rich = TRUE)
-	)
-    )
+    transform = map(model, .id = my_x_var)
     ),
-  model_pred = target(
-    get_mod_pred(model_summary),
-    transform = map(model_summary,
-    .names = paste0("pred_",
-	model_type_var(cut_prefix = TRUE, add_protocol = TRUE, add_rich = TRUE)
-	)
-    )
-    ),
-
-  bm_group = target(
-    add_stream_bm_caract_to_model(bm_vs_network_df = dataset,
-      stream_caract = stream_group, bm_caract = biomass_group,
-      bm_group_var = "bm_std", group_type_caract = "median",
-      bm_summary_type = bm_summary_var) %>% 
-    filter(station %in% st),
-  transform = map(
-    dataset = list(bm_vs_net_trends, log_bm_vs_net_trends, rich_vs_net_trends, log_rich_vs_net_trends, bm_vs_net_trends, log_bm_vs_net_trends, rich_vs_net_trends, log_rich_vs_net_trends),
-    st = list(bm_std_st_decrease_increase$station,
-      log_bm_std_st_decrease_increase$station,
-      rich_std_st_decrease_increase$station,
-      log_rich_std_st_decrease_increase$station,
-      bm_std_st_decrease_increase$station,
-      log_bm_std_st_decrease_increase$station,
-      rich_std_st_decrease_increase$station,
-      log_rich_std_st_decrease_increase$station
-      ),
-    bm_summary_var = c("first_3_year", "first_3_year", "first_3_year", "first_3_year", "median", "median", "median", "median"),
-    .names = c("bm_net_group_f3y", "log_bm_net_group_f3y", "rich_net_group_f3y", "log_rich_net_group_f3y", "bm_net_group_median", "log_bm_net_group_median", "rich_net_group_median", "log_rich_net_group_median")
-  ) 
-  ),
+  #model_pred = target(
+    #get_mod_pred(model_summary),
+    #transform = map(model_summary, .id = my_x_var)
+    #),
 
   temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
   temporal_dynamics_coef = get_lm_coeff(
@@ -161,37 +139,37 @@ plan <- drake_plan(
   net_dyn_lm_plot = get_net_dyn_lm_plot(net_dyn_lm = net_dyn_lm),
   net_dyn_lm_coeff = get_lm_coeff(.data = net_dyn_lm, col_names = "model"),
 
-  report = callr::r(
-    function(...) rmarkdown::render(...),
-    args = list(
-      input = drake::knitr_in("report.Rmd"),
-      output_file = drake::file_out("report.html")
-    )
-  ),
+  #report = callr::r(
+    #function(...) rmarkdown::render(...),
+    #args = list(
+      #input = drake::knitr_in("report.Rmd"),
+      #output_file = drake::file_out("report.html")
+    #)
+  #),
   #4. The plots
   p_bm_vs_bm_slope = plot_bm_vs_bm_slope(
     tps_dyn_coef = temporal_dynamics_coef,
     bm_group = biomass_group  
     ),
   p_hist_med_bm = plot_hist_med_bm(.data = full_data2),
-  p_pred_medium_f3y = get_pred_model(
-    summary_model = summary_log_bm_f3y,
-    model_name = "mod_medium_bm",
-    model_data = model_log_bm_f3y
-  ),
-  p_pred_quad2_f3y = get_pred_model(
-    summary_model = summary_log_bm_f3y,
-    model_name = "mod_bm_quad2",
-    model_data = model_log_bm_f3y
-  ),
-  pred_plot_signif = get_model_plot_from_signif_term(
-    anova_table = model_log_bm_f3y_table_medium[["anova_table"]],
-    model = model_log_bm_f3y 
-    ),
-  pred_plot_signif_log_rich = get_model_plot_from_signif_term(
-    anova_table = model_log_rich_f3y_table_medium[["anova_table"]],
-    model = model_log_rich_f3y
-    ),
+  #p_pred_medium_f3y = get_pred_model(
+    #summary_model = summary_log_bm_f3y,
+    #model_name = "mod_medium_bm",
+    #model_data = model_log_bm_f3y
+  #),
+  #p_pred_quad2_f3y = get_pred_model(
+    #summary_model = summary_log_bm_f3y,
+    #model_name = "mod_bm_quad2",
+    #model_data = model_log_bm_f3y
+  #),
+  #pred_plot_signif = get_model_plot_from_signif_term(
+    #anova_table = model_log_bm_f3y_table_medium[["anova_table"]],
+    #model = model_log_bm_f3y 
+    #),
+  #pred_plot_signif_log_rich = get_model_plot_from_signif_term(
+    #anova_table = model_log_rich_f3y_table_medium[["anova_table"]],
+    #model = model_log_rich_f3y
+    #),
 
   #5. Tables 
   effect_quad2_piece = tibble(
@@ -199,23 +177,62 @@ plan <- drake_plan(
     mod_bm_quad2 = c("bm_slope", "I(bm_slope^2)", "bm", "bm_slope:bm", "I(bm_slope^2)", "bm:I(bm_slope^2)"),
     mod_medium_bm = c("bm_slope", "bm_slope:inc_fTRUE", "bm", "bm_slope:bm", "bm_slope:inc_fTRUE", "bm_slope:bm:inc_fTRUE")
     ),
-  hyp_table_f3y = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_f3y),
-  hyp_table = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm),
-  model_log_bm_f3y_table = get_table_from_summary(
-    .data = summary_log_bm_f3y,
-    model =  "mod_bm_quad2",
-    variable = NULL 
+  #hyp_table_f3y = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_std),
+  #hyp_table = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_std),
+  summary_table = target(
+    model_summary %>%
+      mutate(
+	reg_table = map(model_obj, broom::tidy),
+	anova_table = map(anova, broom::tidy)
+	) %>%
+      select(any_of(c("variable", "model", "model_obj", "reg_table", "anova_table")))
+    ,
+    transform = map(model_summary, .id = my_x_var)
   ),
-  model_log_bm_f3y_table_medium = get_table_from_summary(
-    .data = summary_log_bm_f3y,
-    model =  "mod_medium_bm",
-    variable = NULL
+  predict_table = target(
+    summary_table %>%
+      mutate(
+	ggpred_term = map(anova_table, 
+	  ~get_ggpredict_term_from_anova(aov_tab = .x,
+	    bound = slope_x_bound)),
+	tmp_pred_table = map2(model_obj, ggpred_term, ~ ggpredict(.x, .y) %>% as_tibble),
+	pred_table = map2(tmp_pred_table, ggpred_term, ~rename_pred_table(pred_table = .x, term = .y)),
+	) %>%
+      select(any_of(c("variable", "model", "model_obj", "ggpred_term", "tmp_pred_table", "pred_table")))
+      ,
+    transform = map(summary_table, .id = my_x_var)
   ),
-  model_log_rich_f3y_table_medium = get_table_from_summary(
-    .data = summary_log_rich_f3y,
-    model =  "mod_medium_bm",
-    variable = NULL
-    ),
+  predict_plot = target(
+    predict_table %>%
+      left_join(select(model, variable, data), by = "variable") %>%
+      mutate(
+	raw_plot = map2(data, variable, 
+	  ~plot_raw_data(.df = .x, covar = .y, std_error = TRUE)
+	  ),
+	 pred_plot = map2(pred_table, raw_plot, 
+	  ~plot_add_pred_data(pred = .x, gg = .y)
+	  )
+	) %>%
+      select(any_of(c("variable", "model", "pred_table", "raw_plot", "pred_plot")))
+      ,
+    transform = map(predict_table, model, .id = my_x_var) 
+  ),
+  #model_log_bm_f3y_table = get_table_from_summary(
+    #.data = summary_log_bm_f3y,
+    #model =  "mod_bm_quad2",
+    #variable = NULL 
+  #),
+  #model_log_bm_f3y_table_medium = get_table_from_summary(
+    #.data = summary_log_bm_f3y,
+    #model =  "mod_medium_bm",
+    #variable = NULL
+  #),
+  #model_log_rich_f3y_table_medium = get_table_from_summary(
+    #.data = summary_log_rich_f3y,
+    #model =  "mod_medium_bm",
+    #variable = NULL
+    #),
+  trace = TRUE
 
 )
 

@@ -115,35 +115,56 @@ compute_my_lm_vs_net_model <- function (
   .df = NULL,
   var_to_group = c("variable", "protocol_type"),
   var_to_scale = NULL,
-  x = "bm_slope"
+  x = "bm_slope",
+  covar = NULL
   ) {
 
-  #x_sym <- enquo(x)
   x_sym <- x
-  #x_sym <- quo_name(x_sym)
 
+  # Extract var name of x slope 
+  mask <- str_detect(colnames(.df), "slope") &
+    !colnames(.df) %in% c("linear_slope", "linear_slope_strd_error")
+  x_slope_var <- colnames(.df)[mask]
+  x_slope_var_sym <- sym(x_slope_var)
+  x_var <- str_remove(x_slope_var, "_slope")
+  x_var_sym <- sym(x_var) #needed for tidy selection 
+
+  # 
   .df %<>%
     mutate(
-      increasing = linear_slope > 0,
+      increasing := {{x_slope_var_sym}} > 0,
       inc_f = as.factor(increasing),
-      log_bm = log(bm)
+      #"log_{{x_var_sym}}" := log({{x_var_sym}})
     ) 
+
+  #return(.df)
 
   if (!is.null(var_to_scale)) {
     .df %<>%
       mutate_at(vars(all_of(var_to_scale)), scale)
   }
   
+
+  # Define formulas:
+
+  if (is.null(covar)) {
+    # Covariable is the x raw variable, so the formula is basically:
+    #y ~ x_slope + x
+    covar <- x_var
+  } 
+  formula_medium <- 
+    paste0("linear_slope ~ ", x_slope_var, " + ", covar," + ", x_slope_var,
+      ":inc_f + ",x_slope_var, ":", covar, " + ", x_slope_var,":inc_f:", covar)
+  formula_all <- paste0("linear_slope ~ ", x_slope_var, "* inc_f *", covar)
+
   .df %<>%
   group_by_at(vars(all_of(var_to_group))) %>%
   nest() %>%
     mutate(
-     mod_medium_bm = map(data, 
-       ~lm(as.formula(paste("linear_slope ~", !!(x_sym), "+ bm +",!!(x_sym), ":inc_f + ",!!(x_sym), ":bm +
-	     ", !!(x_sym),":inc_f:bm")), .x, weights = reg_weight)),
-      mod_all_bm = map(data, ~lm(as.formula(paste("linear_slope ~ ", !!(x_sym), "*inc_f*bm")), .x, weights = reg_weight)),
-      mod_bm_quad = map(data, ~lm(as.formula(paste("linear_slope ~ ", !!(x_sym), "*bm + I(", !!(x_sym), "^2)")), .x, weights = reg_weight)),
-      mod_bm_quad2 = map(data, ~lm(as.formula(paste("linear_slope ~ ", !!(x_sym),"*bm + I(", !!(x_sym), "^2)*bm")), .x, weights = reg_weight))
+     mod_medium_bm = map(data, ~lm(as.formula(formula_medium), .x, weights = reg_weight)),
+     mod_all_bm = map(data, ~lm(as.formula(formula_all), .x, weights = reg_weight)),
+      #mod_bm_quad = map(data, ~lm(as.formula(paste("linear_slope ~ ", !!(x_sym), "*bm + I(", !!(x_sym), "^2)")), .x, weights = reg_weight)),
+      #mod_bm_quad2 = map(data, ~lm(as.formula(paste("linear_slope ~ ", !!(x_sym),"*bm + I(", !!(x_sym), "^2)*bm")), .x, weights = reg_weight))
     )
 
   return(ungroup(.df))
@@ -184,7 +205,6 @@ get_mod_pred <- function (summary_mod = NULL) {
 }
 
 pval2lgl <- function (x = NULL, thld = 0.05) {
-
   x <- ifelse(x <= thld, TRUE, FALSE)
   return(as.logical(x))
 }

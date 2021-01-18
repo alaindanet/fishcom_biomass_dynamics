@@ -104,3 +104,40 @@ get_model_plot_from_signif_term <- function (
     return(model_test)
 
 } 
+
+get_predict_from_signif <- function (mod_summary = NULL) {
+
+  term_model <- anova_table %>%
+    mutate(signf = p.value <= 0.05) %>%
+    filter(signf) %>%
+    #select(variable, term) %>%
+    group_by(variable) %>%
+    summarise( signif_term = paste(term, collapse = "+"),
+      indiv_term = list(term)) %>%
+    mutate( single_var_term = map(indiv_term, get_mod_single_term),
+      predict_term = map(single_var_term, from_term_to_predict_term))
+
+    model_test <- model %>%
+      filter(variable %in% term_model$variable) %>%
+      select(variable, data) %>%
+      left_join(term_model, by = "variable")%>%
+      mutate(model_formula = paste0("linear_slope ~", signif_term)) %>%
+      mutate(
+	mod = map2(data, model_formula,
+	  ~try(compute_linear_model(formulas = .y, .data = .x)))
+      )
+      model_test %<>%
+	mutate(pred = pmap(list(mod, predict_term),
+	    function (model, pred_term){
+	      ggpredict(model, terms = pred_term) %>% as_tibble
+	  }),
+	  myplot = pmap(list(pred, data),
+	    function (pred, .data) {
+	    try(
+	      plot_final_model(ggpred = pred,
+		rawdata = .data, std_error = TRUE))
+	    })
+	)
+    return(model_test)
+
+}

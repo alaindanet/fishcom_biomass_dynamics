@@ -221,10 +221,23 @@ get_mod_single_term <- function (model_term = NULL) {
  out[out %in% single_term]
 }
 
+get_lm_single_term <- function (model_term = NULL) {
+  sep_string <- str_split(model_term, pattern = "[:|+]") %>% unlist
+  str_remove_all(string = sep_string, pattern = "\\s*") %>% unique
+}
+
 from_term_to_predict_term <- function (term = NULL) {
 
   # Needed for predict term to be in order for ggpredict
-  term <- term[order(match(term, model_single_term()))]
+  #term <- term[order(match(term, model_single_term()))]
+  ## first x (i.e. slope), followed by bm and inc_f 
+  term <- c(
+    term[str_detect(term, "_slope")],
+    term[str_detect(term, "inc_f")],
+    term[!str_detect(term, "_slope") & !str_detect(term, "inc_f")]
+  )
+  term %<>% na.omit
+  return(term)
 
   if ("bm_slope" %in% term) {
     term[term == "bm_slope"] <- "bm_slope [-0.2,-0.00001,0.00001,.2]"
@@ -236,4 +249,125 @@ from_term_to_predict_term <- function (term = NULL) {
     term[term == "bm"] <- "bm [quart2]"
   }
   term
+}
+
+get_ggpredict_term_from_anova <- function (aov_tab = NULL, bound = NULL) {
+  tmp <- aov_tab %>%
+    mutate(signf = p.value <= 0.05) %>%
+    filter(signf) %>%
+    summarise(
+      signif_term = paste(term, collapse = "+"),
+      indiv_term = list(term)
+      ) %>%
+    mutate(single_var_term = map(signif_term, get_lm_single_term),
+      predict_term = map(single_var_term, from_term_to_predict_term)
+    )
+    pred_term <- tmp$predict_term[[1]]
+    #tmp$predict_term
+    # Get x var to get bounds 
+    term <- aov_tab$term
+    x_var <-  term[!str_detect(term, "_slope|Residuals|inc_f")]
+    min_max <- bound[[x_var]]
+
+    ggpred_tmp <- paste0(x_var, "_slope", " [",min_max[1],", -0.000000001, 0.000000001, ", min_max[2], "]")
+
+    # If no signicant effect, return x slope, may be to change
+    if (str_length(pred_term) == 0) {
+      return(ggpred_tmp)
+    }
+
+    if (any(str_detect(pred_term, "inc_f"))) {
+     ggpred_tmp <- c(ggpred_tmp, "inc_f") 
+    }
+
+    if (any(!str_detect(pred_term, "inc_f|_slope"))) {
+      tmp <- 
+      ggpred_tmp <- c(ggpred_tmp,
+	paste0(pred_term[!str_detect(pred_term, "inc_f|_slope")], "[quart2]")
+      )
+    }
+
+    return(ggpred_tmp)
+    
+}
+
+rename_pred_table <- function (pred_table = NULL, term = NULL) {
+  
+  # Case one: all the term are present
+  if (length(term) == 1) {
+    pred_table %<>%
+      select(-group)
+  } else if (length(term) == 3) {
+    pred_table %<>%
+      rename(increasing = group, covar = facet) %>% 
+      filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
+  } else if (length(term) == 2) {
+    if (any(str_detect(term, "inc_f"))) {
+      pred_table %<>%
+	rename(increasing = group) %>%
+	filter(increasing == FALSE & x < 0 | increasing == TRUE & x > 0)
+    } else {
+      pred_table %<>%
+	rename(covar = group)
+    }
+  }
+
+  return(pred_table)
+
+}
+
+plot_raw_data  <- function(.df = NULL, covar = NULL, std_error = TRUE) {
+
+  col_df <- colnames(.df)
+  x_var <- col_df[str_detect(col_df, "_slope") & !str_detect(col_df, "_slope_strd_error") & !str_detect(col_df, "linear_slope")]
+  x_var_error <- str_replace(x_var, "_slope","_strd_error")
+
+  #return(c(x_var, covar, x_var_error))
+
+  if (!is.null(covar)) {
+    p <- .df %>%
+      ggplot(aes_string(x = x_var, y = "linear_slope", color = covar)) +
+      viridis::scale_color_viridis() +
+      geom_point() 
+  } else {
+    p <- .df %>%
+      ggplot(aes_string(x = x_var, y = "linear_slope")) +
+      viridis::scale_color_viridis() +
+      geom_point() 
+  }
+
+  if (std_error) {
+    p <- p +
+      geom_errorbar(data = .df, 
+	aes_string(
+	  xmin = paste0(x_var, " - ", x_var_error),
+	  xmax = paste0(x_var, " + ", x_var_error)),
+	alpha = .3
+	) +
+      geom_errorbar(data = .df, 
+	aes(
+	  ymin = linear_slope - linear_slope_strd_error,
+	  ymax = linear_slope + linear_slope_strd_error),
+	alpha = .3)
+  }
+  return(p)
+}
+
+plot_add_pred_data <- function (pred = NULL, gg = NULL) {
+
+  if (is.null(gg)) {
+    p <- pred %>% ggplot(aes(y = predicted, x = x))
+  } else {
+    p <- gg
+  }
+
+  if ("covar" %in% colnames(pred)) {
+    p <- p + 
+      geom_line(data = pred, aes(y = predicted, x = x, linetype = covar), inherit.aes = FALSE)
+  } else {
+    p <- p + 
+      geom_line(data = pred, aes(y = predicted, x = x), inherit.aes = FALSE)
+  } 
+
+  return(p)
 }

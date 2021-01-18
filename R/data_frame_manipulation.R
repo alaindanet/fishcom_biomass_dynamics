@@ -321,6 +321,39 @@ add_stream_bm_caract_to_model <- function (
   return(output)
 }
 
+get_st_mono_trends <- function(.df = NULL, xvar = NULL) {
+  output <- .df %>%
+      unnest(classif) %>%
+      filter(
+	variable == xvar,
+	shape_class %in% c("increase_constant", "decrease_constant")
+	) %>%
+      select(station, shape_class)
+    return(output)
+
+}
+
+get_slope_x_bound <- function(classif = NULL, st_mono = NULL, type = "min_max") {
+  
+   classif %<>%
+    filter(variable %in% st_mono$variable) %>%
+    left_join(st_mono, by = "variable") %>%
+    mutate(
+      classif = map2(classif, station, ~.x %>% filter(station %in% .y)),
+      min_max = map2(classif, variable,
+	~c(
+	  min(.x[["linear_slope"]], na.rm = TRUE), max(.x[[ "linear_slope"]], na.rm = TRUE
+      )
+	)
+	),
+    )
+
+    output <- classif[[type]]
+    names(output) <- classif[["variable"]]
+
+    return(output)
+}
+
 #' Get VIF
 
 get_vif <- function (.df = NULL, model_cols = c("mod1", "mod2", "mod3", "mod5")) {
