@@ -266,10 +266,11 @@ get_ggpredict_term_from_anova <- function (aov_tab = NULL, bound = NULL) {
     #tmp$predict_term
     # Get x var to get bounds 
     term <- aov_tab$term
-    x_var <-  term[!str_detect(term, "_slope|Residuals|inc_f")]
+    x_var_slope <-  term[str_ends(term, "_slope")]
+    x_var <- str_remove(x_var_slope, "_slope")
     min_max <- bound[[x_var]]
 
-    ggpred_tmp <- paste0(x_var, "_slope", " [",min_max[1],", -0.000000001, 0.000000001, ", min_max[2], "]")
+    ggpred_tmp <- paste0(x_var_slope, " [",min_max[1],", -0.000000001, 0.000000001, ", min_max[2], "]")
 
     # If no signicant effect, return x slope, may be to change
     if (str_length(pred_term) == 0) {
@@ -283,7 +284,7 @@ get_ggpredict_term_from_anova <- function (aov_tab = NULL, bound = NULL) {
     if (any(!str_detect(pred_term, "inc_f|_slope"))) {
       tmp <- 
       ggpred_tmp <- c(ggpred_tmp,
-	paste0(pred_term[!str_detect(pred_term, "inc_f|_slope")], "[quart2]")
+	paste0(pred_term[!str_detect(pred_term, "inc_f|_slope")], " [quart2]")
       )
     }
 

@@ -16,6 +16,22 @@ drake::make(plan)
 drake::vis_drake_graph(plan)
 
 #make(plan, parallelism = "future", jobs = 3)
+loadd(model_summary)
+loadd(summary_table)
+
+
+summary_table %>% filter(x == "log_bm_std") %>%
+ select(-x, -covar, -model, -model_obj) %>%
+
+ list(reg_table = map_dfr(.$reg_table, rbind),
+   anova_table = map_dfr(.$anova_table, rbind)
+ )
+
+get_table_from_summary(
+    .data = model_summary,
+    model =  "mod_medium_bm",
+    variable = NULL
+  )
 
 # If you do not change any code or data,
 # subsequent make()'s do not build targets.
@@ -24,15 +40,6 @@ drake::vis_drake_graph(plan)
 plan
 print(plan, n = 40)
 
-comb <- list(
-  explicative = get_com_str_var(all = TRUE),
-  predictor = model_x_var
-)
-comb <- expand.grid(comb, stringsAsFactors = FALSE)
-
-# filtering combination: 
-comb %>% 
-  #mutate(equal = explicative == predictor) 
-  filter(explicative != predictor) %>%
-  mutate(covar = ifelse(str_detect(predictor, "log_"), str_remove(predictor, "log_"), predictor))
+loadd(model)
+loadd(predict_plot, summary_table, predict_table, slope_x_bound)
 

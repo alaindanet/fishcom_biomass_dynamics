@@ -170,7 +170,7 @@ compute_my_lm_vs_net_model <- function (
   return(ungroup(.df))
 }
 
-model_summary <- function (.df) {
+get_model_summary <- function (.df) {
 
   model_var <- tidyselect::vars_select(names(.df), starts_with("mod"))
 

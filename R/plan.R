@@ -77,55 +77,69 @@ plan <- drake_plan(
       .names = c("rich_vs_net_trends", "log_rich_vs_net_trends") 
     )
   ),
-  st_mono_trends = target(
+  #st_mono_trends = target(
+    #rigal_classification %>%
+      #unnest(classif) %>%
+      #filter(
+	#variable == y,
+	#shape_class %in% c("increase_constant", "decrease_constant")
+	#) %>%
+      #select(variable, station, shape_class),
+    #transform = map(
+      #y = !!model_x_var
+    #)
+  #),
+  #st_mono_trends_combined = target(
+    #rbind(st_mono_trends),
+    #transform = combine(st_mono_trends)
+    #),
+  st_mono_trends_combined_list = 
     rigal_classification %>%
-      unnest(classif) %>%
-      filter(
-	variable == y,
-	shape_class %in% c("increase_constant", "decrease_constant")
-	) %>%
-      select(variable, station, shape_class),
-    transform = map(
-      y = !!model_x_var
-    )
-  ),
-  st_mono_trends_combined = target(
-    rbind(st_mono_trends),
-    transform = combine(st_mono_trends)
-    ),
-  st_mono_trends_combined_list = st_mono_trends_combined %>%
-  group_by(variable) %>%
-  summarise(station = list(station)),
+    mutate(
+      classif = map(classif, ~ .x %>%
+	filter(shape_class %in% c("increase_constant", "decrease_constant")) %>%
+	select(station, shape_class)),
+      station = map(classif, ~.x$station)) %>%
+    select(-classif)
+    ,
   slope_x_bound = get_slope_x_bound(
     classif = rigal_classification,
     st_mono = st_mono_trends_combined_list, type = "min_max"),
-  data_model = target(
-    get_y_versus_x_trends(classif = rigal_classification,
-      x_var = my_x_var, y_var = model_x_var) %>%
-    filter(station %in% get_st_mono_trends(.df = rigal_classification, xvar = my_x_var)$station) %>%
-    left_join(summary_var_f3y, by = "station"),
-  transform = map(my_x_var = !!model_x_var, .id = my_x_var)
+
+  # 3. Modelling
+  comb = list(
+    y = get_com_str_var(all = TRUE),
+    x = model_x_var
+  ) %>% 
+  expand.grid(., stringsAsFactors = FALSE) %>%
+  as_tibble %>%
+  # filtering combination: 
+  filter(y != x) %>%
+  mutate(
+    covar = ifelse(str_detect(x, "log_"), str_remove(x, "log_"), x)
   ),
-  model = target(
-    compute_my_lm_vs_net_model(
-      .df = data_model,
-      var_to_group = "variable",
-      ),
-    transform = map(data_model, .id = my_x_var)
+  data4model = comb %>%
+    mutate(
+      data_model = map2(x, y, function (myx, myy, classif) {
+	get_y_versus_x_trends(classif = classif, x_var = myx, y_var = myy) %>%
+	  filter(station %in% get_st_mono_trends(.df = classif, xvar = myx)$station)
+      }, classif = rigal_classification),
+      data_model = map2(data_model, covar,
+	~left_join(.x, summary_var_f3y[, colnames(summary_var_f3y) %in% c("station", .y)], by = "station")
+      )
     ),
-  vif = target(
-    get_vif(model, model_cols =
-      all_of(tidyselect::vars_select(names(model), starts_with("mod")))),
-    transform = map(model, .id = my_x_var)
+  model = data4model %>% 
+    mutate(
+      mods = pmap(list(.df = data_model, x = x, covar = covar), compute_my_lm_vs_net_model,
+	var_to_group = "variable")
+      ) %>%
+    unnest(c(mods)) %>%
+    select(-data_model, -variable) %>%
+    select(-mod_all_bm),
+  model_vif = get_vif(model, model_cols = all_of(tidyselect::vars_select(names(model),
+	starts_with("mod")))
     ),
-  model_summary = target(
-    model_summary(model),
-    transform = map(model, .id = my_x_var)
-    ),
-  #model_pred = target(
-    #get_mod_pred(model_summary),
-    #transform = map(model_summary, .id = my_x_var)
-    #),
+  model_summary = get_model_summary(model),
 
   temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
   temporal_dynamics_coef = get_lm_coeff(
@@ -139,37 +153,19 @@ plan <- drake_plan(
   net_dyn_lm_plot = get_net_dyn_lm_plot(net_dyn_lm = net_dyn_lm),
   net_dyn_lm_coeff = get_lm_coeff(.data = net_dyn_lm, col_names = "model"),
 
-  #report = callr::r(
-    #function(...) rmarkdown::render(...),
-    #args = list(
-      #input = drake::knitr_in("report.Rmd"),
-      #output_file = drake::file_out("report.html")
-    #)
-  #),
+  report = callr::r(
+    function(...) rmarkdown::render(...),
+    args = list(
+      input = drake::knitr_in("report.Rmd"),
+      output_file = drake::file_out("report.html")
+    )
+  ),
   #4. The plots
   p_bm_vs_bm_slope = plot_bm_vs_bm_slope(
     tps_dyn_coef = temporal_dynamics_coef,
     bm_group = biomass_group  
     ),
   p_hist_med_bm = plot_hist_med_bm(.data = full_data2),
-  #p_pred_medium_f3y = get_pred_model(
-    #summary_model = summary_log_bm_f3y,
-    #model_name = "mod_medium_bm",
-    #model_data = model_log_bm_f3y
-  #),
-  #p_pred_quad2_f3y = get_pred_model(
-    #summary_model = summary_log_bm_f3y,
-    #model_name = "mod_bm_quad2",
-    #model_data = model_log_bm_f3y
-  #),
-  #pred_plot_signif = get_model_plot_from_signif_term(
-    #anova_table = model_log_bm_f3y_table_medium[["anova_table"]],
-    #model = model_log_bm_f3y 
-    #),
-  #pred_plot_signif_log_rich = get_model_plot_from_signif_term(
-    #anova_table = model_log_rich_f3y_table_medium[["anova_table"]],
-    #model = model_log_rich_f3y
-    #),
 
   #5. Tables 
   effect_quad2_piece = tibble(
@@ -179,60 +175,48 @@ plan <- drake_plan(
     ),
   #hyp_table_f3y = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_std),
   #hyp_table = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_std),
-  summary_table = target(
-    model_summary %>%
+  summary_table = model_summary %>%
       mutate(
 	reg_table = map(model_obj, broom::tidy),
 	anova_table = map(anova, broom::tidy)
 	) %>%
-      select(any_of(c("variable", "model", "model_obj", "reg_table", "anova_table")))
-    ,
-    transform = map(model_summary, .id = my_x_var)
-  ),
-  predict_table = target(
-    summary_table %>%
-      mutate(
+      select(any_of(c("x", "y", "covar", "model", "model_obj", "reg_table", "anova_table"))),
+  predict_table = summary_table %>%
+     mutate(
 	ggpred_term = map(anova_table, 
 	  ~get_ggpredict_term_from_anova(aov_tab = .x,
 	    bound = slope_x_bound)),
 	tmp_pred_table = map2(model_obj, ggpred_term, ~ ggpredict(.x, .y) %>% as_tibble),
 	pred_table = map2(tmp_pred_table, ggpred_term, ~rename_pred_table(pred_table = .x, term = .y)),
 	) %>%
-      select(any_of(c("variable", "model", "model_obj", "ggpred_term", "tmp_pred_table", "pred_table")))
-      ,
-    transform = map(summary_table, .id = my_x_var)
-  ),
-  predict_plot = target(
-    predict_table %>%
-      left_join(select(model, variable, data), by = "variable") %>%
+      select(any_of(c("x", "y", "covar", "model", "model_obj", "ggpred_term", "tmp_pred_table", "pred_table"))),
+  predict_plot = predict_table %>%
+      left_join(select(model, x, y, covar, data), by = c("x", "y", "covar")) %>%
       mutate(
-	raw_plot = map2(data, variable, 
+	raw_plot = map2(data, covar,
 	  ~plot_raw_data(.df = .x, covar = .y, std_error = TRUE)
 	  ),
 	 pred_plot = map2(pred_table, raw_plot, 
 	  ~plot_add_pred_data(pred = .x, gg = .y)
 	  )
 	) %>%
-      select(any_of(c("variable", "model", "pred_table", "raw_plot", "pred_plot")))
-      ,
-    transform = map(predict_table, model, .id = my_x_var) 
-  ),
+      select(any_of(c("x", "y", "covar", "model", "pred_table", "raw_plot", "pred_plot"))),
   #model_log_bm_f3y_table = get_table_from_summary(
     #.data = summary_log_bm_f3y,
     #model =  "mod_bm_quad2",
     #variable = NULL 
   #),
-  #model_log_bm_f3y_table_medium = get_table_from_summary(
-    #.data = summary_log_bm_f3y,
-    #model =  "mod_medium_bm",
-    #variable = NULL
-  #),
+  model_log_bm_f3y_table_medium = list(
+    reg_table = unnest(summary_table, reg_table),
+    anova_table = unnest(summary_table, anova_table)
+    ) %>%
+    map(., ~ .x %>% filter(x == "log_bm_std") %>%
+      select(-any_of(c("x", "covar", "model", "model_obj", "reg_table", "anova_table")))),
   #model_log_rich_f3y_table_medium = get_table_from_summary(
     #.data = summary_log_rich_f3y,
     #model =  "mod_medium_bm",
     #variable = NULL
     #),
   trace = TRUE
-
 )
 

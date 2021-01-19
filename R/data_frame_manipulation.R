@@ -373,14 +373,7 @@ get_vif <- function (.df = NULL, model_cols = c("mod1", "mod2", "mod3", "mod5"))
     filter(check) %>%
     select(-check)
 
-  if ("protocol_type" %in% names(.df)) {
-    selected_var <- c("variable", "protocol_type", "model_type", "vif")
-  } else {
-    selected_var <- c("variable", "model_type", "vif")
-  }
-
   .df %<>% 
-    select_at(.vars = vars(all_of(selected_var))) %>%
     filter(!any(class(vif) %in% "try-error")) %>%
     unnest(cols = vif)
   return(.df)

@@ -150,32 +150,32 @@ loadd(rich_vs_net_trends)
 
 ```{r, eval = TRUE}
 #https://stackoverflow.com/questions/44457243/regression-tables-in-r-markdown-rmarkdown-html-pdf
-loadd(model_log_bm_f3y_table_medium)
-model_log_bm_f3y_table_medium[["reg_table"]] %>% 
-  filter(variable %in% get_com_str_var(all = FALSE)) %>%
-  kable(.,
-    booktabs = TRUE, 
-    caption = 
-      paste0(
-      "Regression table for the model: dN =",
-      "dB + B + dB*B + Inc*B + dB*Inc*B."
-    )) %>% 
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
+#loadd(model_log_bm_f3y_table_medium)
+#model_log_bm_f3y_table_medium[["reg_table"]] %>% 
+  #filter(y %in% get_com_str_var(all = FALSE)) %>%
+  #kable(.,
+    #booktabs = TRUE, 
+    #caption = 
+      #paste0(
+      #"Regression table for the model: dN =",
+      #"dB + B + dB*B + Inc*B + dB*Inc*B."
+    #)) %>% 
+  #kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  #collapse_rows(columns = 1, valign = "top")
 ```
 
 ```{r}
-model_log_bm_f3y_table_medium[["anova_table"]] %>% 
-  filter(variable %in% get_com_str_var(all = FALSE)) %>%
-  kable(., booktabs = TRUE,
-    caption = 
-      paste0(
-      "ANOVA table for the model: dN =",
-      "dB + B + dB*B + Inc*B + dB*Inc*B."
-    )
-  ) %>%
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
+#model_log_bm_f3y_table_medium[["anova_table"]] %>% 
+  #filter(variable %in% get_com_str_var(all = FALSE)) %>%
+  #kable(., booktabs = TRUE,
+    #caption = 
+      #paste0(
+      #"ANOVA table for the model: dN =",
+      #"dB + B + dB*B + Inc*B + dB*Inc*B."
+    #)
+  #) %>%
+  #kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  #collapse_rows(columns = 1, valign = "top")
 ```
 
 
@@ -287,19 +287,77 @@ number of piscivorous nodes.
 
 
 ```{r}
-loadd(pred_plot_signif)
-pred_plot_signif_com <- pred_plot_signif %>%
-  filter(variable %in% c(get_com_str_var(), "ct_ff"))
+loadd(predict_plot)
+pred_plot_signif_com <- predict_plot %>%
+  filter(
+    y %in% c(get_com_str_var(), "ct_ff", "log_rich_std"),
+    x == "log_bm_std"
+  )
 legend_signif <- get_legend(
-  pred_plot_signif_com$myplot[[1]] +
+  pred_plot_signif_com$pred_plot[[1]] +
     theme(legend.position = "bottom")
 )
-pred_plot_signif_com$myplot %<>% map(., ~.x + theme(legend.position = "none"))
+pred_plot_signif_com$pred_plot %<>% map(., ~.x + theme(legend.position = "none"))
 top <- plot_grid(
-  plotlist = pred_plot_signif_com$myplot,
-  labels = pred_plot_signif_com$variable
+  plotlist = pred_plot_signif_com$pred_plot,
+  labels = pred_plot_signif_com$y, nrow = 1
 )
-plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+pred_plot1 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+```
+
+```{r}
+pred_plot_rich <- predict_plot %>%
+  filter( y %in% c(get_com_str_var(), "ct_ff"), x == "log_rich_std") %>%
+  filter(!y %in% "rich_std")
+legend_signif <- get_legend(
+  pred_plot_rich$pred_plot[[1]] +
+    theme(legend.position = "bottom")
+)
+pred_plot_rich$pred_plot %<>% map(., ~.x + theme(legend.position = "none"))
+top <- plot_grid(
+  plotlist = pred_plot_rich$pred_plot,
+  labels = pred_plot_rich$y
+)
+pred_plot2 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+```
+
+```{r}
+pred_plot_other <- predict_plot %>%
+  filter( y %in% c("ct_ff", "w_trph_lvl_avg"), x == c("ct_ff", "w_trph_lvl_avg"))
+legend_signif <- get_legend(
+  pred_plot_other$pred_plot[[1]] +
+    theme(legend.position = "bottom")
+)
+pred_plot_other$pred_plot %<>% map(., ~.x + theme(legend.position = "none"))
+top <- plot_grid(
+  plotlist = pred_plot_other$pred_plot,
+  labels = pred_plot_other$y
+)
+pred_plot3 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+```
+
+```{r, fig.dim = c(12, 8)}
+plot_grid(
+  pred_plot1, plot_grid(pred_plot2, pred_plot3, ncol = 2),
+  nrow = 2
+
+)
+```
+
+
+```{r}
+loadd(model_log_bm_f3y_table_medium)
+model_log_bm_f3y_table_medium[["anova_table"]] %>%
+  filter( y %in% c(get_com_str_var(), "ct_ff", "log_rich_std")) %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "ANOVA table for the model: dN =",
+      "dB + B + dB*B + Inc*B + dB*Inc*B."
+    )
+  ) %>%
+  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
 ```
 
 ### Further analysis
@@ -318,9 +376,23 @@ summary_var_f3y %>%
 
 ## Other variables 
 
+```{r pred-other-com, fig.dim = c(12, 10)}
+pred_plot_signif <- predict_plot %>%
+  filter(!y %in% c(get_com_str_var(), "ct_ff"), x == "log_bm_std")
+legend_signif2 <- get_legend(
+  pred_plot_signif_com$pred_plot[[1]] + theme(legend.position = "bottom")
+)
+pred_plot_signif$pred_plot %<>% map(., ~.x + theme(legend.position = "none"))
+top2 <- plot_grid(
+  plotlist = pred_plot_signif$pred_plot,
+  labels = pred_plot_signif$y
+)
+plot_grid(top2, legend_signif2, nrow = 2, rel_heights = c(1, .1))
+```
+
 ```{r}
 model_log_bm_f3y_table_medium[["anova_table"]] %>% 
-  filter(!variable %in% get_com_str_var(all = FALSE)) %>%
+  filter(!y %in% get_com_str_var(all = FALSE)) %>%
   kable(., booktabs = TRUE,
     caption = 
       paste0(
@@ -330,23 +402,8 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
   ) %>%
   kable_styling(latex_options =c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
-
 ```
 
-```{r pred-other-com, fig.dim = c(12, 10)}
-plot_signif <- pred_plot_signif %>%
-  filter(!variable %in% get_com_str_var())
-legend_signif <- get_legend(
-  plot_signif$myplot[[1]] +
-    theme(legend.position = "bottom")
-)
-plot_signif$myplot %<>% map(., ~.x + theme(legend.position = "none"))
-top_signif_other <- plot_grid(
-  plotlist = plot_signif$myplot,
-  labels = plot_signif$variable
-)
-plot_grid(top_signif_other, legend_signif, nrow = 2, rel_heights = c(1, .1))
-```
 
 ```{r eval = FALSE}
 pred_plot_signif %>%
@@ -362,6 +419,11 @@ pred_plot_signif %>%
     alpha = .3)
 ```
 
+```{r setup,  eval = TRUE}
+knitr::opts_chunk$set(eval=FALSE)
+```
+
+
 ## Temporal series of networks
 
 ```{r}
@@ -375,7 +437,7 @@ st_id_plot
 st_network_to_plot <- c(513, 1453, 16654, 6020)
 ```
 
-- Station ploted: `r st_network_to_plot`
+- Station ploted: `r #st_network_to_plot`
 
 ```{r}
 library(tidygraph)
