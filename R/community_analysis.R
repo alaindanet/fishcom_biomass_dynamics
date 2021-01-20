@@ -177,6 +177,64 @@ var_to_summarise <- c("richness", "rich_std", "nind", "nind_std", "biomass", "bm
   return(output)
 }
 
+get_temporal_betadiv_from_com_mat_year <- function (com = NULL) {
+
+com_mat_year_nested$beta <- c(
+  NA,
+  map(com_mat_year_nested$year[-1],
+    function(y, .df) {
+
+      year_n <- .df[.df$year == y, ]$data[[1]]
+      year_n_1 <- .df[.df$year == 1995, ]$data[[1]]
+
+      out <- betapart::beta.temp(
+	year_n_1[, !colnames(year_n_1) %in% "station"],
+	year_n[, !colnames(year_n) %in% "station"]
+      )
+      output <- tibble(
+	station = year_n$station,
+	out
+      )
+      return(output)
+    
+    }, .df = com_mat_year_nested)
+)
+
+}
+
+get_com_mat_year <- function(com = NULL, variable = "biomass") {
+
+  var_sym <- sym("biomass")
+  tmp_com_op <- com %>%
+    left_join(select(op_data, opcod, station, year), by = "opcod") %>%
+    filter(!is.na(station), !is.na(year)) 
+
+  tmp_com_mat <- tmp_com_op %>%
+    select(station, year, species, {{var_sym}}) %>%
+    pivot_wider(names_from = species, values_from = {{var_sym}}) %>%
+    mutate_all(~ifelse(is.na(.), 0, .)) 
+
+  tmp_com_mat %>%
+    group_by(year) %>%
+    arrange(station) %>%
+    nest()
+
+  comb <- expand.grid(
+    station = unique(tmp_com_mat$station),
+    year = unique(tmp_com_mat$year)) %>%
+    as_tibble()
+
+  com_mat_year <- comb %>%
+    left_join(tmp_com_mat, by = c("station", "year")) %>%
+    mutate_at(vars(matches("[A-Z]{3}", ignore.case = FALSE)), ~ifelse(is.na(.), 0, .)) %>%
+    mutate_at(vars(matches("[A-Z]", ignore.case = FALSE)), ~ifelse(. != 0, 1, .)) %>%
+    group_by(year) %>%
+    arrange(year, station) 
+
+  return(com_mat_year)
+
+}
+
 #' Compute temporal beta-diversity
 #'
 #' @param com data.frame community_analysis 
@@ -423,11 +481,11 @@ get_pielou_from_com_analysis <- function (com = NULL, variable = NULL) {
     spread(species, {{var_sym}}) %>%
     mutate_all(list(~ ifelse(is.na(.), 0, .)))
 
-  richness <- specnumber(test_mat[,-1])
+  richness <- vegan::specnumber(test_mat[,-1])
   piel <- vegan::diversity(test_mat[,-1]) / log(richness)
 
   # Because log(1) = 0
-  piel[ == 1] <- 0 
+  piel[richness == 1] <- 0 
 
   output <- tibble(opcod = test_mat[["opcod"]], pielou = piel)
   return(output)
