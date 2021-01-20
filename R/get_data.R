@@ -8,8 +8,8 @@ get_community_data <- function (
 
   load(path, envir = environment())
 
-  com <- community_metrics %>% 
-    dplyr::select(opcod, biomass, richness) %>%
+  com <- community_metrics %>%
+    dplyr::select(opcod, biomass, richness, pielou) %>%
     dplyr::filter(!is.na(opcod))
 
   return(com)
@@ -28,9 +28,8 @@ get_community_analysis_data <- function (
     dplyr::ungroup() %>%
     dplyr::left_join(dplyr::select(op, opcod, surface), by = "opcod") %>%
     dplyr::mutate(
-      nind = nind / surface, 
-      length = length / surface, 
-      biomass = biomass / surface
+      nind_std = nind / surface, 
+      bm_std = biomass / surface
     )
   return(com_std)
 }

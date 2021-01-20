@@ -131,54 +131,6 @@ We kept the second model.
 # Results
 
 
-```{r, cache = FALSE}
-loadd(log_bm_net_group_f3y, model_log_bm_f3y,
-  summary_log_bm_f3y, vif_log_bm_f3y)
-#loadd(bm_net_group_median, bm_vs_net_trends)
-loadd(bm_net_group_f3y)
-loadd(bm_net_group_f3y)
-loadd(rich_vs_net_trends)
-
-#compute_my_lm_vs_net_model(
-      #.df = filter(my_bm_net_group, !is.na(protocol_type)),
-      #var_to_group = "variable"
-#)
-```
-
-
-#### All protocol
-
-```{r, eval = TRUE}
-#https://stackoverflow.com/questions/44457243/regression-tables-in-r-markdown-rmarkdown-html-pdf
-#loadd(model_log_bm_f3y_table_medium)
-#model_log_bm_f3y_table_medium[["reg_table"]] %>% 
-  #filter(y %in% get_com_str_var(all = FALSE)) %>%
-  #kable(.,
-    #booktabs = TRUE, 
-    #caption = 
-      #paste0(
-      #"Regression table for the model: dN =",
-      #"dB + B + dB*B + Inc*B + dB*Inc*B."
-    #)) %>% 
-  #kable_styling(latex_options =c("scale_down", "stripped")) %>%
-  #collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
-#model_log_bm_f3y_table_medium[["anova_table"]] %>% 
-  #filter(variable %in% get_com_str_var(all = FALSE)) %>%
-  #kable(., booktabs = TRUE,
-    #caption = 
-      #paste0(
-      #"ANOVA table for the model: dN =",
-      #"dB + B + dB*B + Inc*B + dB*Inc*B."
-    #)
-  #) %>%
-  #kable_styling(latex_options =c("scale_down", "stripped")) %>%
-  #collapse_rows(columns = 1, valign = "top")
-```
-
-
 ### Results
 
 - Species richness:
@@ -290,7 +242,7 @@ number of piscivorous nodes.
 loadd(predict_plot)
 pred_plot_signif_com <- predict_plot %>%
   filter(
-    y %in% c(get_com_str_var(), "ct_ff", "log_rich_std"),
+    y %in% c(get_com_str_var(), "log_rich_std"),
     x == "log_bm_std"
   )
 legend_signif <- get_legend(
@@ -307,7 +259,7 @@ pred_plot1 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
 
 ```{r}
 pred_plot_rich <- predict_plot %>%
-  filter( y %in% c(get_com_str_var(), "ct_ff"), x == "log_rich_std") %>%
+  filter( y %in% c(get_com_str_var(), "bm_std", "log_bm_std"), x == "log_rich_std") %>%
   filter(!y %in% "rich_std")
 legend_signif <- get_legend(
   pred_plot_rich$pred_plot[[1]] +

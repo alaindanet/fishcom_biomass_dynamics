@@ -13,7 +13,7 @@ get_lm_station <- function (.data = NULL, var_names = NULL, rhs = NULL) {
   for (i in seq_along(var_names)) {
   
   .data[[var_names[i]]] <-
-    purrr::map(.data$data, compute_linear_model, formulas = paste0(var_names[i], rhs))
+    purrr::map(.data$data, ~try(compute_linear_model(.x, formulas = paste0(var_names[i], rhs))))
   
   }
   # Coefficients

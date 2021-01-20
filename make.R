@@ -16,22 +16,6 @@ drake::make(plan)
 drake::vis_drake_graph(plan)
 
 #make(plan, parallelism = "future", jobs = 3)
-loadd(model_summary)
-loadd(summary_table)
-
-
-summary_table %>% filter(x == "log_bm_std") %>%
- select(-x, -covar, -model, -model_obj) %>%
-
- list(reg_table = map_dfr(.$reg_table, rbind),
-   anova_table = map_dfr(.$anova_table, rbind)
- )
-
-get_table_from_summary(
-    .data = model_summary,
-    model =  "mod_medium_bm",
-    variable = NULL
-  )
 
 # If you do not change any code or data,
 # subsequent make()'s do not build targets.
@@ -40,6 +24,24 @@ get_table_from_summary(
 plan
 print(plan, n = 40)
 
-loadd(model)
-loadd(predict_plot, summary_table, predict_table, slope_x_bound)
+loadd(monotonous_data)
+loadd(monotonous_data)
+loadd(full_data2)
+debugonce(get_lm_station)
+test <- get_lm_station(.data = monotonous_data, 
+    var_name = c(get_biomass_var(), get_com_str_var(all = TRUE)),
+    rhs = " ~ nb_year")
 
+install.packages("betapart")
+library(betapart)
+
+
+  #com_test <- left_join(com, select(.op, opcod, surface), by = "opcod")
+
+  mat <- compute_com_mat(.op = .op, com = com, variable = variable,
+    summarise_by_station = summarise_by_station)
+
+  cbind(mat[, 1:2], compute_pielou_simpson(.data = mat[, 2:ncol(mat)])) %>%
+    as_tibble
+
+}

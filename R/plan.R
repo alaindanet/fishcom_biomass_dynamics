@@ -24,7 +24,10 @@ plan <- drake_plan(
   metrics_fishfish_only = get_network_metric_fish_only(net = net_analysis_data),
   net_data2 = left_join(net_data, net_l_ld_IS, by = "opcod") %>%
     left_join(select(metrics_fishfish_only, opcod, ct_ff, l_ff, ld_ff), by = "opcod"),
-  full_data = get_full_data(net = net_data2, com = com_data, op = op_data),
+  piel = get_piel_nind_bm(com = com_analysis_data), 
+  com_data2 = com_data %>%
+    left_join(piel, by = "opcod"),
+  full_data = get_full_data(net = net_data2, com = com_data2, op = op_data),
   full_data2 = add_to_full_data(.data = full_data),
   species_full_data = get_species_full_data(com = com_analysis_data, op =
     op_data),
@@ -77,22 +80,6 @@ plan <- drake_plan(
       .names = c("rich_vs_net_trends", "log_rich_vs_net_trends") 
     )
   ),
-  #st_mono_trends = target(
-    #rigal_classification %>%
-      #unnest(classif) %>%
-      #filter(
-	#variable == y,
-	#shape_class %in% c("increase_constant", "decrease_constant")
-	#) %>%
-      #select(variable, station, shape_class),
-    #transform = map(
-      #y = !!model_x_var
-    #)
-  #),
-  #st_mono_trends_combined = target(
-    #rbind(st_mono_trends),
-    #transform = combine(st_mono_trends)
-    #),
   st_mono_trends_combined_list = 
     rigal_classification %>%
     mutate(
@@ -108,7 +95,7 @@ plan <- drake_plan(
 
   # 3. Modelling
   comb = list(
-    y = get_com_str_var(all = TRUE),
+    y = c(get_com_str_var(all = TRUE), "bm_std", "log_bm_std"),
     x = model_x_var
   ) %>% 
   expand.grid(., stringsAsFactors = FALSE) %>%
@@ -141,7 +128,7 @@ plan <- drake_plan(
     ),
   model_summary = get_model_summary(model),
 
-  temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
+  #temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
   temporal_dynamics_coef = get_lm_coeff(
     .data = temporal_dynamics,
     col_names = c("bm_std", "log_bm_std", "connectance", "w_trph_lvl_avg", "richness", "weighted_connectance", "nbnode_std", "nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich")),

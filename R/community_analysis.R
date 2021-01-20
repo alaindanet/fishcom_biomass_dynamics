@@ -225,6 +225,7 @@ compute_temporal_betadiv <- function (.op = NULL, com = NULL) {
 #'
 #'@export
 compute_betadiv <- function(com, binary = FALSE, time_to_time = FALSE) {
+
   if (binary) {
     com %<>% replace(., . != 0, 1)
   }
@@ -369,32 +370,89 @@ compute_community_temporal_analysis <- function(.op = NULL,
 #' @param com community_analysis
 #'
 #'
-compute_com_mat <- function (.op = NULL, com = NULL) {
+compute_com_mat <- function (.op = NULL, com = NULL, variable = "bm_std",
+  summarise_by_station = TRUE 
+  ) {
+
+  #var_autorized <- c("bm_std", "nind_std", "biomass", "nind", )
+  #stopifnot(variable %in% var_autorized)
+  var_sym <- rlang::sym(variable)
+
+  #if (!all(var_autorized %in% colnames(com))) {
+    #com %<>%
+      #dplyr::mutate(
+	#bm_std = biomass / surface,
+	#nind_std = nind /surface
+      #) 
+  #}
 
   com %<>%
-    dplyr::mutate(bm_std = biomass / surface) %>%
     dplyr::filter(!is.na(surface)) %>%
-    dplyr::select(opcod, species, bm_std) %>%
+    dplyr::select(opcod, species, {{var_sym}}) %>%
     dplyr::left_join(.op[, c("opcod", "station")], by = "opcod") %>%
     dplyr::filter(!is.na(station)) %>%
     dplyr::group_by(station) %>%
     tidyr::nest() %>%
-    dplyr::mutate(data = purrr::map(data, function (.data) {
+    dplyr::mutate(data = purrr::map(data, function (.data, summarise_data) {
 	.data %<>%
-	  tidyr::spread(species, bm_std) %>%
-	  dplyr::select(-opcod) %>%
-	  dplyr::mutate_all(list(~ ifelse(is.na(.), 0, .))) %>%
+	  tidyr::spread(species, {{var_sym}}) %>%
+	  dplyr::mutate_all(list(~ ifelse(is.na(.), 0, .))) 
+	if(summarise_data) {
+	.data %<>%
 	  dplyr::summarise_all(list(median))
+	}
+
 	return(.data)
-    }))
+    }, summarise_data = summarise_by_station))
   
   com %<>%
     tidyr::unnest(data) %>%
-    dplyr::mutate_all(list(~ ifelse(is.na(.), 0, .)))
+    dplyr::mutate_all(list(~ ifelse(is.na(.), 0, .))) %>%
+    ungroup()
 
   return(com)
+} 
+
+get_pielou_from_com_analysis <- function (com = NULL, variable = NULL) {
+
+  var_sym <- sym(variable)
+
+  test_mat <- com %>%
+    ungroup() %>%
+    select(opcod, species, {{var_sym}}) %>%
+    spread(species, {{var_sym}}) %>%
+    mutate_all(list(~ ifelse(is.na(.), 0, .)))
+
+  richness <- specnumber(test_mat[,-1])
+  piel <- vegan::diversity(test_mat[,-1]) / log(richness)
+
+  # Because log(1) = 0
+  piel[ == 1] <- 0 
+
+  output <- tibble(opcod = test_mat[["opcod"]], pielou = piel)
+  return(output)
 
 } 
+
+get_piel_nind_bm <- function (com = NULL) {
+
+  piel_nind <- 
+    get_pielou_from_com_analysis(
+      com = com,
+      variable = "nind"
+      ) %>%
+    select(opcod, piel_nind = pielou)
+
+  piel_bm <- 
+    get_pielou_from_com_analysis(
+      com = com,
+      variable = "biomass"
+      ) %>%
+    select(opcod, piel_bm = pielou)
+
+  piel_bm %>%
+    left_join(piel_nind, by = "opcod")
+}
 
 #' Compute Pielou and simpson
 #'
