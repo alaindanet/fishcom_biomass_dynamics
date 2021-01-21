@@ -24,52 +24,7 @@ drake::vis_drake_graph(plan)
 plan
 print(plan, n = 40)
 
-loadd(monotonous_data)
-loadd(monotonous_data)
-loadd(full_data2)
-debugonce(get_lm_station)
-test <- get_lm_station(.data = monotonous_data, 
-    var_name = c(get_biomass_var(), get_com_str_var(all = TRUE)),
-    rhs = " ~ nb_year")
 
-library(betapart)
-data(ceram.s)
-data(ceram.n)
-beta.temp(x = ceram.s, y = ceram.s)
-beta.temp(x = ceram.s, y = ceram.n)
-data(bbsData)
-bbs.t <- beta.temp(bbs1980, bbs2000, index.family="sor")
-loadd(com_analysis)
+library(future)
+plan(multisession, workers = 3)
 
-# An 1 vs the other
-com_mat_year <- get_com_mat_year(com = com_analysis_data, variable = "biomass")
-
-com_mat_year_nested <- com_mat_year %>%
-  nest()
-
-betadiv <- get_temporal_betadiv_from_com_mat_year(com = com_mat_year_nested)
-# TODO: beta moyen sur la série temporelle
-# + beta tn - tn-1  
-
-
-
-
-
-# Difference n and n-1 
-unique(tmp_com_mat$station)
-com_mat_year_nested %>%
-  unnest(beta) %>%
-  filter(!is.na(beta.sim)) %>%
-  filter(station == 418) %>%
-  arrange(year)
-
-
-  #com_test <- left_join(com, select(.op, opcod, surface), by = "opcod")
-
-  mat <- compute_com_mat(.op = .op, com = com, variable = variable,
-    summarise_by_station = summarise_by_station)
-
-  cbind(mat[, 1:2], compute_pielou_simpson(.data = mat[, 2:ncol(mat)])) %>%
-    as_tibble
-
-}

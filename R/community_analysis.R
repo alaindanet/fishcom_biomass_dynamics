@@ -202,11 +202,63 @@ com_mat_year_nested$beta <- c(
 
 }
 
-get_com_mat_year <- function(com = NULL, variable = "biomass") {
+get_temporal_betapart_from_com_mat_station <- function (com = NULL) {
+
+  com$betapart <- map(com$data,
+    ~ beta.multi(.x[, !colnames(.x) %in% c("year")])
+  )
+  com$be = map(com$betapart,
+    function (b) {
+      enframe(b) %>%
+	unnest() %>%
+	pivot_wider(names_from = "name", values_from = "value")
+    }
+  )
+ 
+  com %>%
+    select(station, betapart, be)
+
+}
+
+get_com_mat_station <- function(com = NULL, .op = NULL, variable = "biomass", presence_absence = FALSE) {
 
   var_sym <- sym("biomass")
   tmp_com_op <- com %>%
-    left_join(select(op_data, opcod, station, year), by = "opcod") %>%
+    left_join(select(.op, opcod, station, year), by = "opcod") %>%
+    filter(!is.na(station), !is.na(year)) 
+
+  tmp_com_mat <- tmp_com_op %>%
+    select(station, year, species, {{var_sym}}) %>%
+    group_by(station) %>%
+    arrange(year) %>%
+    nest()
+
+  com_mat_station <- tmp_com_mat %>%
+    mutate(
+      data = map(data,
+	~.x %>% 
+	  pivot_wider(names_from = species, values_from = {{var_sym}}) %>%
+	  mutate_at(vars(matches("[A-Z]{3}", ignore.case = FALSE)), ~ifelse(is.na(.), 0, .))
+      )
+    )
+
+  if (presence_absence) {
+    com_mat_station$data <-
+      map(com_mat_station$data,
+	~ .x %>%
+	  mutate_at(vars(matches("[A-Z]{3}", ignore.case = FALSE)), ~ifelse(is.na(.), 0, .)) %>%
+	  mutate_at(vars(matches("[A-Z]", ignore.case = FALSE)), ~ifelse(. != 0, 1, .))
+    )
+  }
+
+  return(com_mat_station)
+
+}
+get_com_mat_year <- function(com = NULL, .op = NULL, variable = "biomass") {
+
+  var_sym <- sym("biomass")
+  tmp_com_op <- com %>%
+    left_join(select(.op, opcod, station, year), by = "opcod") %>%
     filter(!is.na(station), !is.na(year)) 
 
   tmp_com_mat <- tmp_com_op %>%
@@ -240,28 +292,32 @@ get_com_mat_year <- function(com = NULL, variable = "biomass") {
 #' @param com data.frame community_analysis 
 #'
 #'
-compute_temporal_betadiv <- function (.op = NULL, com = NULL) {
+compute_temporal_betadiv <- function (
+  .op = NULL, com = NULL, variable = "biomass") {
+
+  var_sym <- sym(variable)
 
   com %<>%
     dplyr::ungroup() %>%
     dplyr::left_join(.op, by = "opcod") %>%
     dplyr::filter(!(is.na(station) | is.na(opcod))) %>%
-    dplyr::select(station, date, species, biomass) %>%
-    dplyr::group_by(station, date, species) %>%
-    dplyr::summarise(biomass = sum(biomass)) %>%
+    dplyr::select(station, year, species, {{var_sym}}) %>%
+    dplyr::group_by(station, year, species) %>%
+    dplyr::summarise({{var_sym}} := sum({{var_sym}})) %>%
     dplyr::group_by(station) %>%
-    dplyr::arrange(date) %>%
-    tidyr::nest()
+    dplyr::arrange(year) %>%
+    tidyr::nest() %>%
+    dplyr::ungroup()
   ## build community matrices
   com %<>%
     dplyr::mutate(
       com = furrr::future_map2(data, station, function(x, y) {
 
 	x %<>%
-	  tidyr::spread(species, biomass) %>%
-	  dplyr::mutate_at(vars(-date), list(~replace(.,is.na(.), as.integer(0)))) %>%
-	  dplyr::arrange(date) %>%
-	  dplyr::select(-date)
+	  tidyr::spread(species, {{var_sym}}) %>%
+	  dplyr::mutate_at(vars(-year), list(~replace(.,is.na(.), as.integer(0)))) %>%
+	  dplyr::arrange(year) %>%
+	  dplyr::select(-year)
 	x
 	}
       )

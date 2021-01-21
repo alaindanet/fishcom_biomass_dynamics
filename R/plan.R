@@ -25,6 +25,30 @@ plan <- drake_plan(
   net_data2 = left_join(net_data, net_l_ld_IS, by = "opcod") %>%
     left_join(select(metrics_fishfish_only, opcod, ct_ff, l_ff, ld_ff), by = "opcod"),
   piel = get_piel_nind_bm(com = com_analysis_data), 
+  betadiv = map_dfr(
+    c("biomass", "bm_std", "nind_std", "nind"),
+    ~compute_temporal_betadiv(
+      .op = op_data,
+      com = filter(com_analysis_data, !is.na(surface)),
+      variable = .x) %>%
+    select(-data, -com) %>%
+    mutate(variable = .x)
+  ) %>%
+  pivot_longer(cols = c(betadiv:betadiv_bin_diag)) %>%
+  mutate(name = str_c(name, variable, sep = "_")) %>%
+  select(-variable) %>%
+  pivot_wider(names_from = "name", values_from = "value")
+  ,
+  betapart_bin = 
+    get_com_mat_station(
+      com = com_analysis_data,
+      .op = op_data,
+      variable = "biomass",
+      presence_absence = TRUE) %>%
+  get_temporal_betapart_from_com_mat_station(com = .) %>%
+  select(-betapart) %>%
+  ungroup() %>%
+  unnest(be),
   com_data2 = com_data %>%
     left_join(piel, by = "opcod"),
   full_data = get_full_data(net = net_data2, com = com_data2, op = op_data),

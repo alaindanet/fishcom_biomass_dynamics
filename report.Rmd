@@ -5,7 +5,10 @@ self_contained: yes
 date: "`r Sys.Date()`"
 tables: yes
 output:
-  html_document
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+    math: katex
 ---
 
 ```{r, echo = FALSE}
@@ -95,15 +98,6 @@ bivar_cap <- paste0(
 ```
 
 
-```{r}
-loadd(p_bm_vs_bm_slope)
-p_bm_vs_bm_slope
-```
-
-```{r}
-loadd(p_hist_med_bm)
-p_hist_med_bm
-```
 
 # Methods 
 
@@ -705,3 +699,12 @@ loadd(log_bm_net_group_f3y, model_log_bm_f3y,
 loadd(vif_log_bm)
 ```
 
+```{r}
+loadd(p_bm_vs_bm_slope)
+p_bm_vs_bm_slope
+```
+
+```{r}
+loadd(p_hist_med_bm)
+p_hist_med_bm
+```
