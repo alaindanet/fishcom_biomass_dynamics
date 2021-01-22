@@ -201,6 +201,7 @@ plan <- drake_plan(
 	pred_table = map2(tmp_pred_table, ggpred_term, ~rename_pred_table(pred_table = .x, term = .y)),
 	) %>%
       select(any_of(c("x", "y", "covar", "model", "model_obj", "ggpred_term", "tmp_pred_table", "pred_table"))),
+
   predict_plot = predict_table %>%
       left_join(select(model, x, y, covar, data), by = c("x", "y", "covar")) %>%
       mutate(
@@ -210,6 +211,38 @@ plan <- drake_plan(
 	 pred_plot = map2(pred_table, raw_plot, 
 	  ~plot_add_pred_data(pred = .x, gg = .y)
 	  )
+	) %>%
+      select(any_of(c("x", "y", "covar", "model", "pred_table", "raw_plot", "pred_plot"))),
+
+    predict_table2 = summary_table %>%
+  select(x, y, covar, anova_table) %>%
+  left_join(data4model, by = c("x", "y", "covar")) %>%
+  mutate(
+    model_obj = furrr::future_map2(anova_table, data_model,
+      ~compute_lm_from_signif_anova(aov_tab = .x, .df = .y)
+      ),
+    anova = map(model_obj, anova),
+    anova_table = map(anova, broom::tidy),
+    ggpred_term = map(anova_table,
+      ~get_ggpredict_term_from_anova(
+	aov_tab = .x,
+	bound = slope_x_bound)),
+  tmp_pred_table = map2(model_obj, ggpred_term, 
+    ~ggpredict(.x, .y) %>%
+      as_tibble),
+    pred_table = map2(tmp_pred_table, ggpred_term,
+      ~rename_pred_table(pred_table = .x, term = .y))) %>%
+      select(any_of(c("x", "y", "covar", "model", "model_obj", "ggpred_term", "tmp_pred_table", "pred_table"))),
+
+    predict_plot2 = predict_table2 %>%
+      left_join(select(model, x, y, covar, data), by = c("x", "y", "covar")) %>%
+      mutate(
+	raw_plot = map2(data, covar,
+	  ~plot_raw_data(.df = .x, covar = .y, std_error = TRUE)
+	  ),
+	pred_plot = map2(pred_table, raw_plot, 
+	  ~plot_add_pred_data(pred = .x, gg = .y)
+	)
 	) %>%
       select(any_of(c("x", "y", "covar", "model", "pred_table", "raw_plot", "pred_plot"))),
   #model_log_bm_f3y_table = get_table_from_summary(

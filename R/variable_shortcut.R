@@ -50,13 +50,16 @@ model_type_var <- function(
 
 get_com_str_var <- function (all = FALSE) { 
 
-x <- c("ct_ff", "w_trph_lvl_avg", #"connectance" ,"weighted_connectance",
- "rich_std")
+  x <- c("ct_ff", "w_trph_lvl_avg", #"connectance" ,"weighted_connectance",
+    "rich_std", "piel_nind", "piel_bm")
 
-if (all) {
-  x <- c(x, "connectance", "weighted_connectance", "richness", "log_rich_std", "nbnode_std" ,"nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich", "l", "ld", "m", "A", "avg_IS", "gini", "ct_ff", "l_ff", "ld_ff", "piel_nind", "piel_bm")
-}
-return(x)
+  if (all) {
+    x <- c(x, "connectance", "weighted_connectance", "richness", "log_rich_std", "nbnode_std" ,"nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich", "l", "ld", "m", "A", "avg_IS", "gini", "ct_ff", "l_ff", "ld_ff", "piel_nind", "piel_bm")
+  }
+
+  x <- unique(x) 
+
+  return(x)
 }
 
 get_model_terms <- function ( ) {

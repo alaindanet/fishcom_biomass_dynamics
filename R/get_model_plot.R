@@ -259,7 +259,8 @@ get_ggpredict_term_from_anova <- function (aov_tab = NULL, bound = NULL) {
       signif_term = paste(term, collapse = "+"),
       indiv_term = list(term)
       ) %>%
-    mutate(single_var_term = map(signif_term, get_lm_single_term),
+    mutate(
+      single_var_term = map(signif_term, get_lm_single_term),
       predict_term = map(single_var_term, from_term_to_predict_term)
     )
     pred_term <- tmp$predict_term[[1]]
@@ -290,6 +291,59 @@ get_ggpredict_term_from_anova <- function (aov_tab = NULL, bound = NULL) {
 
     return(ggpred_tmp)
     
+}
+
+compute_lm_from_signif_anova <- function (aov_tab = NULL , .df = NULL) {
+  tmp <- aov_tab %>%
+    mutate(signf = p.value <= 0.05) %>%
+    filter(signf) %>%
+    summarise(
+      signif_term = paste(term, collapse = "+"), 
+      indiv_term = list(term)
+      ) %>%
+    mutate(single_var_term = map(signif_term, get_lm_single_term))
+
+  #return(tmp)
+  
+
+  term <- aov_tab$term
+  x_var_slope <- term[str_ends(term, "_slope")]
+  x_var_slope_sym <- sym(x_var_slope)
+
+  .df %<>%
+    mutate(
+      increasing := {{x_var_slope_sym}} > 0,
+      inc_f = as.factor(increasing),
+      #"log_{{x_var_sym}}" := log({{x_var_sym}})
+    ) 
+
+  signif_term <- tmp$signif_term[[1]]
+
+  # If no significant term, put slope
+  if (str_length(signif_term) == 0 ) {
+    signif_term <- paste0(x_var_slope)
+  }
+  # If no slope in significant terms, i.e. put it
+  if (!str_detect(signif_term, "_slope")) {
+    signif_term <- paste0(x_var_slope, "+", signif_term)
+  }
+
+  # Get main effet if the interaction is significant 
+  single_terms <- tmp$indiv_term[[1]]
+  if (any(str_detect(single_terms, ":"))) {
+    # left term
+    left_term_inter <- map_chr(
+      single_terms[str_detect(single_terms, ":")],
+	~str_split(.x, ":")[[1]][1]
+      )
+    
+    signif_term <- paste0(left_term_inter, "+", signif_term, collapse = "+") 
+  }
+  #signif_term
+
+  formulas <- paste0("linear_slope ~ ", signif_term)
+  lm(formula = as.formula(formulas), data = .df, weights = reg_weight)
+
 }
 
 rename_pred_table <- function (pred_table = NULL, term = NULL) {

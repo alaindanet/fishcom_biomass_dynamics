@@ -24,7 +24,12 @@ drake::vis_drake_graph(plan)
 plan
 print(plan, n = 40)
 
+#TODO check rigor of automatic plotting; all the conditions are respected?
 
 library(future)
 plan(multisession, workers = 3)
+
+#######################################
+#  Get the right term from new model  #
+#######################################
 
