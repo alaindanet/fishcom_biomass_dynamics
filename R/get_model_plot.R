@@ -251,9 +251,9 @@ from_term_to_predict_term <- function (term = NULL) {
   term
 }
 
-get_ggpredict_term_from_anova <- function (aov_tab = NULL, bound = NULL) {
+get_ggpredict_term_from_anova <- function (aov_tab = NULL, bound = NULL, pval_threshold = 0.05) {
   tmp <- aov_tab %>%
-    mutate(signf = p.value <= 0.05) %>%
+    mutate(signf = p.value <= pval_threshold) %>%
     filter(signf) %>%
     summarise(
       signif_term = paste(term, collapse = "+"),

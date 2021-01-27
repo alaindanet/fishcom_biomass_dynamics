@@ -226,7 +226,9 @@ plan <- drake_plan(
     ggpred_term = map(anova_table,
       ~get_ggpredict_term_from_anova(
 	aov_tab = .x,
-	bound = slope_x_bound)),
+	bound = slope_x_bound,
+	pval_threshold = 1
+	)),
   tmp_pred_table = map2(model_obj, ggpred_term, 
     ~ggpredict(.x, .y) %>%
       as_tibble),
@@ -245,22 +247,18 @@ plan <- drake_plan(
 	)
 	) %>%
       select(any_of(c("x", "y", "covar", "model", "pred_table", "raw_plot", "pred_plot"))),
-  #model_log_bm_f3y_table = get_table_from_summary(
-    #.data = summary_log_bm_f3y,
-    #model =  "mod_bm_quad2",
-    #variable = NULL 
-  #),
   model_log_bm_f3y_table_medium = list(
     reg_table = unnest(summary_table, reg_table),
     anova_table = unnest(summary_table, anova_table)
     ) %>%
     map(., ~ .x %>% filter(x == "log_bm_std") %>%
       select(-any_of(c("x", "covar", "model", "model_obj", "reg_table", "anova_table")))),
-  #model_log_rich_f3y_table_medium = get_table_from_summary(
-    #.data = summary_log_rich_f3y,
-    #model =  "mod_medium_bm",
-    #variable = NULL
-    #),
+  model_log_rich_f3y_table_medium = list(
+    reg_table = unnest(summary_table, reg_table),
+    anova_table = unnest(summary_table, anova_table)
+    ) %>%
+    map(., ~ .x %>% filter(x == "log_rich_std") %>%
+      select(-any_of(c("x", "covar", "model", "model_obj", "reg_table", "anova_table")))),
   trace = TRUE
 )
 

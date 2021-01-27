@@ -39,7 +39,11 @@ source("R/misc.R") # Define your custom code as a bunch of functions.
 source("R/variable_shortcut.R")
 source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
 
-#theme_set(theme_cowplot())
+mytheme <- theme_cowplot() +
+background_grid()
+
+theme_set(mytheme)
+theme_get()
 ```
 
 # Research questions
@@ -52,11 +56,11 @@ strong decline in insects and vertebrate populations.
 
 However, those studies says nothing about how empirical findings about how
 different aspects of community structure such as species richness react
-to a change in community biomass. 
+to a change in community biomass.
 
 Ecological theory might provide insight on how community structure varies
-according to biomass. Especially BEF predicts a positive link between species richness and
-community biomass especially in grassland.
+according to biomass. Especially BEF predicts a positive link between species
+richness and community biomass especially in grassland.
 
 However, communities used in BEF experiments might not be relevant to get
 insight about what happens in natural settings. Firstly there are statics, i.e.
@@ -84,9 +88,14 @@ different depending on if the community biomass was growing or shrinking through
 time for all variables, suggesting that assembly processes such as colonization
 processes might.
 
+# Introduction
 
-## Links betwenn temporal dynamics
+1. Option1 Global change -> change of biomass 
+   Option2 Ecological communities are dynamics + example
+ 
+2. Ecological communities often describe by their richness, biomass
 
+3. BEF
 
 
 ```{r b-bivar-cap}
@@ -98,105 +107,68 @@ bivar_cap <- paste0(
 ```
 
 
-
-# Methods 
-
-- Methodological choice:
-  - Dynamics of log of the biomass: put big and little station on the same scale
-    (% of biomass gained or lost per year)
-
-
-## The three model
-
-1. $dN = dB + dB \times B + dB^2 + dB^2 \times B$
-
-2. $dN = dB + B + dB \times B + Inc \times B + dB \times Inc \times B$
-
-3. $dN = dB + B + dB \times B + Inc + Inc \times dB + dB \times B \times Inc$
-
-with:
-- $dN$: temporal trend of network structure
-- $dB$: temporal trend of total (log) biomass
-- $B$: total median biomass or total biomass of the first three year
-- $Inc$: Is $dB > 0$?
-
-We kept the second model.
-
 # Results
 
 
-### Results
+- Species richness, Avg trophic level, connectance:
+  - increases when biomass increases while decreases when biomass decreases
+  - Avg trophic level: same for species richness  
+  - connectance:  decreases when richness increases while increases when
+    richness decreases (reverse sign compared to biomass)
 
-- Species richness:
-  - decreases a lot in time when biomass decreases
-  - increases slightly in time when biomass increases (immigration debt)
-  - No effect of community size! (same for the number of nodes)
+- Pielou (eveness) :
+  - Indiv: 
+    - do not varies with biomass temporal trends
+    - increases with increasing temporal trends of species richness
+  - Biomass: 
+    - increase when biomass decreases and decreases when biomass increases
+    - decreases when species richness decreases and increase when species
+      richness increases
 
-- Avg trophic level:
-  - decreases simultaneously with biomass decreases 
-  - increase simultaneously with biomass increases but increases less for bigger
-    communities
-  - meaning that biomass loss and gain are located in the highest trophic level
-    (except gain of biomass in biggest communities)
+- Connectance: positive relationship with avg trophic level temporal trends
 
-- Connectance:
-  - do not decrease when biomass decreases in little communities
-  - decreases when biomass decreases in big communities
-  - do not vary when biomass increases 
+# Discussion
 
-- Weighted connectance:
-  - increases (more even flux distribution) when biomass decreases in little communities
-  - decreases (more skewed flux distribution) when biomass decreases in big communities
-  - decreases when biomass increases
+## Summary of result
 
-### Summary of result
+- There was a significant positive link between the dynamics of community biomass and the
+  dynamics of community structure for the variables: species richness, average trophic level, connectance except for pielou of
+  individuals and pielou of biomass which had respectively a no and a negative
+  relationship. 
+
+- There was a significant positive link between the dynamics of species richness and the
+  dynamics of community structure for the variables: average trophic level, connectance, pielou of
+  individuals and pielou of biomass; except for connectance which had a negative
+  relationship.
 
 - There are a significant link between the dynamics of community biomass and the
-  dynamics of community structure for all the variables: species richness,
-  average trophic level, connectance and weighted connectance.
+  dynamics of community structure for all the variables expect pielou of
+  biomass: species richness, average trophic level, connectance and pielou of
+  individuals
 
 - We found that the link between network temporal dynamics and biomass temporal
-  dynamics change according if the community loses or gain biomass, for all
+  dynamics **does not change** according if the community loses or gain biomass, for all
   variables.
 
-- We found that the biomass of the community at the beginning of the temporal
-  series, i.e. community size, had an effect on the link between network
-  dynamics and biomass expect for species richness. We also found that the
-  effect of biomass was stronger in communities losing biomass for connectance and
-  weighted connectance but stronger in communities gaining biomass for average
-  trophic level
+## Answer to research questions 
 
+- Lost and gain of biomass or species richness resulted in same network structure dynamics,
+  suggesting that the two processes are symmetric.
+- The low effect of community size suggests that the architecture of the
+  community in terms of species richness, number of piscivorous species, plays a
+  role in its dynamics
 
-### Answer to research questions 
-
-- Lost and gain of biomass result in different network structure dynamics,
-  suggesting that the two processes are not symmetric.
-- The effect of community size suggests that the architecture of the community
-  in terms of species richness, number of piscivorous species, plays a role in
-  its dynamics
-
-### Interpretation
+## Interpretation
 
 - Richness:
-  - When biomass increases, one can that species richness increases as well
+  - When biomass increases, species richness increases as well
     as when biomass decreases conjointly to species richness.
-  - Increase in species richness necessitates colonization events, i.e.
-    stochastic events while decreases in species richness necessitates
-    disparition of species already in the community. Thus, the colonization
-    process needs element exterior to the community.
-    - Immigration debt: (might be relevant if low availability of new species)
-  - second explanation: when biomass increases, competitive interactions may prevent the increase in
-    species richness. We expect that processes based on competition would raise
-    the role of community size.
 
 - Avg trophic level: 
   - Higest trophic level concentrates most of the biomass, so gain and loss are
     statistically more linked to them
-  - In biggest communities, there was no link between biomass and avg trophic
-    level dyn because those communities already contain high trophic
-    levels (There is a positive correlation between the number of pisc node and
-    biomass of the community). So, there is a saturation at the top of the
-    chain.
+  - Low and gain of biomass are linked to big individuals
+
     - The observation that the number of link and link density follow the same
       pattern confirm this interpretation.
 
@@ -237,59 +209,112 @@ loadd(predict_plot2)
 pred_plot_signif_com <- predict_plot2 %>%
   filter(
     y %in% c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
+    !y %in% c("bm_std", "rich_std"),
     x == "log_bm_std"
   )
 legend_signif <- get_legend(
   pred_plot_signif_com$pred_plot[[1]] +
     theme(legend.position = "bottom")
 )
-pred_plot_signif_com$pred_plot %<>% map(., ~.x + theme(legend.position = "none"))
-top <- plot_grid(
-  plotlist = pred_plot_signif_com$pred_plot,
-  labels = pred_plot_signif_com$y, nrow = 2
+pred_plot_signif_com %<>% 
+  mutate(
+  pred_plot = pmap(list(pred_plot, y, x),
+    function(p, y, x) {
+      # Replace label
+      label <- str_replace_all(c(x,y), var_replacement(slope = TRUE)) 
+      p +
+	labs(x = label[1], y = label[2]) +
+	theme(legend.position = "none")
+    } )
+  )
+
+list_p <- pred_plot_signif_com$pred_plot
+list_p[[length(list_p) + 1]] <- legend_signif
+
+pred_plot1 <- plot_grid(
+  plotlist = list_p,
+  labels = "AUTO",
+  nrow = 2
 )
-pred_plot1 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+#pred_plot1 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
 ```
 
 ```{r}
 pred_plot_rich <- predict_plot2 %>%
-  filter( y %in% c(get_com_str_var(), "bm_std", "log_bm_std", "piel_nind", "piel_bm"), x == "log_rich_std") %>%
-  filter(!y %in% "rich_std")
+  filter( y %in% c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"), x == "log_rich_std") %>%
+  filter(!y %in% c("rich_std"))
 legend_signif <- get_legend(
   pred_plot_rich$pred_plot[[1]] +
     theme(legend.position = "bottom")
 )
-pred_plot_rich$pred_plot %<>% map(., ~.x + theme(legend.position = "none"))
-top <- plot_grid(
-  plotlist = pred_plot_rich$pred_plot,
-  labels = pred_plot_rich$y
+pred_plot_rich %<>% 
+  mutate(
+  pred_plot = pmap(list(pred_plot, y, x),
+    function(p, y, x) {
+      # Replace label
+      label <- str_replace_all(c(x,y), var_replacement(slope = TRUE)) 
+      p +
+	labs(x = label[1], y = label[2]) +
+	theme(legend.position = "none")
+    } )
+  )
+
+list_p <- pred_plot_rich$pred_plot
+list_p[[length(list_p) + 1]] <- legend_signif
+
+pred_plot2 <- plot_grid(
+  plotlist = list_p,
+  nrow = 2,
+  labels = "AUTO" 
 )
-pred_plot2 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+#pred_plot2 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
 ```
 
 ```{r}
+
 pred_plot_other <- predict_plot2 %>%
   filter( y %in% c("ct_ff", "w_trph_lvl_avg"), x %in% c("ct_ff", "w_trph_lvl_avg"))
 legend_signif <- get_legend(
   pred_plot_other$pred_plot[[1]] +
     theme(legend.position = "bottom")
 )
-pred_plot_other$pred_plot %<>% map(., ~.x + theme(legend.position = "none"))
-top <- plot_grid(
-  plotlist = pred_plot_other$pred_plot,
-  labels = pred_plot_other$y, nrow = 2
+pred_plot_other %<>% 
+  mutate(
+  pred_plot = pmap(list(pred_plot, y, x),
+    function(p, y, x) {
+      # Replace label
+      label <- str_replace_all(c(x,y), var_replacement(slope = TRUE)) 
+      p +
+	labs(x = label[1], y = label[2]) +
+	theme(legend.position = "none")
+    } )
+  )
+
+list_p <- pred_plot_other$pred_plot
+list_p[[length(list_p) + 1]] <- legend_signif
+
+pred_plot3 <- plot_grid(
+  plotlist = list_p,
+  labels = "AUTO", nrow = 2
 )
-pred_plot3 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+#pred_plot3 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
 ```
 
-```{r, fig.dim = c(12, 12)}
+```{r, fig.dim = c(10, 7)}
+pred_plot1
+pred_plot2
+pred_plot3
+```
+
+
+```{r, eval = FALSE, fig.dim = c(12, 12)}
 plot_grid(
-  pred_plot1, plot_grid(pred_plot2, pred_plot3, ncol = 2, rel_widths = c(.75, 1)),
+  , plot_grid(, , ncol = 2, rel_widths = c(.75, 1)),
   nrow = 2
 )
 ```
 
-```{r, fig.dim = c(10, 5)}
+```{r, eval = FALSE, fig.dim = c(10, 5)}
 loadd(betapart_bin, rigal_classification, st_mono_trends_combined_list)
 
 
@@ -312,23 +337,6 @@ beta_xdata %>%
 
 ```
 
-```{r}
-# Rich and rich slope
-loadd(summary_var_f3y)
-
-mask <- st_mono_trends_combined_list$variable == "richness"
-xdata <- rigal_classification %>%
-  filter(variable == "richness") %>%
-  unnest(classif) %>%
-  filter(station %in% st_mono_trends_combined_list[mask, ]$station[[1]])
-
-xdata %>%
-  select(station, linear_slope) %>%
-  left_join(summary_var_f3y %>% select(station, richness), by = "station") %>%
-  ggplot(aes(x = linear_slope, y = richness)) +
-  geom_point() +
-  labs(x = "Slope of richness (year)", y = "richness")
-```
 
 ```{r}
 #loadd(temporal_dynamics_plot)
@@ -339,17 +347,39 @@ xdata %>%
 ```{r}
 loadd(model_log_bm_f3y_table_medium)
 model_log_bm_f3y_table_medium[["anova_table"]] %>%
-  filter( y %in% c(get_com_str_var(), "ct_ff", "log_rich_std")) %>%
+  filter(
+    y %in% c(get_com_str_var(), "ct_ff", "log_rich_std"),
+    !y %in% "rich_std") %>%
   kable(., booktabs = TRUE,
     caption = 
       paste0(
       "ANOVA table for the model: dN =",
-      "dB + B + dB*B + Inc*B + dB*Inc*B."
+      "dB + B + dB*B + Inc*B + dB*Inc*B. The community structure versus the
+      biomass"
     )
   ) %>%
   kable_styling(latex_options =c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
+
+```{r}
+loadd(model_log_rich_f3y_table_medium)
+model_log_rich_f3y_table_medium[["anova_table"]] %>%
+  filter(
+    y %in% c(get_com_str_var(), "log_bm_std"),
+    !y %in% "rich_std") %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "ANOVA table for the model: dN =",
+      "dB + B + dB*B + Inc*B + dB*Inc*B. The community structure versus the
+      species richness"
+    )
+  ) %>%
+  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
 
 ### Further analysis
 
@@ -396,6 +426,24 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
+
+```{r}
+# Rich and rich slope
+loadd(summary_var_f3y, st_mono_trends_combined_list, rigal_classification)
+
+mask <- st_mono_trends_combined_list$variable == "richness"
+xdata <- rigal_classification %>%
+  filter(variable == "richness") %>%
+  unnest(classif) %>%
+  filter(station %in% st_mono_trends_combined_list[mask, ]$station[[1]])
+
+xdata %>%
+  select(station, linear_slope) %>%
+  left_join(summary_var_f3y %>% select(station, richness), by = "station") %>%
+  ggplot(aes(x = linear_slope, y = richness)) +
+  geom_point() +
+  labs(x = "Slope of richness (year)", y = "richness")
+```
 
 
 ```{r setup,  eval = TRUE}
@@ -741,3 +789,22 @@ p_bm_vs_bm_slope
 loadd(p_hist_med_bm)
 p_hist_med_bm
 ```
+
+# Methods 
+
+- Methodological choice:
+  - Dynamics of log of the biomass: put big and little station on the same scale
+    (% of biomass gained or lost per year)
+
+
+
+2. $dN = dB + B + dB \times B + Inc \times B + dB \times Inc \times B$
+
+with:
+- $dN$: temporal trend of network structure
+- $dB$: temporal trend of total (log) biomass
+- $B$: total median biomass or total biomass of the first three year
+- $Inc$: Is $dB > 0$?
+
+We kept the second model.
+

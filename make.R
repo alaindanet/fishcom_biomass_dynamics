@@ -15,7 +15,7 @@ drake::make(plan, keep_going = TRUE)
 drake::make(plan)
 drake::vis_drake_graph(plan)
 
-#make(plan, parallelism = "future", jobs = 3)
+make(plan, parallelism = "future", jobs = 3)
 
 # If you do not change any code or data,
 # subsequent make()'s do not build targets.
@@ -33,3 +33,11 @@ plan(multisession, workers = 3)
 #  Get the right term from new model  #
 #######################################
 
+loadd(predict_table2)
+
+predict_table2$model_obj[[3]]
+
+loadd(predict_plot2)
+
+predict_plot2$pred_plot
+  

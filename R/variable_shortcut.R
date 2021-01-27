@@ -66,3 +66,26 @@ get_model_terms <- function ( ) {
   c("bm_slope", "inc_f", "bm", "log_bm")
 
 } 
+
+var_replacement <- function (slope = FALSE) {
+
+  x <- c(
+    ct_ff = "Connectance",
+    w_trph_lvl_avg = "Avg trophic level",
+    #connectance ,weighted_connectance,
+    log_rich_std = "Log Species richness",
+    log_bm_std = "Log Biomass",
+    bm_std = "Biomass",
+    rich_std = "Species richness",
+    piel_nind = "Pielou (individual)",
+    piel_bm = "Pielou (biomass)"
+  )
+
+  if (slope) {
+    tmp <- names(x) 
+    x %<>% paste0(., " temporal trend")
+    names(x) <- tmp
+  }
+
+  return(x)
+}
