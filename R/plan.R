@@ -164,13 +164,7 @@ plan <- drake_plan(
   net_dyn_lm_plot = get_net_dyn_lm_plot(net_dyn_lm = net_dyn_lm),
   net_dyn_lm_coeff = get_lm_coeff(.data = net_dyn_lm, col_names = "model"),
 
-  report = callr::r(
-    function(...) rmarkdown::render(...),
-    args = list(
-      input = drake::knitr_in("report.Rmd"),
-      output_file = drake::file_out("report.html")
-    )
-  ),
+
   #4. The plots
   p_bm_vs_bm_slope = plot_bm_vs_bm_slope(
     tps_dyn_coef = temporal_dynamics_coef,
@@ -259,6 +253,25 @@ plan <- drake_plan(
     ) %>%
     map(., ~ .x %>% filter(x == "log_rich_std") %>%
       select(-any_of(c("x", "covar", "model", "model_obj", "reg_table", "anova_table")))),
+
+    # Reporting
+
+  report = callr::r(
+    function(...) rmarkdown::render(...),
+    args = list(
+      input = drake::knitr_in("report.Rmd"),
+      output_file = drake::file_out("report.html")
+    )
+  ),
+  wordstack = callr::r(
+    function(...) rmarkdown::render(...),
+    args = list(
+      input = drake::knitr_in("paper/wordstack.Rmd"),
+      output_file = drake::file_out("paper/wordstack.html"),
+      output_dir = "paper"
+    )
+  ),
+
   trace = TRUE
 )
 

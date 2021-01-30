@@ -1,0 +1,94 @@
+---
+title: "Wordstack and outline of the manuscript"
+author: "Alain Danet"
+self_contained: yes
+date: "`r Sys.Date()`"
+tables: yes
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+    math: katex
+---
+
+# Wordstack
+
+- Foodwebs
+- interactions
+- perturbation/perturbation sequences
+- network structure
+- temporal dynamics
+- BEF
+- space for time
+- extinction sequences
+
+- omnivory
+- equilibrium / dynamics
+
+# Outline
+
+### Introduction
+
+1. community structure are dynamics and affect ecosystem functions 
+    1. species interactions ?
+    2. biomass or richness 
+
+2. Community structure dimension are linked 
+    1. Biomass and species richness 
+	1. experiment: richness and productivity richness and stability
+	2. Empirical:
+    2. Foodweb/Network structure and biomass/richness 
+	1. connectance richness
+	2. persistance / connectance
+
+3. Colonisation / Extinction sequences in natural settings
+    1. Space for time substitution
+    2. Communities are not affected randomly as environment species niche  rel
+    3. sequence: is losing something = adding something ?
+ 
+4. Research questions 
+    1. Link between the temporal dynamics of different aspects of community structure ?
+	1. Is BEF valid? 
+	2. is space for time substitution?
+    2. effect of assembly/disassembly
+
+5. blabla Foodweb/fish/super huge top dataset
+
+
+## Material and methods
+
+1. Data selection
+2. Community biomass and richness 
+3. Network reconstruction
+4. Statistical analysis
+
+## Results
+
+1. No effects of community assembly/disassembly
+
+2. Community structure and biomass
+    1. positive links everywhere except piel ind (neutral) and piel biomass
+       (negative)
+    2. No effect of differences between gain and losses
+
+3. Community structure and species richness
+   1. Positive links everywhere except connectance
+
+## Discussion
+
+1. Temporal trends valid theory: BEF and network assembly
+    1. Biomass and species richness
+    2. Connectance and species richness:
+    3. Tlvl and species richness
+2. Top trophic levels drives the response to biomass and species richness variation
+    1. Top predators represent both few individuals and most of the biomass 
+    2. Predators are key to the network structure
+3. Biomass and richness gains and losses are symmetric processes in terms of
+   community structure
+    1. Because big individuals are drivers
+    2. We could have imagine other ways, that losses and gain of biomass/species are
+       overall due to little individuals. Is it a statistical or an ecological
+       effect? because big individuals are less numerous? (can be check with
+       nind in covariable?)
+4. Are community dynamics fluctuate around equilibrium point
+

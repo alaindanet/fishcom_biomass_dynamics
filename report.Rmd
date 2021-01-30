@@ -27,7 +27,7 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r}
+```{r, results = FALSE}
 library(drake)
 library(tidyverse)
 library(magrittr)
@@ -43,69 +43,7 @@ mytheme <- theme_cowplot() +
 background_grid()
 
 theme_set(mytheme)
-theme_get()
 ```
-
-# Research questions
-
-## Abstract
-
-Determine how community structure will respond to ongoing change remains an ongoing
-challenge. Studies reported strong temporal trends in community biomass, notably
-strong decline in insects and vertebrate populations. 
-
-However, those studies says nothing about how empirical findings about how
-different aspects of community structure such as species richness react
-to a change in community biomass.
-
-Ecological theory might provide insight on how community structure varies
-according to biomass. Especially BEF predicts a positive link between species
-richness and community biomass especially in grassland.
-
-However, communities used in BEF experiments might not be relevant to get
-insight about what happens in natural settings. Firstly there are statics, i.e.
-not temporal. Secondly, community composition are set to randomly and thus do
-not reflect real perturbations which do not affect communities randomly. 
-(to be fair one could argue that random communities can mimic an average outcome
-over a set of possible perturbations, as perturbation 1 would cause extinction of species
-C, perturbation 2 for species A, etc...).
-
-Overall, we miss empirical findings about the link between biomass and
-community structure.
-
-We investigated the link between the temporal dynamics of community biomass at one side and 
-species richness, connectance and average trophic level at another side using a
-1995-2018 standardized monitoring of fish communities. We questionned the shape
-of the link between both temporal trends.  More specifically, we questionned if
-(2) the link between foodweb structure and biomass dynamics vary between growing
-and shrinking communities, and if the size of the community can modulate this
-response.
-
-We found significant positive relationships the dynamics of community biomass
-and the dynamics of species richness, average trophic level and connectance but
-a negative one for weighted connectance. We also found this relationship was
-different depending on if the community biomass was growing or shrinking through
-time for all variables, suggesting that assembly processes such as colonization
-processes might.
-
-# Introduction
-
-1. Option1 Global change -> change of biomass 
-   Option2 Ecological communities are dynamics + example
- 
-2. Ecological communities often describe by their richness, biomass
-
-3. BEF
-
-
-```{r b-bivar-cap}
-bivar_cap <- paste0(
-  "Links between temporal dynamics of biomass and temporal dynamics of
-  metrics for the communities which have a median biomass across time inferior
-  to the median of the station (little) and the other (big)"
-)
-```
-
 
 # Results
 
@@ -113,7 +51,7 @@ bivar_cap <- paste0(
 - Species richness, Avg trophic level, connectance:
   - increases when biomass increases while decreases when biomass decreases
   - Avg trophic level: same for species richness  
-  - connectance:  decreases when richness increases while increases when
+  - connectance: decreases when richness increases while increases when
     richness decreases (reverse sign compared to biomass)
 
 - Pielou (eveness) :
@@ -154,54 +92,9 @@ bivar_cap <- paste0(
 
 - Lost and gain of biomass or species richness resulted in same network structure dynamics,
   suggesting that the two processes are symmetric.
-- The low effect of community size suggests that the architecture of the
-  community in terms of species richness, number of piscivorous species, plays a
-  role in its dynamics
-
-## Interpretation
-
-- Richness:
-  - When biomass increases, species richness increases as well
-    as when biomass decreases conjointly to species richness.
-
-- Avg trophic level: 
-  - Higest trophic level concentrates most of the biomass, so gain and loss are
-    statistically more linked to them
-  - Low and gain of biomass are linked to big individuals
-
-    - The observation that the number of link and link density follow the same
-      pattern confirm this interpretation.
-
-- Connectance:
-  - In little communities, few piscivorous species and so loss of biomass do not
-    change the foodwebs that much because fish-resource links are quite redondant.
-    - there is a positive correlation between nb of pisc node and biomass.
-    - In bigger communities, the loss of the highest piscivorous nodes/species
-      (see average trophic level), which have a lot of interactions, leads to a
-      decrease of connectance over time.
-  - Increase in biomass was weakly related to an increase in node number or species
-    richness, so it is not surprising that connectance to not vary.
-
-- Connectance (fish-fish interactions):
-  - Globally positive relationship
-  - when biomass increases: communities gains higher trophic level that might
-    explain this relationship (but species richness increase as well)
-  - When biomass decreases: communities  
-
-- Weighted connectance:
-  - When biomass decreases in little communities, loss of highest trophic level
-    and so less big predators and weighted connectance become more even
-    - In big communities, the highest number can make the absence of such an effect 
-  - When Biomass increases:
-    - but species richness and number of nodes increases and gini coefficient
-      does not move: so it is ninly due to the number of species
-    - Gini decrease (more even link distribution) and number of species
-      decrease also, so weighted_connectance should increase (it is what we see
-      for low biomass communities). No idea for the difference between little
-      and big communites.
-
-The key to understand the difference between little and big communities is the
-number of piscivorous nodes.
+- The low effect of community biomass and species richness suggests that the
+  architecture of the community in terms of species richness, number of
+  piscivorous species, does not play a big role in its dynamics
 
 
 ```{r}

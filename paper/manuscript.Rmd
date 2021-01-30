@@ -1,0 +1,100 @@
+---
+title: "More than space for time: revealing the tight links constraining the temporal dynamics of network structure"
+author: "Alain Danet, Maud Mouchet, Loubna El Madouri, Colin Fontaine"
+self_contained: yes
+date: "`r Sys.Date()`"
+tables: yes
+bibliography: references.bib 
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+    math: katex
+---
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  #fig.dim = c(7, 7),
+  fig.fullwidth = TRUE,
+  fig.show = "hold",
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  results = TRUE 
+)
+```
+
+
+```{r, results = FALSE}
+library(drake)
+library(tidyverse)
+library(magrittr)
+library(cowplot)
+library(viridis)
+library(kableExtra)
+library(sf)
+mypath <- rprojroot::find_package_root_file 
+source(mypath("R/variable_shortcut.R")) # Define your custom code as a bunch of functions.
+source(mypath("R/misc.R"))
+source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
+
+mytheme <- theme_cowplot() +
+background_grid()
+
+theme_set(mytheme)
+```
+
+# Result
+
+
+Overall, we found no significant effect of the temporal gain or losses of total
+biomass and species richness on the relationship between the temporal trends of
+community structure and that of biomass and species richness (slope X, Table X).
+
+## Community structure and biomass
+
+We found a significant positive relationship between the temporal trends of total biomass from
+one side and species richness, average trophic level, connectance from the other
+side (slopes XX, Figure X, Table X), meaning that they increased in time when
+the total biomass increased in time and respectively that they decreased in time
+when the total biomass decreased in time. 
+
+We found that a significant negative relationship between the temporal trends of
+total biomass and that of the pielou of biomass (slopes XX, Figure X, Table X),
+meaning that the pielou value increased in time when the total biomass decreased in time and
+respectively that the pielou value decreased in time when the total biomass
+increase in time. However, we found no relationship between the temporal trends of
+total biomass and that of the pielou of individual.
+
+## Community structure and species richness 
+
+
+The temporal trends of total biomass, average trophic level, pielou of biomass,
+pielou of individual had a positive relationship with that of species
+richness (slopes XX, Figure X, Table X).
+
+We also found that the relationship between the temporal trends of pielou of
+individual and connectance and that of species richness was dependant of the
+overall species richness of the community (Figure X, Table X). The relationship
+between temporal trends of pielou of individual and that of species richness
+was more positive as the community contained more species (+ XX by species by
+square meter). While the relationship between temporal trends of pielou of
+individual and that of species richness was more negative as the community
+contained more species.
+
+# Discussion
+
+
+##
+
+[@danet_species_nodate]
+
+# References  {-}
+
+<div id="refs"></div>
+
+# Figures {-}
+
