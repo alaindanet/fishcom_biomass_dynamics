@@ -1,6 +1,6 @@
 ---
 title: "More than space for time: revealing the tight links constraining the temporal dynamics of network structure"
-author: "Alain Danet, Maud Mouchet, Loubna El Madouri, Colin Fontaine"
+author: "Alain Danet, Maud Mouchet, Loubna El Madouri, Colin Fontaine (ordre non fixé)"
 self_contained: yes
 date: "`r Sys.Date()`"
 tables: yes
@@ -71,10 +71,11 @@ total biomass and that of the pielou of individual.
 
 ## Community structure and species richness 
 
-
 The temporal trends of total biomass, average trophic level, pielou of biomass,
 pielou of individual had a positive relationship with that of species
-richness (slopes XX, Figure X, Table X).
+richness (slopes XX, Figure X, Table X). However, the direct relationship
+between the temporal trends of average trophic level and the one of species
+richness was not significant after controling for total biomass temporal trends.
 
 We also found that the relationship between the temporal trends of pielou of
 individual and connectance and that of species richness was dependant of the
@@ -87,14 +88,128 @@ contained more species.
 
 # Discussion
 
+- Main results:
+  - different mechanisms for richness and biomass
+  - space for time subtitution works for biomass and tlvl but not for
+    connectance
 
-##
+## Temporal dynamics confirms space for time substitution BEF
 
-[@danet_species_nodate]
+The temporal dynamic of the species richness was positively linked to that of
+biomass. In non-temporal data, this result was already found in streams
+[@woods_testing_2020; @danet_species_nodate] but also in grasslands salt marches
+and forests [@hector_plant_1999; @tilman_biodiversity_2014;
+@wu_relationship_2015; @li_relationship_2018; but see @grace_integrative_2016]. Therefore,
+our results confirm BEF prediction works also in time.  
+
+*From the previous manuscript*: the positive relationship of species richness on total
+biomass might be due to resource use complementarity [@carey_determining_2011],
+which is held by niche differentiation [@loreau_biodiversity_1998;
+@loreau_partitioning_2001] or to the higher probability of getting high biomass
+species with higher species richness [@loreau_biodiversity_2001].
+
+We found the temporal dynamic of connectance was negative associated, but
+weakly, with that one of species richness as found in most empirical foodweb
+[@dunne_network_2006]. The relationship is very weak in species rich commuties
+and more negative for species poor commuties. An explanation might be that
+species-rich communities already contains a significant number of piscivores, which have the
+most links whereas species poor communites contains few piscivores. 
+
+The temporal dynamic of the average trophic level had no relationship with the
+one of species richness. It is surprising because one can imagine that loss and
+gain of species would reveal assembly/disassembly mechanisms in terms of trophic
+structure. However, we found that when species richness increases, the
+distribution of biomass and individuals among species become more even in the
+community, meaning that dominance decrease. Species richness has often been
+found to be positively or negatively related to individual eveness
+[@soininen_relationship_2012; @maureaud_biodiversity_2019].
+
+ 
+## Biomass temporal dynamics is linked to the top trophic level
+
+We further found that the temporal dynamic of the average trophic level was positively
+linked to that of biomass. Increase  of average trophic level can be associated
+to either gain of biomass in the highest trophic level nor losses of biomass in
+the lowest trophic. In our case, such gain or losses of average trophic level is
+certainly associated to the loss or the gain of the biggest individuals. Because
+it seems unlikely that a community gain or loss biomass while respectively
+losing or gaining individuals. Pielou index temporal dynamics further confirm
+this interpretation. 
+
+We found that the pielou of biomass decrease through time
+as total biomass decrease and reversely, meaning that biomass distribution
+across species respectively became less and more even when total biomass
+decrease and increase. The structuration in size class of the community might
+explain this pattern.
+
+Finally, we found no relationship between the temporal
+dynamics of pielou based on indivual number and that one of biomass, confirming
+that the temporal trends of total biomass in our study is linked to few big
+individuals. @maureaud_biodiversity_2019 found negative relationship between
+biomass and eveness of indivual in marine ecosystem. One explanation is that
+marine ecosystem studied in [@maureaud_biodiversity_2019] are much larger than
+the stream communities studied in this study. 
+
+We further found that the temporal dynamic of connectance was positively
+linked to that one of total biomass, meaning that connectance increases through
+time in a given site when total biomass increases through time and reversely.
+This is in line with the fact that the fishes located at higher trophic level
+also display a larger number of links as the size of the predation window
+increases with the size of the fishes. This is because the predation window of
+freshwater fish species is highly nested.
+
+##  Biomass and richness variation are not the same process 
+
+Our results indicate that biomass trends are linked to few big individuals while
+richness trends are linked to overall shift in dominance in communities. This
+results has profound implications for conservation. As more and more studies
+report biomass and richness temporal dynamics [@hallmann_more_2017;
+@ceballos_biological_2017], it is important to note that they might not be
+equivalent in terms of consequences on the structure of the community. Further
+studies should investigate several dimensions of community structure because it
+drives many aspects of ecosystem functioning. 
+
+## Biomass and richness gains and losses are symmetric processes in terms of community structure
+
+We found no case in which gain or losses of biomass and richness lead to
+different relationship between the temporal dynamic of community structure and
+the one of biomass and species richness. We could have imagine that
+extinction/colonisation processes or immigration/extinction debt could have lead
+to different relationships.
+
+## Space for time substitution does not always hold 
+
+We found that total biomass was linked positively related to species richness
+both in space and in time, indicating that space for time might be use. In the
+same way, we found a positive positive relationship between average trophic
+level and total biomass both in time and in space. However, it was not the case
+for connectance and average trophic level that were respectively weakly or not
+linked to species richness in time whereas our result shows a strong negative
+relation in space. Moreover, connectance displayed a strong positive
+relationship (move to results?) with biomass in time but not in space. 
+
+Space for time substitution is a widely
+used tool in ecology [@pickett_space-for-time_1989; @blois_space_2013;
+@damgaard_critique_2019]. However, the drivers of spatial variation might not
+be the ones that drive community variation in time. The successional processes
+driving the assembly or the disassembly of communities might not be reflected in
+spatial gradient.
+
+## Conclusion
+
+We showed that BEF works in time but that richness and biomass temporal trends through
+time relates on different ecological processes inside communities. We further
+found that space for time subtitution does not always work. 
+
 
 # References  {-}
 
 <div id="refs"></div>
 
 # Figures {-}
+
+```{r}
+loadd(p_fig1_2)
+p_fig1_2
+```
 

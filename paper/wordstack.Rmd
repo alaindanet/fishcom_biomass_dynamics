@@ -43,8 +43,9 @@ output:
 
 3. Colonisation / Extinction sequences in natural settings
     1. Space for time substitution
-    2. Communities are not affected randomly as environment species niche  rel
+    2. Communities are not affected randomly as environment species niche
     3. sequence: is losing something = adding something ?
+    4. assembly / disassembly processes 
  
 4. Research questions 
     1. Link between the temporal dynamics of different aspects of community structure ?
@@ -76,19 +77,40 @@ output:
 
 ## Discussion
 
-1. Temporal trends valid theory: BEF and network assembly
-    1. Biomass and species richness
-    2. Connectance and species richness:
-    3. Tlvl and species richness
-2. Top trophic levels drives the response to biomass and species richness variation
+1. Temporal trends valid theory: BEF 
+    1. Total Biomass and species richness 
+	- plant: [@tilman_productivity_1996; @grace_integrative_2016;
+	  @hector_plant_1999; @tilman_biodiversity_2014;
+	  @grace_integrative_2016]
+	- stream feeders: [@cardinale_species_2002]
+	- aquatic bacterial consumers [@pennekamp_biodiversity_2018]
+    2. Connectance and species richness: [@dunne_network_2006]
+    3. Tlvl and species richness: []
+    4. Evenness increases with species richness:
+       - It is expected when adding species lead to a transfert of indiv [@jost_relation_2010]
+       - Losses of species richness leads to more dominance of few species
+       - Negative selection effect? See [@maureaud_biodiversity_2019]
+       - Evenness is often positively linked to species richness
+	 [@soininen_relationship_2012]
+       
+    
+2. Biomass temporal dynamics is linked to the top trophic level
+   [@maureaud_biodiversity_2019] found neg biomass-eveness (indiv).
     1. Top predators represent both few individuals and most of the biomass 
     2. Predators are key to the network structure
-3. Biomass and richness gains and losses are symmetric processes in terms of
+
+3. Biomass and richness variation are not the same process 
+    1. Linked to few big individuals for biomass 
+    2. Linked to dominance for richness 
+
+4. Biomass and richness gains and losses are symmetric processes in terms of
    community structure
     1. Because big individuals are drivers
-    2. We could have imagine other ways, that losses and gain of biomass/species are
-       overall due to little individuals. Is it a statistical or an ecological
-       effect? because big individuals are less numerous? (can be check with
-       nind in covariable?)
-4. Are community dynamics fluctuate around equilibrium point
+    2. We could have imagine other ways, that losses and gain of biomass/species
+       are overall due to little individuals. Is it a statistical or an
+       ecological effect? because big individuals are less numerous? (can be
+       check with nind in covariable?)
 
+5. Space for time substitution does not always hold
+
+6. Are community dynamics fluctuate around equilibrium point
