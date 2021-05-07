@@ -141,3 +141,81 @@ get_predict_from_signif <- function (mod_summary = NULL) {
     return(model_test)
 
 }
+
+plot_matrix_bm_rich_cross_classif <- function (classif = NULL) {
+
+  ti <- classif %>%
+    filter(variable %in% c("log_bm_std", "log_rich_std")) %>%
+    unnest(classif) %>%
+    select(variable, station, shape_class) %>%
+    pivot_wider(names_from = variable, values_from = shape_class)
+
+  ti2 <- ti %>% 
+    group_by(log_bm_std, log_rich_std) %>%
+    summarise(n = n())
+
+  ggplot(data = ti2, aes(x=log_bm_std, y = log_rich_std, fill=log(n))) + 
+    geom_tile() +
+    viridis::scale_fill_viridis() +
+    geom_text(aes(x=log_bm_std, y = log_rich_std, label = n), color = "black", size = 10)
+
+}
+
+get_plot_fig1_2 <- function(predict_plot = predict_plot2, get_list = FALSE, rm_legend = FALSE) {
+
+  pred_plot_signif_bm <- predict_plot %>%
+    filter(
+      y %in% c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
+      !y %in% c("bm_std", "rich_std"),
+      x == "log_bm_std"
+    )
+  pred_plot_signif_rich <- predict_plot %>%
+    filter( y %in% c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"), x == "log_rich_std") %>%
+    filter(!y %in% c("rich_std"))
+  pred_plot_other <- predict_plot %>%
+    filter( y %in% c("ct_ff", "w_trph_lvl_avg"), x %in% c("ct_ff", "w_trph_lvl_avg"))
+  pred_plot_ind <- predict_plot %>%
+    filter( y %in% c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"), x == "nind_std") %>%
+    filter(!y %in% c("nind_std"))
+
+  the_plot <- map(list(pred_plot_signif_bm, pred_plot_signif_rich, pred_plot_other, pred_plot_ind), function (x) {
+    
+  legend_signif <- get_legend(
+    x$pred_plot[[1]] +
+      theme(legend.position = "bottom")
+  )
+  x %<>% 
+    mutate(
+      pred_plot = pmap(list(pred_plot, y, x),
+	function(p, y, x) {
+	  # Replace label
+	  label <- str_replace_all(c(x,y), var_replacement(slope = TRUE)) 
+	  p +
+	    labs(x = label[1], y = label[2]) +
+	    theme(legend.position = "none")
+	} )
+    )
+
+  list_p <- x$pred_plot
+  list_p[[length(list_p) + 1]] <- legend_signif
+
+  pred_plot <- plot_grid(
+    plotlist = list_p,
+    labels = "AUTO",
+    nrow = 2
+  )
+
+  if (get_list) {
+    return(list_p)
+  }
+    
+  return(pred_plot)
+    
+    }
+  )
+
+  names(the_plot) <- c("bm", "rich", "other", "nind") 
+
+  return(the_plot)
+
+}

@@ -9,7 +9,7 @@ get_community_data <- function (
   load(path, envir = environment())
 
   com <- community_metrics %>%
-    dplyr::select(opcod, biomass, richness, pielou) %>%
+    dplyr::select(opcod, biomass, richness, pielou, nind, nind_std) %>%
     dplyr::filter(!is.na(opcod))
 
   return(com)

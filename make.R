@@ -19,7 +19,6 @@ make(plan, parallelism = "future", jobs = 3)
 
 # If you do not change any code or data,
 # subsequent make()'s do not build targets.
-
 # Load your targets back into your session with loadd() and readd().
 plan
 print(plan, n = 40)
@@ -29,15 +28,27 @@ print(plan, n = 40)
 library(future)
 plan(multisession, workers = 3)
 
-#######################################
-#  Get the right term from new model  #
-#######################################
+load("data/community_metrics.rda")
+loadd(st_mono_trends_combined_list)
+print(st_mono_trends_combined_list, n = 20)
 
-loadd(predict_table2)
+loadd(data4model)
+test <- data4model %>%
+  filter(x == "log_rich_std", y %in% c("piel_bm", "piel_nind","w_trph_lvl_avg", "log_bm_std")) %>%
+  unnest(data_model) %>%
+  select(station ,y, log_rich_std_slope, linear_slope) %>%
+  pivot_wider(names_from = "y", values_from = "linear_slope")
 
-predict_table2$model_obj[[3]]
+mod <- lm(w_trph_lvl_avg ~ log_rich_std_slope + log_bm_std, data = test)
+summary(mod)
+car::vif(mod)
 
-loadd(predict_plot2)
+# Is it the same for pielou ?
 
-predict_plot2$pred_plot
-  
+mod <- lm(piel_bm ~ log_rich_std_slope + log_bm_std, data = test2)
+summary(mod)
+car::vif(mod)
+
+mod <- lm(piel_nind ~ log_rich_std_slope + log_bm_std, data = test2)
+summary(mod)
+car::vif(mod)

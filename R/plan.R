@@ -2,7 +2,7 @@
 # Details: https://books.ropensci.org/drake/plans.html
 
 # Variable:
-model_x_var <- c("log_bm_std", "rich_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg")
+model_x_var <- c("log_bm_std", "rich_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg", "nind_std")
 #model_y_var <- c("ct_ff", "w_trph_lvl_avg", "rich_std", "log_rich_std", "w_trph_lvl_avg")
 
 plan <- drake_plan(
@@ -171,6 +171,9 @@ plan <- drake_plan(
     bm_group = biomass_group  
     ),
   p_hist_med_bm = plot_hist_med_bm(.data = full_data2),
+  p_cross_classif_bm_rich = plot_matrix_bm_rich_cross_classif(
+    classif = rigal_classification),
+  p_fig1_2 = get_plot_fig1_2(predict_plot = predict_plot2),
 
   #5. Tables 
   effect_quad2_piece = tibble(
@@ -271,6 +274,14 @@ plan <- drake_plan(
       output_dir = "paper"
     )
   ),
+  manuscript = callr::r(
+    function(...) rmarkdown::render(...),
+    args = list(
+      input = drake::knitr_in("paper/manuscript.Rmd"),
+      output_file = drake::file_out("paper/manuscript.html"),
+      output_dir = "paper"
+    )
+    ),
 
   trace = TRUE
 )

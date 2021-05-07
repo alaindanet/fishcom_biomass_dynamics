@@ -47,7 +47,6 @@ theme_set(mytheme)
 
 # Results
 
-
 - Species richness, Avg trophic level, connectance:
   - increases when biomass increases while decreases when biomass decreases
   - Avg trophic level: same for species richness  
@@ -70,14 +69,14 @@ theme_set(mytheme)
 ## Summary of result
 
 - There was a significant positive link between the dynamics of community biomass and the
-  dynamics of community structure for the variables: species richness, average trophic level, connectance except for pielou of
-  individuals and pielou of biomass which had respectively a no and a negative
-  relationship. 
+  dynamics of community structure for the variables: species richness, average
+  trophic level, connectance except for pielou of individuals and pielou of
+  biomass which had respectively a no and a negative relationship. 
 
-- There was a significant positive link between the dynamics of species richness and the
-  dynamics of community structure for the variables: average trophic level, connectance, pielou of
-  individuals and pielou of biomass; except for connectance which had a negative
-  relationship.
+- There was a significant positive link between the dynamics of species richness
+  and the dynamics of community structure for the variables: average trophic
+  level, connectance, pielou of individuals and pielou of biomass; except for
+  connectance which had a negative relationship.
 
 - There are a significant link between the dynamics of community biomass and the
   dynamics of community structure for all the variables expect pielou of
@@ -85,127 +84,96 @@ theme_set(mytheme)
   individuals
 
 - We found that the link between network temporal dynamics and biomass temporal
-  dynamics **does not change** according if the community loses or gain biomass, for all
-  variables.
+  dynamics **does not change** according if the community loses or gain biomass,
+  for all variables.
 
 ## Answer to research questions 
 
-- Lost and gain of biomass or species richness resulted in same network structure dynamics,
-  suggesting that the two processes are symmetric.
+- Lost and gain of biomass or species richness resulted in same network
+  structure dynamics, suggesting that the two processes are symmetric.
 - The low effect of community biomass and species richness suggests that the
   architecture of the community in terms of species richness, number of
   piscivorous species, does not play a big role in its dynamics
 
 
 ```{r}
+loadd(p_fig1_2)
 loadd(predict_plot2)
-pred_plot_signif_com <- predict_plot2 %>%
-  filter(
-    y %in% c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
-    !y %in% c("bm_std", "rich_std"),
-    x == "log_bm_std"
-  )
-legend_signif <- get_legend(
-  pred_plot_signif_com$pred_plot[[1]] +
-    theme(legend.position = "bottom")
-)
-pred_plot_signif_com %<>% 
-  mutate(
-  pred_plot = pmap(list(pred_plot, y, x),
-    function(p, y, x) {
-      # Replace label
-      label <- str_replace_all(c(x,y), var_replacement(slope = TRUE)) 
-      p +
-	labs(x = label[1], y = label[2]) +
-	theme(legend.position = "none")
-    } )
+pl <- get_plot_fig1_2(predict_plot2, get_list = TRUE)
+
+map(pl$bm, function (plo) {
+  plo + theme(legend.position = "none")
+  
+  save_plot(
+    file = get_mypath(
+      "figures", 
+      paste0(str_replace_all(plo$labels$y, " ", "_"),
+	"_",
+	str_replace_all(plo$labels$x, " ", "_"),
+	".png"
+      )
+      ),
+    plot = plo,
+    base_height = 4, base_asp = 1.2#1.618 
   )
 
-list_p <- pred_plot_signif_com$pred_plot
-list_p[[length(list_p) + 1]] <- legend_signif
-
-pred_plot1 <- plot_grid(
-  plotlist = list_p,
-  labels = "AUTO",
-  nrow = 2
+} 
 )
-#pred_plot1 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
+map(pl$rich, function (plo) {
+
+  plo + theme(legend.position = "none")
+  
+  save_plot(
+    file = get_mypath(
+      "figures", 
+      paste0(str_replace_all(plo$labels$y, " ", "_"),
+	"_",
+	str_replace_all(plo$labels$x, " ", "_"),
+	".png"
+      )
+      ),
+    plot = plo,
+    base_height = 4, base_asp = 1.2#1.618 
+  )
+
+} 
+)
+
+map(pl$nind, function (plo) {
+
+  plo + theme(legend.position = "none")
+  
+  save_plot(
+    file = get_mypath(
+      "figures", 
+      paste0(str_replace_all(plo$labels$y, " ", "_"),
+	"_",
+	str_replace_all(plo$labels$x, " ", "_"),
+	".png"
+      )
+      ),
+    plot = plo,
+    base_height = 4, base_asp = 1.2#1.618 
+  )
+
+} 
+)
+
+pred_plot1 <- p_fig1_2[["bm"]]
+pred_plot2 <- p_fig1_2[["rich"]]
+pred_plot3 <- p_fig1_2[["other"]]
+pred_plot4 <- p_fig1_2[["nind"]]
 ```
 
-```{r}
-pred_plot_rich <- predict_plot2 %>%
-  filter( y %in% c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"), x == "log_rich_std") %>%
-  filter(!y %in% c("rich_std"))
-legend_signif <- get_legend(
-  pred_plot_rich$pred_plot[[1]] +
-    theme(legend.position = "bottom")
-)
-pred_plot_rich %<>% 
-  mutate(
-  pred_plot = pmap(list(pred_plot, y, x),
-    function(p, y, x) {
-      # Replace label
-      label <- str_replace_all(c(x,y), var_replacement(slope = TRUE)) 
-      p +
-	labs(x = label[1], y = label[2]) +
-	theme(legend.position = "none")
-    } )
-  )
-
-list_p <- pred_plot_rich$pred_plot
-list_p[[length(list_p) + 1]] <- legend_signif
-
-pred_plot2 <- plot_grid(
-  plotlist = list_p,
-  nrow = 2,
-  labels = "AUTO" 
-)
-#pred_plot2 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
-```
-
-```{r}
-
-pred_plot_other <- predict_plot2 %>%
-  filter( y %in% c("ct_ff", "w_trph_lvl_avg"), x %in% c("ct_ff", "w_trph_lvl_avg"))
-legend_signif <- get_legend(
-  pred_plot_other$pred_plot[[1]] +
-    theme(legend.position = "bottom")
-)
-pred_plot_other %<>% 
-  mutate(
-  pred_plot = pmap(list(pred_plot, y, x),
-    function(p, y, x) {
-      # Replace label
-      label <- str_replace_all(c(x,y), var_replacement(slope = TRUE)) 
-      p +
-	labs(x = label[1], y = label[2]) +
-	theme(legend.position = "none")
-    } )
-  )
-
-list_p <- pred_plot_other$pred_plot
-list_p[[length(list_p) + 1]] <- legend_signif
-
-pred_plot3 <- plot_grid(
-  plotlist = list_p,
-  labels = "AUTO", nrow = 2
-)
-#pred_plot3 <- plot_grid(top, legend_signif, nrow = 2, rel_heights = c(1, .1))
-```
 
 ```{r, fig.dim = c(10, 7)}
 pred_plot1
 pred_plot2
 pred_plot3
+pred_plot4
 ```
 
 
-```{r, eval = FALSE, fig.dim = c(12, 12)}
-plot_grid(
-  , plot_grid(, , ncol = 2, rel_widths = c(.75, 1)),
-  nrow = 2
-)
-```
 
 ```{r, eval = FALSE, fig.dim = c(10, 5)}
 loadd(betapart_bin, rigal_classification, st_mono_trends_combined_list)
@@ -281,7 +249,7 @@ loadd(summary_var_f3y)
 
 summary_var_f3y %>%
   na.omit() %>%
-  select(bm_std, avg_IS, l, ld, m, A, gini, log_bm_std, connectance, ct_ff, rich_std, w_trph_lvl_avg,
+  select(bm_std, nind_std, log_bm_std, connectance, ct_ff, rich_std, w_trph_lvl_avg,
     weighted_connectance, nbnode_std, nb_pisc_node_std, prop_pisc_node, piel_bm,
     piel_nind) %>%
   cor() %>%
@@ -291,11 +259,13 @@ summary_var_f3y %>%
 
 ## Other variables 
 
+#### Réseau ~ Biomasse
+
 ```{r pred-other-com, fig.dim = c(12, 10)}
 pred_plot_signif <- predict_plot2 %>%
   filter(!y %in% c(get_com_str_var(), "ct_ff"), x == "log_bm_std")
 legend_signif2 <- get_legend(
-  pred_plot_signif_com$pred_plot[[1]] + theme(legend.position = "bottom")
+  pred_plot_signif$pred_plot[[1]] + theme(legend.position = "bottom")
 )
 pred_plot_signif$pred_plot %<>% map(., ~.x + theme(legend.position = "none"))
 top2 <- plot_grid(
@@ -317,6 +287,38 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
   ) %>%
   kable_styling(latex_options =c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
+```
+
+#### Réseau ~ richnes 
+
+```{r pred-other-com-rich, fig.dim = c(12, 10)}
+pred_plot_signif <- predict_plot2 %>%
+  filter(!y %in% c(get_com_str_var(), "ct_ff"), x == "log_rich_std")
+legend_signif2 <- get_legend(
+  pred_plot_signif$pred_plot[[1]] + theme(legend.position = "bottom")
+)
+pred_plot_signif$pred_plot %<>% map(., ~.x + theme(legend.position = "none"))
+top2 <- plot_grid(
+  plotlist = pred_plot_signif$pred_plot,
+  labels = pred_plot_signif$y
+)
+plot_grid(top2, legend_signif2, nrow = 2, rel_heights = c(1, .1))
+```
+
+```{r}
+model_log_rich_f3y_table_medium[["anova_table"]] %>% 
+  filter(!y %in% get_com_str_var(all = FALSE)) %>%
+  kable(., booktabs = TRUE,
+    caption = 
+      paste0(
+      "ANOVA table for the model: dN =",
+      "dB + B + dB*B + Inc*B + dB*Inc*B."
+    )
+  ) %>%
+  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+```{r}
 ```
 
 

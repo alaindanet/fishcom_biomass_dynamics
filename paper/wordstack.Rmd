@@ -101,7 +101,7 @@ output:
 
 3. Biomass and richness variation are not the same process 
     1. Linked to few big individuals for biomass 
-    2. Linked to dominance for richness 
+    2. Linked to dominance for richness
 
 4. Biomass and richness gains and losses are symmetric processes in terms of
    community structure
