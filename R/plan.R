@@ -117,6 +117,21 @@ plan <- drake_plan(
     classif = rigal_classification,
     st_mono = st_mono_trends_combined_list, type = "min_max"),
 
+  # 2.2 Environment
+  st_analysis = get_all_station_analysis(classif = rigal_classification),
+  data_for_pca = habitat_press %>%
+    filter(station %in% st_analysis) %>%
+    select(all_of(c("station", get_var_for_pca()))),
+  pca = get_pca_environment(.data = data_for_pca),
+  environment_pca = data_for_pca %>%
+    mutate(
+      RC1 = pca$rotated$scores[, 1],
+      log_RC1 = log(RC1 + abs(min(RC1)) + 1),
+      RC2 = pca$rotated$scores[, 2],
+      log_RC2 = log(RC2 + abs(min(RC2)) + 1)
+      ) %>%
+    select(RC1, log_RC1, RC2, log_RC2, everything()),
+
   # 3. Modelling
   comb = list(
     y = c(get_com_str_var(all = TRUE), "bm_std", "log_bm_std"),
@@ -164,6 +179,17 @@ plan <- drake_plan(
   net_dyn_lm_plot = get_net_dyn_lm_plot(net_dyn_lm = net_dyn_lm),
   net_dyn_lm_coeff = get_lm_coeff(.data = net_dyn_lm, col_names = "model"),
 
+  # 3.2 Analysis for the spatial models 
+  basin_station = get_basin_station(),
+  sp_st_data = summary_var_med %>%
+    left_join(environment_pca, by = "station") %>%
+    left_join(basin_station, by = "station") %>%
+    filter(station %in% st_analysis) %>%
+    select(all_of(c("station", "basin", "log_RC1", "log_RC2", get_all_var_analysis()))) %>%
+    na.omit,
+  sp_models = get_mod_list(.data = as.data.frame(sp_st_data)),
+  colin_sp_models = map(sp_models, car::vif),
+  est_sp_models = map(sp_models, broom.mixed::tidy),
 
   #4. The plots
   p_bm_vs_bm_slope = plot_bm_vs_bm_slope(
@@ -174,6 +200,13 @@ plan <- drake_plan(
   p_cross_classif_bm_rich = plot_matrix_bm_rich_cross_classif(
     classif = rigal_classification),
   p_fig1_2 = get_plot_fig1_2(predict_plot = predict_plot2),
+  p_pca = my_pca_plot(.data = pca$rotated,
+    xaxis = "RC1", yaxis = "RC2", ctb_thld = .4, 
+    label_size = 4, force_pull = 0.01, force = 10,
+    seed = 1
+  ),
+  sp_relation_plot = get_sp_model_plot(sp_models),
+
 
   #5. Tables 
   effect_quad2_piece = tibble(

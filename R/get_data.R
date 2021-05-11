@@ -208,3 +208,10 @@ update_files <- function () {
    copy.date = TRUE
    )
 }
+
+get_all_station_analysis <- function (classif = NULL) {
+  st_analysis <- map(get_all_var_analysis(), ~get_st_mono_trends(.df = classif, xvar = .x)$station) %>% 
+    unlist %>% unique
+  return(st_analysis)
+
+}

@@ -70,6 +70,8 @@ get_model_terms <- function ( ) {
 var_replacement <- function (slope = FALSE) {
 
   x <- c(
+    log_RC1 = "PCA Avg stream size",
+    log_RC2 = "PCA Avg temperature",
     ct_ff = "Connectance",
     w_trph_lvl_avg = "Avg trophic level",
     #connectance ,weighted_connectance,
@@ -88,4 +90,16 @@ var_replacement <- function (slope = FALSE) {
   }
 
   return(x)
+}
+
+get_var_for_pca <- function() {
+  c(
+    "slope", "alt", "d_source", "strahler", "width_river_mean", "avg_depth_station_mean",
+    "width_river_cv", "avg_depth_station_cv", "DBO_med", "flow_med", "temperature_med",
+    "DBO_cv", "flow_cv", "temperature_cv"
+  )
+}
+
+get_all_var_analysis <- function () {
+  c(get_com_str_var(), get_biomass_var(), get_richness_var()) %>% unique
 }

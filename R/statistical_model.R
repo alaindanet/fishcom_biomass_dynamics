@@ -242,3 +242,71 @@ test2 <- comparison_table %>%
 
 return(test2)
 }
+
+#' Compute spatial relationships
+
+get_mod_list <- function(.data = NULL) {
+  rlang::eval_tidy(rlang::quo(
+      list(
+	log_rich_std = nlme::lme(log_rich_std ~ log_RC1 + log_RC2 + log_bm_std + piel_nind + piel_bm + ct_ff + w_trph_lvl_avg,
+	  random = ~ 1 | basin, data = {{.data}}),
+	ct_ff = nlme::lme(ct_ff ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std + piel_nind + piel_bm + w_trph_lvl_avg,
+	  random = ~ 1 | basin, data = {{.data}}),
+	w_trph_lvl_avg = nlme::lme(w_trph_lvl_avg ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std+ piel_nind + piel_bm + ct_ff,
+	  random = ~ 1 | basin, data = {{.data}}),
+	log_bm_std = nlme::lme(log_bm_std ~ log_RC1 + log_RC2 + log_rich_std + piel_nind + piel_bm + ct_ff + w_trph_lvl_avg,
+	  random = ~ 1 | basin, data = {{.data}}),
+	piel_bm = nlme::lme(piel_bm ~ log_RC1 + log_RC2 + log_rich_std + piel_nind + ct_ff + w_trph_lvl_avg + log_bm_std,
+	  random = ~ 1 | basin, data = {{.data}}),
+	piel_nind = nlme::lme(piel_nind ~ log_RC1 + log_RC2 + log_rich_std + piel_bm + ct_ff + w_trph_lvl_avg + log_bm_std,
+	  random = ~ 1 | basin, data = {{.data}})
+      )
+      ))
+} 
+
+#' Compute PCA 
+
+get_pca_environment <- function (.data = data_for_pca) {
+  # Perform PCA
+  pca <- compute_rotated_pca(.data)
+  # Inverse the second axis to have a increasing gradient of temperature 
+  pca$rotated$loadings[, 2] <- pca$rotated$loadings[, 2] * (-1) 
+  pca$rotated$scores[, 1] <- pca$rotated$scores[, 1] * -1
+
+  return(pca)
+}
+
+compute_rotated_pca <- function(.data = NULL, naxis = 2) {
+      .data %<>% na.omit
+      pca <- ade4::dudi.pca(as.data.frame(.data), scannf = FALSE, nf = naxis, center = TRUE, scale = TRUE)
+      pca_rotated <- psych::principal(.data, rotate="varimax", nfactors = naxis,
+	scores=TRUE)
+
+      return(list(normal = pca, rotated = pca_rotated))
+}
+
+
+#' Compute plots from pca_rotated 
+#'
+#' @param pca_rotated list. The output of compute_rotated_pca.
+#' @param axis integer vector of length 2 (x and y resp.).
+#'
+plot_rotated_pca <- function (pca_rotated = NULL, axis = c(1,2)) {
+
+ {
+   adegraphics::adegpar()$plabels
+   ade4::s.corcircle(
+    pca_rotated$rotated$loadings[1:nrow(pca_rotated$rotated$loadings),], xax = axis[1],
+    yax = axis[2], box = TRUE)
+  mtext(paste0("RC ", axis[1]), side = 1, adj = .5, line = -1)
+  mtext(paste0("RC ", axis[2]), side = 2, adj = .5, line = -5)
+  rotated_plot <- grDevices::recordPlot()
+ }
+  pca_plot <- factoextra::fviz_pca_var(pca_rotated$normal,
+    axes = axis,
+    col.var = "contrib", # Color by contributions to the PC
+    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE # Avoid text overlapping
+  )
+  return(list(rotated = rotated_plot, normal = pca_plot))
+}

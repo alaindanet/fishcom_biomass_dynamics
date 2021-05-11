@@ -1179,7 +1179,12 @@ make_troph_plot <- function (
 ##############
 #  PCA plot  #
 ##############
-my_pca_plot <- function (.data = pca_rotated$rotated, xaxis = NULL, yaxis = NULL, ctb_thld = .4) {
+my_pca_plot <- function (.data = pca_rotated$rotated,
+  xaxis = NULL, yaxis = NULL,
+  ctb_thld = .4, label_size = 2, 
+  force = 10,  force_pull = 1,
+  seed = NA
+  ) {
 
   pca_data <- .data$loadings[1:nrow(.data$loadings),]
   pca_data %<>%
@@ -1217,7 +1222,9 @@ ggplot() +
   ) +
   ggrepel::geom_label_repel(data = pca_label,
     aes_string(x = xaxis, y = yaxis, label = "variable"),
-    size = 2, force = 10, box.padding = .1, label.padding = .1
+    size = label_size,
+    force = force, force_pull = force_pull, seed = seed,
+    box.padding = .1, label.padding = .1
   )
 }
 

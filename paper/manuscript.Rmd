@@ -47,6 +47,49 @@ background_grid()
 theme_set(mytheme)
 ```
 
+# Methods
+
+## Data selection
+
+## Food-web inference 
+
+Because we had few informations about trophic interactions between resources, we
+selected only the fish-fish interactions in subsequent analysis.
+
+## Food-web and community structure
+
+We characterized food-webs by its connectance, describing the degree of
+generalism in a network [@dunne_network_2006, @delmas_analysing_2019]. It is
+computed as the ratio between the actual number of links and the number of
+potential links ($C = \frac{L}{S(S-1)}$, with $L$ being the number of links and
+$S$ the number of trophic species). We also computed the average trophic level,
+weighted by the biomass of the trophic species. The trophic level of a trophic
+species is computed recursively as 1 added to the mean trophic level of the
+preys that it consumes.
+
+We described community structure by its total biomass, species richness and the
+evenness of the number of individual and the amount of biomass across species. The evenness was
+quantified with the Pielou index, computed as the Shannon diversity index
+divided by the number of species ($P = \frac{H'}{N}$, with $H'$ being the
+Shannon diversity index and $N$ the number of species).
+
+```{r}
+loadd(com_analysis_data)
+```
+
+## Classification of temporal trajectories
+
+We characterized the temporal trajectories of network and community structure at
+each site. We used a method based on second order polynomial which allows to
+assess both the direction and the monotony of temporal trends
+[@rigal_method_2020].
+
+- Why do we want to classify temporal trends?
+- How do we select station for each variable?
+
+## Spatial  
+
+
 # Result
 
 

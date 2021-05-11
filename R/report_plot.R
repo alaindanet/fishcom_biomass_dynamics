@@ -219,3 +219,65 @@ get_plot_fig1_2 <- function(predict_plot = predict_plot2, get_list = FALSE, rm_l
   return(the_plot)
 
 }
+
+#' Get spatial report plot
+
+get_y_x_comb_from_model <- function(mod = NULL) {
+
+  x_terms <- labels(terms(mod))
+  all_terms <- dimnames(attr(terms(mod), "factors"))[[1]]
+
+  y_term <- all_terms[! all_terms %in% x_terms] 
+
+  tibble(
+    y = y_term, 
+    x = x_terms 
+  )
+}
+
+get_predict_from_model_x <- function (mod = NULL, term = NULL) {
+  ggpredict(mod, terms = c(term)) %>%
+    as_tibble()
+}
+
+get_predict_plot_from_model_x <- function (mod = NULL, x = NULL) {
+
+  stopifnot(is.character(x))
+
+  pred <- get_predict_from_model_x(mod = mod, term = x)
+
+  y <- unique(get_y_x_comb_from_model(mod = mod)$y)
+
+  dataset <- mod$data
+
+  # In case of classic lm model:
+  if (is.null(dataset)) {
+    dataset <- mod$model
+  }
+
+  p <- dataset %>%
+    ggplot(aes_string(y = y, x = x)) +
+    geom_point()
+
+  p <- p +
+    geom_line(data = pred, aes(y = predicted, x = x))
+
+  # Axis label
+  label_tmp <- var_replacement()
+  label <- str_replace_all(label_tmp, "\n", "") 
+  names(label) <- names(label_tmp)
+  p +
+    labs(
+      x = label[x],
+      y = label[y]
+    )
+}
+
+get_sp_model_plot <- function(model = sp_models) {
+    tibble(model = model,
+      comb_term = map(model, ~try(get_y_x_comb_from_model(.x)))) %>%
+    unnest(comb_term) %>%
+    mutate(
+      gg = map2(x, model, ~try(get_predict_plot_from_model_x(mod = .y, x = .x)))
+    )
+}
