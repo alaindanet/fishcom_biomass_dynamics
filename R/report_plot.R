@@ -161,16 +161,16 @@ plot_matrix_bm_rich_cross_classif <- function (classif = NULL) {
 
 }
 
-get_plot_fig1_2 <- function(predict_plot = predict_plot2, get_list = FALSE, rm_legend = FALSE) {
+get_plot_fig1_2 <- function(predict_plot = predict_plot2, get_list = FALSE, rm_legend = FALSE, bm_x = "log_bm_std", rich_x = "log_rich_std") {
 
   pred_plot_signif_bm <- predict_plot %>%
     filter(
       y %in% c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
       !y %in% c("bm_std", "rich_std"),
-      x == "log_bm_std"
+      x == bm_x 
     )
   pred_plot_signif_rich <- predict_plot %>%
-    filter( y %in% c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"), x == "log_rich_std") %>%
+    filter(y %in% c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"), x == rich_x) %>%
     filter(!y %in% c("rich_std"))
   pred_plot_other <- predict_plot %>%
     filter( y %in% c("ct_ff", "w_trph_lvl_avg"), x %in% c("ct_ff", "w_trph_lvl_avg"))

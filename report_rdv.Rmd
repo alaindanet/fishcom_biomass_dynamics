@@ -462,7 +462,7 @@ kable(t_colin_sp_models,
 ### Plot
 
 ```{r}
-loadd(sp_relation_plot)
+loadd(sp_relation_plot2)
 plot_grid(plotlist = sp_relation_plot$gg)
 
 # Write plots:
@@ -483,4 +483,40 @@ map(sp_relation_plot$gg,
   ) 
 )
 ```
+
+## Connectance and biomass 
+
+```{r}
+
+loadd(est_sp_models, colin_sp_models, sp_models)
+loadd(data4model, sp_st_data, summary_var_med)
+data4model[1, ]$data_model[[1]]
+
+est_sp_models$log_bm_std$ct_ff
+colin_sp_models$log_bm_std$ct_ff
+cf_bm_sp_mod <- sp_models$log_bm_std$ct_ff
+```
+
+On ne trouve pas d'effet de la biomasse sur la connectance, à part quand on la
+controle pour la richness. Ce qui se comprend car la richness a un effet très
+fort sur la connectance, qui enlève du coup beaucoup de variabilité. 
+
+```{r}
+test_sp_model <- get_mod_list(.data = as.data.frame(sp_st_data))
+est_sp_models = map(test_sp_model, broom.mixed::tidy)
+```
+```{r}
+test_mod <- lm(ct_ff ~ log_RC1 + log_RC2 + log_bm_std, as.data.frame(sp_st_data))
+test_mod_rich <- lm(ct_ff ~ log_RC1 + log_RC2 + log_bm_std + log_rich_std, as.data.frame(sp_st_data))
+```
+
+## 
+
+##
+
+```{r}
+loadd(sp_models, anova_table_sp, tab_sp_anova)
+
+```
+
 

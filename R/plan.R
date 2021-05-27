@@ -2,7 +2,7 @@
 # Details: https://books.ropensci.org/drake/plans.html
 
 # Variable:
-model_x_var <- c("log_bm_std", "rich_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg", "nind_std")
+model_x_var <- c("bm_std", "rich_std", "ct_ff", "w_trph_lvl_avg", "nind_std")
 #model_y_var <- c("ct_ff", "w_trph_lvl_avg", "rich_std", "log_rich_std", "w_trph_lvl_avg")
 
 plan <- drake_plan(
@@ -118,6 +118,7 @@ plan <- drake_plan(
     st_mono = st_mono_trends_combined_list, type = "min_max"),
 
   # 2.2 Environment
+  st_analysis_by_var = get_station_analysis_by_var(classif = rigal_classification),
   st_analysis = get_all_station_analysis(classif = rigal_classification),
   data_for_pca = habitat_press %>%
     filter(station %in% st_analysis) %>%
@@ -187,9 +188,11 @@ plan <- drake_plan(
     filter(station %in% st_analysis) %>%
     select(all_of(c("station", "basin", "log_RC1", "log_RC2", get_all_var_analysis()))) %>%
     na.omit,
-  sp_models = get_mod_list(.data = as.data.frame(sp_st_data)),
-  colin_sp_models = map(sp_models, car::vif),
-  est_sp_models = map(sp_models, broom.mixed::tidy),
+  st_sp = st4sp_model(my_x_var = model_x_var, .data4model = data4model),
+  sp_models = map(st_sp,
+    ~get_mod_list(.data = as.data.frame(sp_st_data[sp_st_data$station %in% .x, ]))),
+  colin_sp_models = map(sp_models, ~map(.x, car::vif)),
+  est_sp_models = map(sp_models, ~map(.x, broom.mixed::tidy)),
 
   #4. The plots
   p_bm_vs_bm_slope = plot_bm_vs_bm_slope(
@@ -199,13 +202,21 @@ plan <- drake_plan(
   p_hist_med_bm = plot_hist_med_bm(.data = full_data2),
   p_cross_classif_bm_rich = plot_matrix_bm_rich_cross_classif(
     classif = rigal_classification),
-  p_fig1_2 = get_plot_fig1_2(predict_plot = predict_plot2),
+  p_fig1_2 = get_plot_fig1_2(predict_plot = predict_plot2,
+    bm_x = "bm_std", rich_x = "rich_std"
+    ),
   p_pca = my_pca_plot(.data = pca$rotated,
     xaxis = "RC1", yaxis = "RC2", ctb_thld = .4, 
     label_size = 4, force_pull = 0.01, force = 10,
     seed = 1
   ),
-  sp_relation_plot = get_sp_model_plot(sp_models),
+  sp_relation_plot = map(sp_models, get_sp_model_plot),
+  sp_relation_plot2 = rbind(
+    sp_relation_plot$rich_std %>%
+      filter(x == "rich_std"),
+    sp_relation_plot$bm_std %>%
+      filter(x == "bm_std")
+  ),
 
 
   #5. Tables 
@@ -217,11 +228,12 @@ plan <- drake_plan(
   #hyp_table_f3y = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_std),
   #hyp_table = make_hyp_table(hyp_table = effect_quad2_piece, mod = model_log_bm_std),
   summary_table = model_summary %>%
-      mutate(
-	reg_table = map(model_obj, broom::tidy),
-	anova_table = map(anova, broom::tidy)
-	) %>%
-      select(any_of(c("x", "y", "covar", "model", "model_obj", "reg_table", "anova_table"))),
+    mutate(
+      reg_table = map(model_obj, broom::tidy),
+      mod_summary_table = map(model_obj, broom::glance),
+      anova_table = map(anova, broom::tidy)
+      ) %>%
+  select(any_of(c("x", "y", "covar", "model", "model_obj", "reg_table", "mod_summary_table", "anova_table"))),
   predict_table = summary_table %>%
      mutate(
 	ggpred_term = map(anova_table, 
@@ -264,7 +276,7 @@ plan <- drake_plan(
       as_tibble),
     pred_table = map2(tmp_pred_table, ggpred_term,
       ~rename_pred_table(pred_table = .x, term = .y))) %>%
-      select(any_of(c("x", "y", "covar", "model", "model_obj", "ggpred_term", "tmp_pred_table", "pred_table"))),
+      select(any_of(c("x", "y", "covar", "model", "model_obj", "ggpred_term", "tmp_pred_table", "pred_table", "anova_table"))),
 
     predict_plot2 = predict_table2 %>%
       left_join(select(model, x, y, covar, data), by = c("x", "y", "covar")) %>%
@@ -289,6 +301,13 @@ plan <- drake_plan(
     ) %>%
     map(., ~ .x %>% filter(x == "log_rich_std") %>%
       select(-any_of(c("x", "covar", "model", "model_obj", "reg_table", "anova_table")))),
+
+    #5.2 Table for spatial analysis 
+    anova_table_sp = map(sp_models, ~map(.x, ~anova(.x))),
+    tab_sp_anova = map(anova_table_sp, get_anova_table_from_named_list),
+    reg_table_sp = map(sp_models, ~map(.x, ~broom::tidy(.x))),
+    mod_summary_table_sp = map(sp_models, ~map(.x, ~broom::glance(.x))),
+    rsq_sp_mod = map(sp_models, ~piecewiseSEM::rsquared(modelList = .x, method = NULL)),
 
     # Reporting
 

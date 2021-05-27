@@ -1359,6 +1359,41 @@ format_table <- function (x = tmp_stab_indir_table) {
   x
 }
 
+format_anova_table <- function (x = NULL, slope = FALSE) {
+  x <- x[, c("y", names(x)[!names(x) %in% "y"])]
+
+  rm_n <- str_remove_all(var_replacement(slope), pattern = "\n ")
+  names(rm_n) <- names(var_replacement(slope)) 
+  x$y <- str_replace_all(x$y, rm_n)
+
+  term_replacement <- c(
+    log_bm_slope = "Biomass trend",
+    bm_slope = "Biomass trend",
+    bm_std = "Biomass",
+    log_rich_slope = "Richness trend",
+    rich_slope = "Richness trend",
+    rich_std = "Richness",
+    inc_f = "Positive"
+  )
+
+  x$term <- str_replace_all(x$term, term_replacement)
+
+  #colnames(x) %<>% str_remove_all(., pattern = "via_")
+
+  col_replacement <- c(
+    df = "DF",
+    y = "Variable",
+    term = "Term",
+    sumsq = "SS",
+    meansq = "MSS",
+    statistic = "Statistic",
+    p.value = "P"
+  )
+  colnames(x) %<>% str_replace_all(., col_replacement)
+
+  return(x)
+}
+
 plot_sensivity_analysis <- function (.data = NULL, y_lim = c(-1.26, .75), inverse_label_order = FALSE) {
   .data %<>%
     mutate(

@@ -210,8 +210,21 @@ update_files <- function () {
 }
 
 get_all_station_analysis <- function (classif = NULL) {
-  st_analysis <- map(get_all_var_analysis(), ~get_st_mono_trends(.df = classif, xvar = .x)$station) %>% 
+  get_station_analysis_by_var(classif = classif) %>%
     unlist %>% unique
-  return(st_analysis)
+}
+
+get_station_analysis_by_var <- function (classif = NULL) {
+  out <- map(get_all_var_analysis(), ~get_st_mono_trends(.df = classif, xvar = .x)$station) 
+  names(out) <- get_all_var_analysis()
+  return(out)
+}
+
+st4sp_model <- function(my_x_var = NULL, .data4model = NULL) {
+
+  out <- map(my_x_var, ~unique(.data4model[.data4model$x == .x, ]$data_model[[1]]$station))
+  names(out) <- my_x_var 
+
+  return(out)
 
 }

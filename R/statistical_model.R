@@ -245,20 +245,25 @@ return(test2)
 
 #' Compute spatial relationships
 
-get_mod_list <- function(.data = NULL) {
+get_mod_list <- function(.data = NULL, st_by_var = NULL) {
   rlang::eval_tidy(rlang::quo(
       list(
-	log_rich_std = nlme::lme(log_rich_std ~ log_RC1 + log_RC2 + log_bm_std + piel_nind + piel_bm + ct_ff + w_trph_lvl_avg,
+	log_rich_std = nlme::lme(log_rich_std ~ log_RC1 + log_RC2 + log_bm_std,
 	  random = ~ 1 | basin, data = {{.data}}),
-	ct_ff = nlme::lme(ct_ff ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std + piel_nind + piel_bm + w_trph_lvl_avg,
+
+	ct_ff = nlme::lme(ct_ff ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std,
 	  random = ~ 1 | basin, data = {{.data}}),
-	w_trph_lvl_avg = nlme::lme(w_trph_lvl_avg ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std+ piel_nind + piel_bm + ct_ff,
+
+	w_trph_lvl_avg = nlme::lme(w_trph_lvl_avg ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std,
 	  random = ~ 1 | basin, data = {{.data}}),
-	log_bm_std = nlme::lme(log_bm_std ~ log_RC1 + log_RC2 + log_rich_std + piel_nind + piel_bm + ct_ff + w_trph_lvl_avg,
+
+	log_bm_std = nlme::lme(log_bm_std ~ log_RC1 + log_RC2 + log_rich_std,
 	  random = ~ 1 | basin, data = {{.data}}),
-	piel_bm = nlme::lme(piel_bm ~ log_RC1 + log_RC2 + log_rich_std + piel_nind + ct_ff + w_trph_lvl_avg + log_bm_std,
+
+	piel_bm = nlme::lme(piel_bm ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std,
 	  random = ~ 1 | basin, data = {{.data}}),
-	piel_nind = nlme::lme(piel_nind ~ log_RC1 + log_RC2 + log_rich_std + piel_bm + ct_ff + w_trph_lvl_avg + log_bm_std,
+
+	piel_nind = nlme::lme(piel_nind ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std,
 	  random = ~ 1 | basin, data = {{.data}})
       )
       ))
