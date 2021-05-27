@@ -61,7 +61,8 @@ output:
 1. Data selection
 2. Community biomass and richness 
 3. Network reconstruction
-4. Statistical analysis
+4. Temporal trends 
+5. Statistical analysis
 
 ## Results
 

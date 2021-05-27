@@ -42,6 +42,9 @@ get_st_mono_trends(.df = rigal_classification, xvar = "rich_std")
 get_st_mono_trends(.df = rigal_classification, xvar = "log_rich_std")
 
 comb %>%
+  filter(y == "log_bm_std")
+
+comb %>%
     mutate(
       data_model = map2(x, y, function (myx, myy, classif) {
 	get_y_versus_x_trends(classif = classif, x_var = myx, y_var = myy) %>%

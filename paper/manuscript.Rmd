@@ -5,11 +5,11 @@ self_contained: yes
 date: "`r Sys.Date()`"
 tables: yes
 bibliography: references.bib 
+fontsize: 12pt
 output:
-  prettydoc::html_pretty:
-    theme: cayman
-    highlight: github
-    math: katex
+  bookdown::html_document2:
+    fig_caption: true
+    theme: "journal"
 ---
 
 ```{r, echo = FALSE}
@@ -45,11 +45,23 @@ mytheme <- theme_cowplot() +
 background_grid()
 
 theme_set(mytheme)
+bookdown::html_document2
+library(bookdown)
 ```
+```{r}
+net_var_bm <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
+      "piel_nind")
+net_var_rich <- c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
+      "piel_nind")
+```
+
 
 # Methods
 
 ## Data selection
+
+We selected the stations that have been monitored at least 10 times on the
+1995-2018 period.   
 
 ## Food-web inference 
 
@@ -67,7 +79,7 @@ weighted by the biomass of the trophic species. The trophic level of a trophic
 species is computed recursively as 1 added to the mean trophic level of the
 preys that it consumes.
 
-We described community structure by its total biomass, species richness and the
+We described community structure by its community biomass, species richness and the
 evenness of the number of individual and the amount of biomass across species. The evenness was
 quantified with the Pielou index, computed as the Shannon diversity index
 divided by the number of species ($P = \frac{H'}{N}$, with $H'$ being the
@@ -147,8 +159,7 @@ With:
 ```{r}
 loadd(rsq_sp_mod, summary_table, sp_models, model_summary)
 rsq <- summary_table %>%
-  filter(y %in% get_com_str_var(all = FALSE), x %in% c("log_bm_std",
-      "log_rich_std")) %>%
+  filter(y %in% unique(c(net_var_bm, net_var_rich))) %>%
 select(y, x, mod_summary_table) %>%
 unnest(mod_summary_table) %>%
 select(y, x, r.squared, adj.r.squared)
@@ -170,8 +181,9 @@ rsq_piel_bm_rich_sp <- rsq_sp_mod$log_bm_std[
 ```
 
 Overall, we found high heterogeneity in the explicative power of statistical
-models linking temporal dynamics of food-web structure and the one of community biomass and species richness spanning from $R_{adj}^2= `r rsq_nind_bm`$ for
-the relationships between to $R_{adj}^2= `r rsq_bm_rich`$ between biomass and
+models linking temporal dynamics of food-web structure and the one of community
+biomass and species richness spanning from $R_{adj}^2= `r rsq_nind_bm`$ for the
+relationships between to $R_{adj}^2= `r rsq_bm_rich`$ between biomass and
 species richness (Table \@ref(tab:rsq)). The spatial relationships among
 food-web structure aspects were more performant, with $R_{cond}^2$ varing from 
 `r rsq_tlvl_rich_sp` to `r rsq_piel_bm_rich_sp` (Table \@ref(tab:rsq-sp)).
@@ -183,45 +195,71 @@ temporal trends of community structure and that of biomass and species richness
 
 ## Relationships between temporal trends 
 
-### Food-web structure and biomass
+### Community structure and community biomass
 
 ```{r}
 loadd(model_log_bm_f3y_table_medium, model_log_rich_f3y_table_medium)
 reg_bm <- model_log_bm_f3y_table_medium$reg_table
 #reg_bm[reg_bm$y == ]
 ```
-We found a significant positive relationship between the temporal trends of total biomass from
-one side and species richness, average trophic level, connectance from the other
-side (Fig. \@ref(fig:bm), Table \@ref(tab:aov-bm)), meaning that they increased in time when
-the total biomass increased in time and respectively that they decreased in time
-when the total biomass decreased in time.
+We found a significant positive relationship between the temporal trends of
+community biomass from one side and species richness, average trophic level,
+connectance from the other side (Fig. \@ref(fig:bm), Table \@ref(tab:aov-bm)),
+meaning that they temporally increased when the community biomass temporally increased and
+respectively that they temporally decreased when the community biomass decreased in
+time.
 
-We found that a significant negative relationship between the temporal trends of
-total biomass and that of the pielou of biomass (slopes XX, Figure X, Table X),
-meaning that the eveness of biomass across species increased in time when the
-total biomass decreased in time and respectively that the evenness decreased
-in time when the total biomass increase in time (Fig. \@ref(fig:bm), Table
-\@ref(tab:aov-bm)). However, we found no relationship between the temporal
-trends of total biomass and that of the pielou
-of individual.
+We found a significant negative relationship between the temporal trends of
+community biomass and that of the pielou of biomass (Figure \@ref(fig:bm), Table
+\@ref(tab:aov-bm)), meaning that the eveness of biomass across species
+temporally increased when the community biomass temporally decreased and
+respectively that the evenness temporally decreased when the community biomass
+temporally increased (Fig. \@ref(fig:bm), Table \@ref(tab:aov-bm)). However, we
+found no significant relationship between the temporal trends of community biomass and that
+of the pielou of individual.
+
+Overall, we did not find effect of assembly/disassembly on the relationships
+between the temporal trends of community structure and the one of community
+biomass. We also found that the median community biomass had no effect on the
+relationship between the temporal trends of community structure and the one of community
+biomass.
 
 ### Community structure and species richness 
 
-The temporal trends of total biomass, average trophic level, pielou of biomass,
+The temporal trends of community biomass, average trophic level, pielou of biomass,
 pielou of individual had a positive relationship with that of species richness
 (Fig. \@ref(fig:rich), Table \@ref(tab:aov-rich)). However, the direct
 relationship between the temporal trends of average trophic level and the one of
-species richness was not significant after controling for total biomass temporal
-trends.
+species richness was not significant after controling for community biomass temporal
+trends [**TO CHECK: refaire tous les modèles temporels en mettant à la fois la
+pente des biomasses et de la richness en même temps??**].
 
 We also found that the relationship between the temporal trends of pielou of
 individual and connectance and that of species richness was dependant of the
-overall species richness of the community (Figure X, Table X). The relationship
-between temporal trends of pielou of individual and that of species richness was
-more positive as the community contained more species (+ XX by species by square
-meter). While the relationship between temporal trends of pielou of individual
-and that of species richness was more negative as the community contained more
-species.
+overall species richness of the community (Fig. \@ref(fig:rich), Table
+\@ref(tab:aov-rich)), meaning that the relationship between temporal trends of
+pielou of individual and that of species richness was more positive as the
+community contained more species (Fig. \@ref(fig:rich), Table
+\@ref(tab:reg-rich)). While the relationship between temporal trends of pielou
+of individual and that of species richness was more negative as the community
+contained more species (Fig. \@ref(fig:rich), Table \@ref(tab:reg-rich)).
+
+## Spatial relationships 
+
+### Community structure and community biomass
+
+We found that species richness, connectance, average trophic level were
+spatially positively related to community biomass while the pielou of biomass was negatively related to
+community biomass (Fig. \@ref(fig:bm), Table \@ref(tab:aov-rich-sp)). However,
+we found no spatial relation between the pielou of individual and community
+biomass. 
+
+### Community structure and species richness 
+
+We found that community biomass, the pielou of biomass and individual were
+positively related to species richness while average trophic level and
+connectance were negatively related to
+community biomass (Fig. \@ref(fig:rich), Table \@ref(tab:aov-rich-sp)).
 
 # Discussion
 
@@ -230,96 +268,90 @@ species.
   - space for time subtitution works for biomass and tlvl but not for
     connectance
 
+## Biomass temporal dynamics is linked to the top trophic level
+
+We found that the temporal increase of the average trophic level was positively
+linked to increase of community biomass. Increase of average trophic level can
+be associated to either gain of biomass in the highest trophic level nor losses
+of biomass in the lowest trophic. In our case, such gain or losses of average
+trophic level is probably associated to the variations of the presence of large
+fishes. This interpretation is confirmed by the finding that the evenness of
+biomass, measured by the pielou, decreased through time as community biomass
+decrease and reversely, meaning that biomass distribution across species
+respectively become respectively less and more even when community biomass
+decrease and increase. We also found no relationship between the temporal trends of evenness based
+on indivual number and that community biomass, confirming that the temporal trends
+of community biomass in our study is linked to few big individuals. It further
+indicates that temporal loss of community biomass are linked with the loss of
+the higher trophic level. 
+
+We also found in space that evenness of biomass was positively related to
+community while eveness of individual number had no relation. It constrasts with
+previous studies which found a negative relationship between biomass and eveness
+of individual in marine and plant communities [@drobner_relation_1998;
+@maureaud_biodiversityecosystem_2019] or studies that found more even plant
+communities in terms of individual number display higher community biomass
+[@wisley_biodiversity_2000].
+
+We further found that the temporal trends of connectance was positively
+linked to that one of community biomass, meaning that connectance increases through
+time in a given site when community biomass increases through time and reversely.
+This is in line with the fact that the fishes located at higher trophic level
+also display a larger number of links as the size of the predation window
+increases with the size of the fishes. This result is also in accordance with  
+theoretical work showing that higher food-web connectance result in higher
+community biomass [@thebaut_food-web_2003].
+
+##  Biomass and richness variation are not the same process 
+
+To the difference with community biomass, the temporal trends evenness of
+biomass and individual were positively related to the temporal trends of species
+richness, meaning that as community biomass temporally increase, the
+distribution of biomass and abondance become more even. Our results indicate
+that biomass trends are linked to few big individuals while richness trends are
+linked to overall shift in dominance in communities.
+
+Surprinsingly, we found the temporal trends of connectance was not related to
+the one of species richness as found spatially in most empirical foodweb
+[@dunne_network_2006]. However, the relationship become slightly negative for
+species poor communities. An explanation might be that species-rich communities
+already contains a significant number of piscivores, which have the most links
+whereas species poor communites contains few piscivores.
+
 ## Temporal dynamics confirms space for time substitution BEF
 
-The temporal dynamic of the species richness was positively linked to that of
-biomass. In non-temporal data, this result was already found in streams
-[@woods_testing_2020; @danet_species_nodate] but also in grasslands salt marches
-and forests [@hector_plant_1999; @tilman_biodiversity_2014;
-@wu_relationship_2015; @li_relationship_2018; but see @grace_integrative_2016]. Therefore,
-our results confirm BEF prediction works also in time.  
-
-*From the previous manuscript*: the positive relationship of species richness on total
+Spatially and temporally, the species richness was positively linked to that of
+biomass. Spatially, this result is in accordance with numerous studies was
+already found in streams [@woods_testing_2020; @danet_species_nodate] but also
+in grasslands, salt marches and forests [@hector_plant_1999;
+@tilman_biodiversity_2014; @wu_relationship_2015; @li_relationship_2018; but see
+@grace_integrative_2016]. Therefore, our results confirm that BEF prediction
+works also in time. The positive relationship of species richness on total
 biomass might be due to resource use complementarity [@carey_determining_2011],
 which is held by niche differentiation [@loreau_biodiversity_1998;
 @loreau_partitioning_2001] or to the higher probability of getting high biomass
 species with higher species richness [@loreau_biodiversity_2001].
 
-We found the temporal dynamic of connectance was negative associated, but
-weakly, with that one of species richness as found in most empirical foodweb
-[@dunne_network_2006]. The relationship is very weak in species rich commuties
-and more negative for species poor commuties. An explanation might be that
-species-rich communities already contains a significant number of piscivores, which have the
-most links whereas species poor communites contains few piscivores. 
+HERE
+ @soininen_relationship_2012;
 
-The temporal dynamic of the average trophic level had no relationship with the
+The temporal trend of the average trophic level had no relationship with the
 one of species richness. It is surprising because one can imagine that loss and
 gain of species would reveal assembly/disassembly mechanisms in terms of trophic
 structure. However, we found that when species richness increases, the
 distribution of biomass and individuals among species become more even in the
 community, meaning that dominance decrease. Species richness has often been
 found to be positively or negatively related to individual eveness
-[@soininen_relationship_2012; @maureaud_biodiversity_2019].
+[ @maureaud_biodiversityecosystem_2019].
 
  
-## Biomass temporal dynamics is linked to the top trophic level
-
-We further found that the temporal dynamic of the average trophic level was positively
-linked to that of biomass. Increase  of average trophic level can be associated
-to either gain of biomass in the highest trophic level nor losses of biomass in
-the lowest trophic. In our case, such gain or losses of average trophic level is
-certainly associated to the loss or the gain of the biggest individuals. Because
-it seems unlikely that a community gain or loss biomass while respectively
-losing or gaining individuals. Pielou index temporal dynamics further confirm
-this interpretation. 
-
-We found that the pielou of biomass decrease through time
-as total biomass decrease and reversely, meaning that biomass distribution
-across species respectively became less and more even when total biomass
-decrease and increase. The structuration in size class of the community might
-explain this pattern.
-
-Finally, we found no relationship between the temporal
-dynamics of pielou based on indivual number and that one of biomass, confirming
-that the temporal trends of total biomass in our study is linked to few big
-individuals. @maureaud_biodiversity_2019 found negative relationship between
-biomass and eveness of indivual in marine ecosystem. One explanation is that
-marine ecosystem studied in [@maureaud_biodiversity_2019] are much larger than
-the stream communities studied in this study. 
-
-We further found that the temporal dynamic of connectance was positively
-linked to that one of total biomass, meaning that connectance increases through
-time in a given site when total biomass increases through time and reversely.
-This is in line with the fact that the fishes located at higher trophic level
-also display a larger number of links as the size of the predation window
-increases with the size of the fishes. This is because the predation window of
-freshwater fish species is highly nested.
-
-##  Biomass and richness variation are not the same process 
-
-Our results indicate that biomass trends are linked to few big individuals while
-richness trends are linked to overall shift in dominance in communities. This
-results has profound implications for conservation. As more and more studies
-report biomass and richness temporal dynamics [@hallmann_more_2017;
-@ceballos_biological_2017], it is important to note that they might not be
-equivalent in terms of consequences on the structure of the community. Further
-studies should investigate several dimensions of community structure because it
-drives many aspects of ecosystem functioning. 
-
-## Biomass and richness gains and losses are symmetric processes in terms of community structure
-
-We found no case in which gain or losses of biomass and richness lead to
-different relationship between the temporal dynamic of community structure and
-the one of biomass and species richness. We could have imagine that
-extinction/colonisation processes or immigration/extinction debt could have lead
-to different relationships.
 
 ## Space for time substitution does not always hold 
 
-We found that total biomass was linked positively related to species richness
+We found that community biomass was linked positively related to species richness
 both in space and in time, indicating that space for time might be use. In the
 same way, we found a positive positive relationship between average trophic
-level and total biomass both in time and in space. However, it was not the case
+level and community biomass both in time and in space. However, it was not the case
 for connectance and average trophic level that were respectively weakly or not
 linked to species richness in time whereas our result shows a strong negative
 relation in space. Moreover, connectance displayed a strong positive
@@ -331,6 +363,21 @@ used tool in ecology [@pickett_space-for-time_1989; @blois_space_2013;
 be the ones that drive community variation in time. The successional processes
 driving the assembly or the disassembly of communities might not be reflected in
 spatial gradient.
+
+This result has profound implications for conservation. As more and more
+studies report community biomass and richness trends [@hallmann_more_2017;
+@ceballos_biological_2017], it is important to note that they might not be
+equivalent in terms of consequences on the structure of the community. Further
+studies should investigate the temporal trends of several dimensions of
+community structure simultaneously because it drives many aspects of ecosystem functioning. 
+
+## Biomass and richness gains and losses are symmetric processes in terms of community structure
+
+We found no case in which gain or losses of biomass and richness lead to
+different relationship between the temporal dynamic of community structure and
+the one of biomass and species richness. We could have imagine that
+extinction/colonisation processes or immigration/extinction debt could have lead
+to different relationships.
 
 ## Conclusion
 
@@ -346,15 +393,45 @@ found that space for time subtitution does not always work.
 # Figures {-}
 
 ```{r}
+fig_bm_cap <- paste0(
+  "Relationship between community structure and community biomass. Left panel
+  displays the relationships between the temporal trends of community structure
+  and the one of community biomass. Lines correspond to the predictions of the
+  linear models while the points are colored according the median community
+  biomass of the three first years of the given temporal series. The lines surrounding each point represent
+  the standard error associated to the temporal trends. Right panel displays the
+  spatial relationship between median community structure over time and the
+  median community biomass over time."
+
+)
+
+fig_rich_cap <- paste0(
+  "Relationship between community structure and species richness. Left panel
+  displays the relationships between the temporal trends of community structure
+  and the one of species richness. Lines correspond to the predictions of the
+  linear models while the points are colored according the median species
+  richness of the three first years of the given temporal series. The lines
+  surrounding each point represent the standard error associated to the temporal
+  trends. Right panel displays the spatial relationship between median community
+  structure over time and the median species richness over time."
+
+)
+```
+
+
+```{r}
 loadd(p_fig1_2, sp_relation_plot2, predict_plot2)
 theme_set(theme_cowplot())
 p_bm <- get_plot_fig1_2(predict_plot = predict_plot2, get_list = TRUE,
-  bm_x = "bm_std", rich_x = "rich_std"
+  bm_x = "log_bm_std", rich_x = "log_rich_std",
+  bm_y = c("ct_ff", "w_trph_lvl_avg", "piel_nind", "piel_bm", "log_rich_std") 
   )$bm
-plot_grid(plotlist = p_bm)
+names(p_bm) <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_nind",
+  "piel_bm") 
+#plot_grid(plotlist = p_bm)
 
 sp_bm <- sp_relation_plot2 %>%
-  filter(x == "bm_std")
+  filter(x == "log_bm_std")
 p_sp_bm <- sp_bm$gg 
 names(p_sp_bm) <- sp_bm$y 
 
@@ -367,18 +444,15 @@ reorder_p_sp_bm[[5]] <- p_sp_bm$log_rich_std
 ```
 
 ```{r}
-fig1_left <- plot_grid(plotlist = p_bm, ncol = 1)
-fig1_right <- plot_grid(plotlist = p_sp_bm, ncol = 1)
-#plot_grid(plotlist = list(p_bm[[1]], p_sp_bm[[1]], ), ncol = 1)
-
 ti <- list()
-for (i in 1:5) {
-  ti[[i]] <- list(p_bm[[i]], reorder_p_sp_bm[[i]]) 
+for (i in c("log_rich_std", "w_trph_lvl_avg",  "piel_bm", "piel_nind", "ct_ff")) {
+  ti[[i]] <- list(p_bm[[i]], p_sp_bm[[i]]) 
 }
-
 ```
 
-```{r bm, fig.height = 12}
+
+
+```{r bm, fig.height = 12, fig.cap=fig_bm_cap}
 # Make the label on two lines 
 top <- plot_grid(plotlist = c(ti[[1]], ti[[2]], ti[[3]], ti[[4]], ti[[5]]), ncol = 2)
 fig1 <- plot_grid(top, p_bm[[6]], ncol = 1, rel_heights = c(1, .1)) 
@@ -386,22 +460,21 @@ fig1
 ```
 
 ```{r}
-p_rich <- get_plot_fig1_2(predict_plot = predict_plot2, get_list = TRUE)$rich
+p_rich <- get_plot_fig1_2(
+  predict_plot = predict_plot2,
+  get_list = TRUE,
+  rich_x = "log_rich_std",
+  rich_y = c("ct_ff", "w_trph_lvl_avg", "piel_nind", "piel_bm", "log_bm_std") 
+  )$rich
+names(p_rich) <- c(
+  "ct_ff", "w_trph_lvl_avg", "piel_nind",
+  "piel_bm", "log_bm_std")
 #plot_grid(plotlist = p_rich)
-
 
 sp_rich <- sp_relation_plot2 %>%
   filter(x == "log_rich_std")
 p_sp_rich <- sp_rich$gg
 names(p_sp_rich) <- sp_rich$y
-
-reorder_p_sp_rich <- p_sp_rich
-reorder_p_sp_rich[[1]] <- p_sp_rich$ct_ff 
-reorder_p_sp_rich[[2]] <- p_sp_rich$w_trph_lvl_avg 
-reorder_p_sp_rich[[3]] <- p_sp_rich$piel_nind 
-reorder_p_sp_rich[[4]] <- p_sp_rich$piel_bm 
-reorder_p_sp_rich[[5]] <- p_sp_rich$log_bm_std 
-
 ```
 
 ```{r}
@@ -410,23 +483,19 @@ fig2_right <- plot_grid(plotlist = p_sp_rich, ncol = 1)
 #plot_grid(plotlist = list(p_bm[[1]], p_sp_bm[[1]], ), ncol = 1)
 
 trich <- list()
-for (i in 1:5) {
-  trich[[i]] <- list(p_rich[[i]], reorder_p_sp_rich[[i]]) 
+for (i in c("log_bm_std", "w_trph_lvl_avg",  "piel_bm", "piel_nind", "ct_ff")) {
+  trich[[i]] <- list(p_rich[[i]], p_sp_rich[[i]]) 
 }
 ```
 
-```{r rich, fig.height = 12}
+```{r rich, fig.height = 12, fig.cap=fig_rich_cap}
 # Make the label on two lines 
 top_rich <- plot_grid(plotlist = c(trich[[1]], trich[[2]], trich[[3]], trich[[4]], trich[[5]]), ncol = 2)
 fig2 <- plot_grid(top_rich, p_rich[[6]], ncol = 1, rel_heights = c(1, .1))
 fig2
 ```
 
-```{r}
-```
-
-
-# Tables
+# Tables {-}
 
 ## Statistical models 
 
@@ -439,7 +508,7 @@ loadd(model_log_bm_f3y_table_medium, model_log_rich_f3y_table_medium)
 
 ```{r}
 model_log_bm_f3y_table_medium[["anova_table"]] %>% 
-  filter(y %in% get_com_str_var(all = FALSE)) %>%
+  filter(y %in% net_var_bm) %>%
   select(-mod_summary_table) %>%
   format_anova_table() %>%
   kable(., booktabs = TRUE,
@@ -457,7 +526,7 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
 
 ```{r}
 model_log_rich_f3y_table_medium[["anova_table"]] %>% 
-  filter(y %in% get_com_str_var(all = FALSE)) %>%
+  filter(y %in% net_var_rich) %>%
   select(-mod_summary_table) %>%
   format_anova_table() %>%
   kable(., booktabs = TRUE,
@@ -474,7 +543,7 @@ model_log_rich_f3y_table_medium[["anova_table"]] %>%
 
 ```{r}
 model_log_bm_f3y_table_medium$reg_table %>% 
-  filter(y %in% get_com_str_var(all = FALSE)) %>%
+  filter(y %in% net_var_bm) %>%
   format_reg_table() %>%
   kable(., booktabs = TRUE,
     caption = 
@@ -489,8 +558,8 @@ model_log_bm_f3y_table_medium$reg_table %>%
 ```
 
 ```{r}
-model_log_rich_f3y_table_medium$reg_table %>% 
-  filter(y %in% get_com_str_var(all = FALSE)) %>%
+model_log_rich_f3y_table_medium$reg_table %>%
+  filter(y %in% net_var_rich) %>%
   format_reg_table() %>%
   kable(., booktabs = TRUE,
     caption = 
@@ -532,6 +601,7 @@ loadd(tab_sp_anova)
 
 ```{r}
 tab_sp_anova$log_bm_std %>%
+  filter(y %in% net_var_bm) %>%
   mutate(
     y = str_replace_all(y, var_replacement()),
     term = str_replace_all(term, var_replacement()),
@@ -549,6 +619,7 @@ tab_sp_anova$log_bm_std %>%
 
 ```{r}
 tab_sp_anova$log_rich_std %>%
+  filter(y %in% net_var_rich) %>%
   mutate(
     y = str_replace_all(y, var_replacement()),
     term = str_replace_all(term, var_replacement()),
@@ -560,20 +631,21 @@ tab_sp_anova$log_rich_std %>%
       richness and the one of network structure."),
   label = "tab:aov-rich-sp"
       ) %>% # 
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  kable_styling(latex_options = c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
 
 ```{r}
-
 table_rsq_sp <- map2(rsq_sp_mod, names(rsq_sp_mod),
   ~mutate(.x, Explicative = .y) %>%
     select(Explicative, Response, Marginal, Conditional)
 ) %>%
 do.call(rbind, .)
+rownames(table_rsq_sp) <- NULL
 
 table_rsq_sp %>%
+  filter(Explicative %in% c("log_rich_std", "log_bm_std")) %>%
   mutate(
     Explicative = str_replace_all(Explicative, var_replacement()),
     Response = str_replace_all(Response, var_replacement())

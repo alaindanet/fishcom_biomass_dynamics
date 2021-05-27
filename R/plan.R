@@ -2,7 +2,7 @@
 # Details: https://books.ropensci.org/drake/plans.html
 
 # Variable:
-model_x_var <- c("bm_std", "rich_std", "ct_ff", "w_trph_lvl_avg", "nind_std")
+model_x_var <- c("log_rich_std", "log_bm_std", "bm_std", "rich_std", "ct_ff", "w_trph_lvl_avg", "nind_std")
 #model_y_var <- c("ct_ff", "w_trph_lvl_avg", "rich_std", "log_rich_std", "w_trph_lvl_avg")
 
 plan <- drake_plan(
@@ -135,7 +135,7 @@ plan <- drake_plan(
 
   # 3. Modelling
   comb = list(
-    y = c(get_com_str_var(all = TRUE), "bm_std", "log_bm_std"),
+    y = c(get_com_str_var(all = TRUE), get_biomass_var()),
     x = model_x_var
   ) %>% 
   expand.grid(., stringsAsFactors = FALSE) %>%
@@ -203,7 +203,7 @@ plan <- drake_plan(
   p_cross_classif_bm_rich = plot_matrix_bm_rich_cross_classif(
     classif = rigal_classification),
   p_fig1_2 = get_plot_fig1_2(predict_plot = predict_plot2,
-    bm_x = "bm_std", rich_x = "rich_std"
+    bm_x = "log_bm_std", rich_x = "log_rich_std"
     ),
   p_pca = my_pca_plot(.data = pca$rotated,
     xaxis = "RC1", yaxis = "RC2", ctb_thld = .4, 
@@ -213,9 +213,9 @@ plan <- drake_plan(
   sp_relation_plot = map(sp_models, get_sp_model_plot),
   sp_relation_plot2 = rbind(
     sp_relation_plot$rich_std %>%
-      filter(x == "rich_std"),
+      filter(x == "log_rich_std"),
     sp_relation_plot$bm_std %>%
-      filter(x == "bm_std")
+      filter(x == "log_bm_std")
   ),
 
 
