@@ -1,5 +1,5 @@
 ---
-title: "More than space for time: revealing the tight links constraining the temporal dynamics of network structure"
+title: "Biomass and species richness temporal trends drives the assembly and the disassembly of food-web in natural fish assemblages"
 author: "Alain Danet, Maud Mouchet, Loubna El Madouri, Colin Fontaine (ordre non fixé)"
 self_contained: yes
 date: "`r Sys.Date()`"
@@ -45,8 +45,6 @@ mytheme <- theme_cowplot() +
 background_grid()
 
 theme_set(mytheme)
-bookdown::html_document2
-library(bookdown)
 ```
 ```{r}
 net_var_bm <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
@@ -55,6 +53,68 @@ net_var_rich <- c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
       "piel_nind")
 ```
 
+# Introduction
+
+## community structure are dynamics and affect ecosystem functions 
+
+Biodiversity to affect ecosystem properties such as total biomass, productivity
+and stability [@tilman_biodiversity_2014; @loreau_biodiversity_2001]. Numerous
+studies have shown the decline of population and community biomass
+[@ceballos_biological_2017; @hallmann_more_2017; @albano_native_2021], as well
+as ongoing extinction [@barnosky_]. Consequences of such trends on various
+aspects of community structure are not well known whereas numerous ecological studies
+have shown that the different aspects of community structure are tightly linked [REF].
+
+The link between Biodiversity and ecosystem functioning is one of the most
+famous example, experimental studies are in accordance to show a positive
+relationship between species richness and community biomass
+[@tilman_biodiversity_2014; @pennekamp_biodiversity_2018]. But this relation is
+not always found in natural settings [@grace_integrative_2016;
+@li_relationship_2018; @maureaud_biodiversityecosystem_2019]. Also, numerous
+studies have found relation between species richness and evenness, showing that
+communities become more or less even as species richness increase
+[@soininen_relationship_2012; @ma_species_2005;
+@maureaud_biodiversityecosystem_2019], highlighting the diversity of
+assembly processes in ecological communities.
+
+The distribution and the number of ecological interactions, i.e. the structure
+of ecological networks, also covary. In food-web, connectance, which measures the
+degree of generalism in a network, has been theoretically shown to theoretically
+positively scale with community biomass [@thebaut_food-web_2003]. Connectance
+has been also shown to be negatively related to species richness in empirical
+food-webs [@dunne_network_2006]. Trophic level has also been shown to be
+positively linked to total biomass in theoretical models
+[@wang_biodiversity_2018]. All together, these studies show that the
+different dimensions of network structure are closely linked.
+
+The space for time substitution allows to use the studies mentioned above to
+predict how changes in species richness or community biomass will in turn affect
+community and network structure. The hypothesis that space can be use to
+surrogate space is often implicitly made in ecological studies. This method
+began to be widely used in the early 20th century to infer the temporal
+succession of vegetation from space variations [@pickett_space-time_1989].  It
+supposes a homology between variations in space and in time i.e. that spatial
+sequence corresponds to temporal sequences. This methods have raised criticisms
+[@damgaard_critique_2019], with studies showing the coherent in space and time
+[@blois_space_2013] or not [@johnson_testing_2008; @adler_contrasting_2007].
+Spatial turnover of species composition, dispersal limitation, disturbance and
+stochastic processes  has been hypothesised to be responsible for the failure of
+space for time substitution [@adler_contrasting_2007; @blois_space_2013].
+
+In this line, how biomass and species richness temporal trends are linked to
+change in food-web structure is still an open question, as well as if space for
+time substitution works in food-web assembly. The increasing availability of
+ecological temporal series makes possible to assess those questions.
+  
+
+Using a standardized monitoring of fish freshwater communities on the period
+1995-2018, we assessed the relationships among temporal trends of food-web
+structure, trends of community biomass and trends in species richness.  
+Moreover, we tested if the those relationships differs between communities that
+lossed or gained biomass/species richness across time, reflecting potential
+difference between disassembly and assembly processes. We finally assessed if
+spatial relationships display the same patterns than temporal ones, to assess
+the validity of space for time substitution. 
 
 # Methods
 
@@ -86,10 +146,12 @@ divided by the number of species ($P = \frac{H'}{N}$, with $H'$ being the
 Shannon diversity index and $N$ the number of species).
 
 ```{r}
-loadd(com_analysis_data, full_data2)
+loadd(com_analysis_data, full_data2, st_mono_trends_combined_list)
 ```
 ```{r}
 nb_st <- unique(full_data2$station) %>% length
+nb_st_var <- map_dbl(st_mono_trends_combined_list$station, length) 
+names(nb_st_var) <- st_mono_trends_combined_list$variable
 ```
 
 
@@ -103,7 +165,8 @@ polynomial which allows to assess both the direction and the monotony of
 temporal trends [@rigal_method_2020]. To avoid complex variations of biomass and
 species richness, we selected the stations that displayed monotonic trends for
 theses variable. Over the `r nb_st` stations, the selection procedure resulted
-in XX stations for biomass and species richness analysis.
+in respectively `r nb_st_var["log_bm_std"]` stations  and `r nb_st_var["log_rich_std"]`
+for community biomass and species richness analysis.
 
 ## Spatial  
 
@@ -135,6 +198,12 @@ With:
   - $B_i$: median community biomass of the first three year
   - $R_i$: median species richness of the first three year
   - $Inc$: Is $dB > 0$?
+
+
+In order to control for the uncertainties of the estimated temporal trends, we
+weighted each temporal trends by the inverse of the product between the standard
+error of the estimated trends, i.e. slopes, for the response and the explicative
+variable.
 
 ## Spatial trends
 
@@ -263,11 +332,6 @@ community biomass (Fig. \@ref(fig:rich), Table \@ref(tab:aov-rich-sp)).
 
 # Discussion
 
-- Main results:
-  - different mechanisms for richness and biomass
-  - space for time subtitution works for biomass and tlvl but not for
-    connectance
-
 ## Biomass temporal dynamics is linked to the top trophic level
 
 We found that the temporal increase of the average trophic level was positively
@@ -306,22 +370,26 @@ community biomass [@thebaut_food-web_2003].
 
 To the difference with community biomass, the temporal trends evenness of
 biomass and individual were positively related to the temporal trends of species
-richness, meaning that as community biomass temporally increase, the
+richness, meaning that as species richness temporally increase, the
 distribution of biomass and abondance become more even. Our results indicate
 that biomass trends are linked to few big individuals while richness trends are
 linked to overall shift in dominance in communities.
 
 Surprinsingly, we found the temporal trends of connectance was not related to
 the one of species richness as found spatially in most empirical foodweb
-[@dunne_network_2006]. However, the relationship become slightly negative for
-species poor communities. An explanation might be that species-rich communities
-already contains a significant number of piscivores, which have the most links
-whereas species poor communites contains few piscivores.
+[@dunne_network_2006] and also in the present study. This result suggests that
+the structure of food-webs might be not very sensitive to variation of species
+richness and that species loss and gain concerns species of low trophic level,
+which in turn does not affect connectance. However, the relationship become
+slightly negative for species poor communities. An explanation might be that
+species-rich communities already contains a significant number of piscivores,
+which have the most links whereas species poor communites contains few
+piscivores.
 
 ## Temporal dynamics confirms space for time substitution BEF
 
 Spatially and temporally, the species richness was positively linked to that of
-biomass. Spatially, this result is in accordance with numerous studies was
+community biomass. Spatially, this result is in accordance with numerous studies was
 already found in streams [@woods_testing_2020; @danet_species_nodate] but also
 in grasslands, salt marches and forests [@hector_plant_1999;
 @tilman_biodiversity_2014; @wu_relationship_2015; @li_relationship_2018; but see
@@ -332,44 +400,42 @@ which is held by niche differentiation [@loreau_biodiversity_1998;
 @loreau_partitioning_2001] or to the higher probability of getting high biomass
 species with higher species richness [@loreau_biodiversity_2001].
 
+- Add loss of species richness, loss of biomass and increase dominance? 
+
 HERE
  @soininen_relationship_2012;
 
-The temporal trend of the average trophic level had no relationship with the
-one of species richness. It is surprising because one can imagine that loss and
-gain of species would reveal assembly/disassembly mechanisms in terms of trophic
-structure. However, we found that when species richness increases, the
-distribution of biomass and individuals among species become more even in the
-community, meaning that dominance decrease. Species richness has often been
-found to be positively or negatively related to individual eveness
-[ @maureaud_biodiversityecosystem_2019].
-
- 
+---
+#The temporal trend of the average trophic level had no relationship with the
+#one of species richness. It is surprising because one can imagine that loss and
+#gain of species would reveal assembly/disassembly mechanisms in terms of trophic
+#structure. However, we found that when species richness increases, the
+#distribution of biomass and individuals among species become more even in the
+#community, meaning that dominance decrease.
+---
 
 ## Space for time substitution does not always hold 
 
 We found that community biomass was linked positively related to species richness
 both in space and in time, indicating that space for time might be use. In the
-same way, we found a positive positive relationship between average trophic
+same way, we found a positive relationship between average trophic
 level and community biomass both in time and in space. However, it was not the case
 for connectance and average trophic level that were respectively weakly or not
 linked to species richness in time whereas our result shows a strong negative
 relation in space. Moreover, connectance displayed a strong positive
-relationship (move to results?) with biomass in time but not in space. 
-
-Space for time substitution is a widely
-used tool in ecology [@pickett_space-for-time_1989; @blois_space_2013;
-@damgaard_critique_2019]. However, the drivers of spatial variation might not
-be the ones that drive community variation in time. The successional processes
-driving the assembly or the disassembly of communities might not be reflected in
-spatial gradient.
+relationship with biomass in time but not in space. This result is in accordance
+with other studies which found mismatch between spatial and temporal patterns
+[@adler_contrasting_2007; @johnson_testing_2008]. This mismatch is mainly due to the crucial assumptions
+that variations in space will correspond to differences of assembly stages and
+then reflect the assembly/disassembly trajectories in time of communities [@].
 
 This result has profound implications for conservation. As more and more
 studies report community biomass and richness trends [@hallmann_more_2017;
 @ceballos_biological_2017], it is important to note that they might not be
 equivalent in terms of consequences on the structure of the community. Further
 studies should investigate the temporal trends of several dimensions of
-community structure simultaneously because it drives many aspects of ecosystem functioning. 
+community structure simultaneously because it drives many aspects of ecosystem
+functioning.
 
 ## Biomass and richness gains and losses are symmetric processes in terms of community structure
 
@@ -381,9 +447,9 @@ to different relationships.
 
 ## Conclusion
 
-We showed that BEF works in time but that richness and biomass temporal trends through
-time relates on different ecological processes inside communities. We further
-found that space for time subtitution does not always work. 
+We showed that BEF works in time but that richness and biomass temporal trends
+through time relates on different ecological processes. We further found that
+space for time subtitution does not always work.  
 
 
 # References  {-}
@@ -434,13 +500,6 @@ sp_bm <- sp_relation_plot2 %>%
   filter(x == "log_bm_std")
 p_sp_bm <- sp_bm$gg 
 names(p_sp_bm) <- sp_bm$y 
-
-reorder_p_sp_bm <- p_sp_bm
-reorder_p_sp_bm[[1]] <- p_sp_bm$ct_ff 
-reorder_p_sp_bm[[2]] <- p_sp_bm$w_trph_lvl_avg 
-reorder_p_sp_bm[[3]] <- p_sp_bm$piel_nind 
-reorder_p_sp_bm[[4]] <- p_sp_bm$piel_bm 
-reorder_p_sp_bm[[5]] <- p_sp_bm$log_rich_std 
 ```
 
 ```{r}
