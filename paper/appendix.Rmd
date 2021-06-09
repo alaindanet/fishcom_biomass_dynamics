@@ -1,0 +1,318 @@
+---
+title: Appendix
+subtitle:
+author: Alain Danet, Maud Mouchet, Loubna El Madouri, Elisa Thébault and Colin Fontaine (ordre non fixé)
+date: \today 
+output:
+  bookdown::pdf_document2:
+    fig_caption: true 
+    keep_tex: true
+    toc: true
+fontsize: 12pt
+header-includes:
+   - \usepackage{natbib}
+   - \newcommand{\beginsupplement}{\renewcommand{\thetable}{S\arabic{table}} \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}} 
+   - \usepackage{float}
+   - \usepackage[table]{xcolor}
+   - \usepackage{multirow}
+   - \usepackage{booktabs}
+   - \usepackage{makecell}
+   - \usepackage{setspace}
+   - \doublespacing
+   - \usepackage{lineno}
+   - \linenumbers
+geometry: margin=2cm
+bibliography: references.bib
+number_sections: true
+---
+
+```{r}
+knitr::opts_chunk$set(
+  cache = TRUE,
+  collapse = TRUE,
+  comment = "#>",
+  #fig.dim = c(7, 7),
+  fig.align = "center",
+  fig.fullwidth = TRUE,
+  fig.show = "hold",
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  results = TRUE
+)
+```
+
+
+```{r, echo = FALSE, message = FALSE, collapse = FALSE}
+
+library(drake)
+library(tidyverse)
+library(magrittr)
+library(ggeffects)
+library(cowplot)
+library(kableExtra)
+library(sf)
+library(nlme)
+
+mypath <- rprojroot::find_package_root_file
+source(mypath("R/variable_shortcut.R")) # Define your custom code as a bunch of
+#functions.
+
+source(mypath("R/misc.R"))
+source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
+
+mytheme <- theme_cowplot() +
+background_grid()
+
+theme_set(mytheme)
+options(knitr.table.format = "latex")
+```
+```{r}
+var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
+  "piel_bm", "piel_nind")
+
+```
+
+
+\beginsupplement
+
+# Statistical analysis
+
+## Spatial model
+
+```{r}
+loadd(est_sp_models, colin_sp_models, sp_models)
+```
+
+```{r}
+tmp <- map(colin_sp_models, enframe)
+t_colin_sp_models <- tibble(vif = tmp, mod = names(colin_sp_models)) %>%
+  unnest(vif) %>%
+  filter(name %in% c("log_rich_std", "log_bm_std", "ct_ff"), mod == "log_rich_std") %>% #same model for
+  #all, so the vif is the same
+  rename(Response = name, vif = value) %>%
+  select(-mod) %>%
+  mutate(vif = map(vif, enframe)) %>%
+  unnest(vif) %>%
+  mutate(
+    value = round(value, 3),
+    name = str_replace_all(name, var_replacement()),
+    Response = str_replace_all(
+      Response,
+      c("log_rich_std" = "Richness model", "log_bm_std" = "Biomass model",
+	"ct_ff" = "Food-web structure"))
+    ) %>%
+  spread(name, value)
+
+
+# colinearity table
+kable(t_colin_sp_models,
+  row.names = FALSE,
+  booktabs = T,
+  caption = "Variance Inflation Factor for the linear models in the spatial
+  models. NA values indicate that the term in column was not included in the
+  modeling of the response variable in row.",
+  label = "vif-sp",
+  ) %>%
+  kable_styling(latex_options = c("scale_down", "stripped"))
+```
+
+## Temporal model with richness and biomass  
+
+```{r}
+loadd(
+  resume_bm_rich_mod_mono_trends,
+  model_bm_rich_no_covar_no_inc_mono_trends,
+  reg_table_bm_rich_mono_trends,
+  reg_table_bm_rich_mono_stable_trends,
+  reg_table_bm_rich_trends,
+  reg_table_bm_rich,
+  anova_table_bm_rich_mono_trends,
+  anova_table_bm_rich_mono_stable_trends,
+  anova_table_bm_rich_trends,
+  anova_table_bm_rich,
+  anova_bm_rich_mod,
+  st_trends_rich_bm,
+  st_mono_trends_rich_bm,
+  st_mono_trends_stable_rich_bm
+)
+
+loadd(pred_bm_rich_mono_trends, pred_bm_rich, pred_bm_rich_trends, pred_bm_rich_mono_stable_trends)
+```
+
+We modeled the temporal trends of food-web structure as dependant of the
+temporal trends of both species richness and community biomass as: 
+
+$dN = dB + dR + \epsilon$
+
+\newpage
+
+### Only mono trends
+
+We kept only the stations that had monotonic trends for biomass and species
+richness, with resulting `r length(st_mono_trends_rich_bm)` stations.
+
+```{r}
+
+plot_grid(plotlist = pred_bm_rich_mono_trends$pred_plot)
+```
+
+
+```{r}
+reg_table_bm_rich_mono_trends %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+    caption =
+      paste0(
+      "Regression coefficients for the linear models explaining the links
+      between the temporal trends of the network structure and the one of
+      community biomass and species richness."
+    ),
+  label = "reg-rich-mono"
+  ) %>%
+  kable_styling(latex_options = c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+```{r}
+anova_table_bm_rich_mono_trends %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+    caption =
+      paste0(
+	"ANOVA results for the links between the temporal trends of the network
+	structure and the one of community biomass and species richness."
+	),
+      label = "aov-rich-mono"
+      ) %>%
+  kable_styling(latex_options = c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+\newpage
+
+### All trends (non monotonic) 
+
+We kept all stations that had a significant trend (decrease or increase) for both
+species richness and community biomass, with resulting 
+`r length(st_mono_trends_rich_bm)` stations. 
+
+```{r}
+plot_grid(plotlist = pred_bm_rich_trends$pred_plot)
+```
+
+
+```{r}
+reg_table_bm_rich_trends %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+    caption =
+      paste0(
+	"Regression coefficients for the linear models explaining the links
+	between the temporal trends of the network structure and the one of
+	community biomass and species richness."
+    ),
+  label = "reg-rich-trends"
+  ) %>%
+  kable_styling(latex_options = c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+```{r}
+anova_table_bm_rich_trends %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+    caption =
+      paste0(
+	"ANOVA results for the links between the temporal trends of species
+	richness and the temporal trends of the network structure."
+	),
+      label = "aov-rich-trends"
+      ) %>%
+  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+\newpage
+
+### All monotonic stations (i.e + monotonic stable)
+
+```{r}
+plot_grid(plotlist = pred_bm_rich_mono_stable_trends$pred_plot)
+```
+
+
+```{r}
+reg_table_bm_rich_mono_stable_trends %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+    caption =
+      paste0(
+	"Regression coefficients for the linear models explaining the links
+	between the temporal trends of the network structure and the one of
+	community biomass and species richness."
+    ),
+  label = "reg-rich-trends"
+  ) %>%
+  kable_styling(latex_options = c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+```{r}
+anova_table_bm_rich_mono_stable_trends %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+    caption =
+      paste0(
+	"ANOVA results for the links between the temporal trends of species
+	richness and the temporal trends of the network structure."
+	),
+      label = "aov-rich-trends"
+      ) %>%
+  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+
+\newpage
+
+### All stations
+
+We kept all the stations. 
+
+```{r}
+plot_grid(plotlist = pred_bm_rich$pred_plot)
+```
+
+
+```{r}
+reg_table_bm_rich %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+    caption =
+      paste0(
+	"Regression coefficients for the linear models explaining the links
+	between the temporal trends of the network structure and the one of
+	community biomass and species richness."
+    ),
+  label = "reg-rich-all"
+  ) %>%
+  kable_styling(latex_options = c("scale_down", "stripped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+```{r}
+anova_table_bm_rich %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+  caption =
+    paste0(
+      "ANOVA results for the links between the temporal trends of species
+      richness and the temporal trends of the network structure."
+      ),
+    label = "aov-rich-all"
+    ) %>%
+kable_styling(latex_options =c("scale_down", "stripped")) %>%
+collapse_rows(columns = 1, valign = "top")
+```
+

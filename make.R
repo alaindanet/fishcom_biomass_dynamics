@@ -15,10 +15,9 @@ drake::make(plan, keep_going = TRUE)
 drake::make(plan)
 drake::vis_drake_graph(plan)
 
-#drake::drake_cache("/home/alain/Documents/post-these/mnhn/fishcom_biomass_dynamics/.drake")$unlock()
-
 make(plan, parallelism = "future", jobs = 3)
 
+#drake::drake_cache("/home/alain/Documents/post-these/mnhn/fishcom_biomass_dynamics/.drake")$unlock()
 # If you do not change any code or data,
 # subsequent make()'s do not build targets.
 # Load your targets back into your session with loadd() and readd().
@@ -30,30 +29,56 @@ print(plan, n = 40)
 library(future)
 plan(multisession, workers = 3)
 
-attr(body(get_rich_vs_network_trends), "srcfile")
+attr(body(get_st_all_trends), "srcfile")
 
+
+loadd(bm_rich_trends)
+loadd(slope_com_var)
+loadd(model_summary, comb)
+loadd(st_mono_trends_rich_bm, st_trends_rich_bm,  slope_com_var_no_covar)
+loadd(model,
+  model_bm_rich_no_covar_no_inc,
+  model_bm_rich_trends,
+  model_bm_rich_mono_trends,
+  model_bm_rich,
+  resume_bm_rich_mod,
+  resume_bm_rich_mod_mono_trends,
+  model_summary,
+  anova_bm_rich_mod_mono_trends,
+  anova_table_bm_rich_mono_trends,
+  slope_x_bound,
+  predict_table
+)
+
+loadd(pred_bm_rich_mono_stable_trends)
+
+# Test variability of the results according to the number of sites
 loadd(sp_models)
-map(sp_models, ~map(.x, ~broom::glance(.x)))
-loadd(comb, rigal_classification)
+test2 <- get_sp_model_plot(model_bm_rich_no_covar_no_inc)
+plot_grid(plotlist = test2$gg)
+mono_plot <- get_sp_model_plot(model_bm_rich_mono_trends)
+plot_grid(plotlist = mono_plot$gg)
+mono_plot <- get_sp_model_plot(model_bm_rich_mono_trends)
+plot_grid(plotlist = mono_plot$gg)
+trends_plot <- get_sp_model_plot(model_bm_rich_trends)
+plot_grid(plotlist = trends_plot$gg)
+all_plot <- get_sp_model_plot(model_bm_rich)
+plot_grid(plotlist = all_plot$gg)
 
-get_st_mono_trends(.df = rigal_classification, xvar = "log_bm_std")
-get_st_mono_trends(.df = rigal_classification, xvar = "bm_std")
-get_st_mono_trends(.df = rigal_classification, xvar = "rich_std")
-get_st_mono_trends(.df = rigal_classification, xvar = "log_rich_std")
 
-comb %>%
-  filter(y == "log_bm_std")
 
-comb %>%
-    mutate(
-      data_model = map2(x, y, function (myx, myy, classif) {
-	get_y_versus_x_trends(classif = classif, x_var = myx, y_var = myy) %>%
-	  filter(station %in% get_st_mono_trends(.df = classif, xvar = myx)$station)
-      }, classif = rigal_classification),
-      data_model = map2(data_model, covar,
-	~left_join(.x, summary_var_f3y[, colnames(summary_var_f3y) %in% c("station", .y)], by = "station")
-      )
-    )
-loadd(predict_plot2)
-get_plot_fig1_2(predict_plot = predict_plot2)
-
+theme_set(theme_cowplot())
+p_raw_plot <- map2(
+  filter(model, x %in% c("log_bm_std", "log_rich_std"), y %in% names(model_bm_rich_no_covar_no_inc))$x,
+  filter(model, x %in% c("log_bm_std", "log_rich_std"), y %in% names(model_bm_rich_no_covar_no_inc))$y,
+  ~plot_raw_data_new_model(
+    .df = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
+    x_var = .x, y_var = .y,
+    std_error = TRUE, covar = NULL
+  )
+)
+plot_grid(plotlist = p_raw_plot)
+plot_raw_data_new_model(
+  .df = filter(slope_com_var_no_covar, station %in% st_mono_trends_rich_bm),
+  x_var = "log_bm_std", y_var = "log_rich_std",
+  std_error = TRUE, covar = NULL)

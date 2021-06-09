@@ -321,17 +321,45 @@ add_stream_bm_caract_to_model <- function (
   return(output)
 }
 
-get_st_mono_trends <- function(.df = NULL, xvar = NULL) {
+get_st_mono_trends <- function(.df = NULL, xvar = NULL, stable = FALSE) {
+
+  if (!stable) {
+    shp_filter <- c("increase_constant", "decrease_constant")
+  } else {
+    shp_filter <- c("increase_constant", "stable_constant", "decrease_constant")
+  }
+
   output <- .df %>%
-      unnest(classif) %>%
-      filter(
-	variable == xvar,
-	shape_class %in% c("increase_constant", "decrease_constant")
-	) %>%
-      select(station, shape_class)
-    return(output)
+    unnest(classif) %>%
+    filter(
+      variable == xvar,
+      shape_class %in% shp_filter
+    ) %>%
+    select(station, shape_class)
+
+  return(output)
 
 }
+
+get_st_all_trends <- function(.df = NULL, xvar = NULL, stable = FALSE) {
+
+  if (!stable) {
+    dir_filter <- c("increase", "decrease")
+  } else {
+    dir_filter <- c("increase", "stable", "decrease")
+  }
+
+  output <- .df %>%
+    unnest(classif) %>%
+    filter(
+      variable == xvar,
+      direction %in% dir_filter
+      ) %>%
+    select(station, shape_class)
+
+  return(output)
+}
+
 
 get_slope_x_bound <- function(classif = NULL, st_mono = NULL, type = "min_max") {
   
@@ -449,4 +477,11 @@ get_coef_from_terms <- function (
   vec <- deframe(ml_summary[, c("term", type)])
   vec[term_chr]
   
+}
+
+
+#' Misc
+
+merge.all <- function(x, y) {
+  dplyr::left_join(x, y, by="station")
 }

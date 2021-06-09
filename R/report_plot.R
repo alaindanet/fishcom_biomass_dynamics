@@ -188,16 +188,16 @@ get_plot_fig1_2 <- function(
     x$pred_plot[[1]] +
       theme(legend.position = "bottom")
   )
-  x %<>% 
+  x %<>%
     mutate(
       pred_plot = pmap(list(pred_plot, y, x),
 	function(p, y, x) {
 	  # Replace label
-	  label <- str_replace_all(c(x,y), var_replacement(slope = TRUE)) 
+	  label <- str_replace_all(c(x, y), var_replacement(slope = TRUE))
 	  p +
 	    labs(x = label[1], y = label[2]) +
 	    theme(legend.position = "none")
-	} )
+	})
     )
 
   list_p <- x$pred_plot
@@ -212,16 +212,63 @@ get_plot_fig1_2 <- function(
   if (get_list) {
     return(list_p)
   }
-    
+
   return(pred_plot)
-    
+
     }
   )
 
-  names(the_plot) <- c("bm", "rich", "other", "nind") 
+  names(the_plot) <- c("bm", "rich", "other", "nind")
 
   return(the_plot)
 
+}
+
+plot_raw_data_new_model <- function(.df = NULL, x_var = NULL, y_var = NULL, covar = NULL, std_error = FALSE) {
+
+  col_df <- colnames(.df)
+  if (paste0(x_var, "_slope") %in% col_df) {
+    x_var_error <- paste0(x_var, "_strd_error")
+    y_var_error <- paste0(y_var, "_strd_error")
+    x_var <- col_df[str_detect(col_df, paste0(x_var, "_slope")) &
+      !str_detect(col_df, paste0(x_var, "_strd_error"))]
+    y_var <- col_df[str_detect(col_df, paste0(y_var, "_slope")) &
+      !str_detect(col_df, paste0(y_var, "_strd_error"))]
+  } else {
+    x_var_error <- paste0(x_var, "_strd_error")
+    y_var_error <- paste0(y_var, "_strd_error")
+    x_var <- col_df[str_detect(col_df, x_var) & !str_detect(col_df, paste0(x_var, "_strd_error"))]
+    y_var <- col_df[str_detect(col_df, y_var) & !str_detect(col_df, paste0(y_var, "_strd_error"))]
+  }
+  #return(c(x_var, x_var_error, y_var, y_var_error))
+  if (!is.null(covar)) {
+    p <- .df %>%
+      ggplot(aes_string(x = x_var, y = y_var, color = covar)) +
+      viridis::scale_color_viridis() +
+      geom_point()
+  } else {
+    p <- .df %>% ggplot(aes_string(x = x_var, y = y_var)) +
+      viridis::scale_color_viridis() +
+      geom_point()
+  }
+  if (std_error) {
+    p <- p + 
+      geom_errorbar(
+	data = .df,
+	aes_string(
+	  xmin = paste0(x_var, " - ", x_var_error),
+	  xmax = paste0(x_var, " + ", x_var_error)
+	  ),
+	alpha = 0.3) +
+      geom_errorbar(
+	data = .df,
+	aes_string(
+	  ymin = paste0(y_var, " - ", y_var_error),
+	  ymax = paste0(y_var, " + ", y_var_error)
+	  ),
+	alpha = 0.3)
+  }
+  return(p)
 }
 
 #' Get spatial report plot
@@ -285,3 +332,62 @@ get_sp_model_plot <- function(model = sp_models) {
       gg = map2(x, model, ~try(get_predict_plot_from_model_x(mod = .y, x = .x)))
     )
 }
+
+get_predict_from_new_model <- function(model = NULL, x_bound = slope_x_bound) {
+
+  x_bound <- tibble::enframe(x_bound, name = "term", value = "min_max")
+
+  # Build the df with term of the model and p.value of Anova
+  ti <- tibble(
+    response = names(model),
+    model = model,
+    aov_mod = map(model, car::Anova),
+    aov_tab = map(aov_mod, ~broom::tidy(.x) %>%
+      filter(term != "Residuals") %>%
+      select(term, p.value)
+    )
+    ) %>%
+  unnest(aov_tab) %>%
+  left_join(x_bound, by = "term")
+
+# get prediction terms and predictions
+
+ti %>%
+  mutate(
+    pred_term = map2(term, min_max,
+      ~paste0(.x, " [", .y[1], ", -0.000000001, 0.000000001, ", .y[2], "]")
+      ),
+    prediction = map2(model, pred_term, ~ggpredict(model = .x, terms = .y) %>%
+      as_tibble()
+    )
+  )
+
+}
+
+
+get_pred_plot_from_new_model <- function(
+  model = NULL,
+  dataset = NULL,
+  x_bound = slope_x_bound) {
+
+  # Get significativity from anova and make prediction
+  aov_pred <- get_predict_from_new_model(model = model, x_bound = x_bound)
+
+  # build raw plot and add prediction 
+  aov_pred %>%
+    mutate(
+      raw_plot = map2(term, response,
+	~plot_raw_data_new_model(
+	  .df = dataset,
+	  x_var = .x, y_var = .y,
+	  std_error = TRUE, covar = NULL
+	  )),
+      pred_plot = pmap(list(prediction, raw_plot, p.value),
+	function(pred, raw_p, s) {
+	  plot_add_pred_data(pred = pred, gg = raw_p, signif = s)
+	}
+      )
+    )
+
+}
+

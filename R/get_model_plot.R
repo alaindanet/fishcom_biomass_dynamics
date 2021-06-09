@@ -290,7 +290,53 @@ get_ggpredict_term_from_anova <- function (aov_tab = NULL, bound = NULL, pval_th
     }
 
     return(ggpred_tmp)
-    
+
+}
+
+get_ggpredict_term_from_anova_new_model <- function (
+  aov_tab = NULL,
+  bound = NULL,
+  pval_threshold = 0.05) {
+
+  tmp <- aov_tab %>%
+    mutate(signf = p.value <= pval_threshold) %>%
+    filter(signf) %>%
+    summarise(
+      signif_term = paste(term, collapse = "+"),
+      indiv_term = list(term)
+      ) %>%
+    mutate(
+      single_var_term = map(signif_term, get_lm_single_term),
+      predict_term = map(single_var_term, from_term_to_predict_term)
+    )
+    pred_term <- tmp$predict_term[[1]]
+    #tmp$predict_term
+    # Get x var to get bounds
+    term <- aov_tab$term
+    x_var_slope <-  term[str_ends(term, "_slope")]
+    x_var <- str_remove(x_var_slope, "_slope")
+    min_max <- bound[[x_var]]
+
+    ggpred_tmp <- paste0(x_var_slope, " [",min_max[1],", -0.000000001, 0.000000001, ", min_max[2], "]")
+
+    # If no signicant effect, return x slope, may be to change
+    if (str_length(pred_term) == 0) {
+      return(ggpred_tmp)
+    }
+
+    if (any(str_detect(pred_term, "inc_f"))) {
+     ggpred_tmp <- c(ggpred_tmp, "inc_f") 
+    }
+
+    if (any(!str_detect(pred_term, "inc_f|_slope"))) {
+      tmp <- 
+      ggpred_tmp <- c(ggpred_tmp,
+	paste0(pred_term[!str_detect(pred_term, "inc_f|_slope")], " [quart2]")
+      )
+    }
+
+    return(ggpred_tmp)
+
 }
 
 compute_lm_from_signif_anova <- function (aov_tab = NULL , .df = NULL) {
@@ -408,21 +454,31 @@ plot_raw_data  <- function(.df = NULL, covar = NULL, std_error = TRUE) {
   return(p)
 }
 
-plot_add_pred_data <- function (pred = NULL, gg = NULL) {
+plot_add_pred_data <- function (pred = NULL, gg = NULL, signif = FALSE) {
 
   if (is.null(gg)) {
-    p <- pred %>% ggplot(aes(y = predicted, x = x))
+    p <- pred %>%
+      ggplot(aes(y = predicted, x = x))
   } else {
     p <- gg
   }
 
   if ("covar" %in% colnames(pred)) {
-    p <- p + 
-      geom_line(data = pred, aes(y = predicted, x = x, linetype = covar), inherit.aes = FALSE)
+    p <- p +
+      geom_line(
+	data = pred,
+	aes(y = predicted, x = x, linetype = covar),
+	inherit.aes = FALSE,
+	color = ifelse(!is.null(signif) & signif, "red", "black")
+      )
   } else {
-    p <- p + 
-      geom_line(data = pred, aes(y = predicted, x = x), inherit.aes = FALSE)
-  } 
+    p <- p +
+      geom_line(data = pred,
+	aes(y = predicted, x = x),
+	inherit.aes = FALSE,
+	color = ifelse(signif, "red", "black")
+      )
+  }
 
   return(p)
 }

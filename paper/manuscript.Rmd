@@ -1,15 +1,27 @@
 ---
 title: "Biomass and species richness temporal trends drives the assembly and the disassembly of food-web in natural fish assemblages"
-author: "Alain Danet, Maud Mouchet, Loubna El Madouri, Colin Fontaine (ordre non fixé)"
-self_contained: yes
-date: "`r Sys.Date()`"
-tables: yes
-bibliography: references.bib 
-fontsize: 12pt
+author: Alain Danet, Maud Mouchet, Willem Bonnaffé, Elisa Thébault and Colin Fontaine
+date: \today 
 output:
-  bookdown::html_document2:
-    fig_caption: true
-    theme: "journal"
+  bookdown::pdf_document2:
+    fig_caption: true 
+    keep_tex: true
+    toc: true
+fontsize: 12pt
+header-includes:
+   - \usepackage{natbib}
+   - \usepackage{float}
+   - \usepackage[table]{xcolor}
+   - \usepackage{multirow}
+   - \usepackage{booktabs}
+   - \usepackage{makecell}
+   - \usepackage{setspace}
+   - \doublespacing
+   - \usepackage{lineno}
+   - \linenumbers
+geometry: margin=2cm
+bibliography: references.bib
+number_sections: true
 ---
 
 ```{r, echo = FALSE}
@@ -23,8 +35,9 @@ knitr::opts_chunk$set(
   echo = FALSE,
   message = FALSE,
   warning = FALSE,
-  results = TRUE 
+  results = TRUE
 )
+
 ```
 
 
@@ -45,6 +58,7 @@ mytheme <- theme_cowplot() +
 background_grid()
 
 theme_set(mytheme)
+options(knitr.table.format = "latex")
 ```
 ```{r}
 net_var_bm <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
@@ -57,63 +71,65 @@ net_var_rich <- c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
 
 ## community structure are dynamics and affect ecosystem functions 
 
-Biodiversity to affect ecosystem properties such as total biomass, productivity
-and stability [@tilman_biodiversity_2014; @loreau_biodiversity_2001]. Numerous
-studies have shown the decline of population and community biomass
+Biodiversity affects ecosystem properties such as total biomass, productivity
+and stability [@tilman_biodiversity_2014; @loreau_biodiversity_2001]. However,
+current biodiversity is at risk, numerous
+studies reported dramatic declines of population and community biomass
 [@ceballos_biological_2017; @hallmann_more_2017; @albano_native_2021], as well
-as ongoing extinction [@barnosky_]. Consequences of such trends on various
-aspects of community structure are not well known whereas numerous ecological studies
+as ongoing extinction [@barnosky_has_2011]. Consequences of such trends on various
+aspects of community structure are not well-known whereas numerous ecological studies
 have shown that the different aspects of community structure are tightly linked [REF].
 
-The link between Biodiversity and ecosystem functioning is one of the most
-famous example, experimental studies are in accordance to show a positive
-relationship between species richness and community biomass
+The temporal trends of species richness and community biomass are likely to
+affect community structure. The positive link between Biodiversity and ecosystem
+functioning shown in experimental studies predict that loss and gain of species
+richness should respectively result in loss and gain of community biomass
 [@tilman_biodiversity_2014; @pennekamp_biodiversity_2018]. But this relation is
 not always found in natural settings [@grace_integrative_2016;
-@li_relationship_2018; @maureaud_biodiversityecosystem_2019]. Also, numerous
-studies have found relation between species richness and evenness, showing that
-communities become more or less even as species richness increase
-[@soininen_relationship_2012; @ma_species_2005;
-@maureaud_biodiversityecosystem_2019], highlighting the diversity of
-assembly processes in ecological communities.
+@li_relationship_2018; @maureaud_biodiversityecosystem_2019]. Numerous
+studies find relation between species richness and evenness, but their disagree
+on the sign of the relationships [@soininen_relationship_2012; @ma_species_2005;
+@maureaud_biodiversityecosystem_2019], highlighting the diversity of assembly
+processes in ecological communities.
 
 The distribution and the number of ecological interactions, i.e. the structure
-of ecological networks, also covary. In food-web, connectance, which measures the
-degree of generalism in a network, has been theoretically shown to theoretically
-positively scale with community biomass [@thebaut_food-web_2003]. Connectance
-has been also shown to be negatively related to species richness in empirical
-food-webs [@dunne_network_2006]. Trophic level has also been shown to be
-positively linked to total biomass in theoretical models
-[@wang_biodiversity_2018]. All together, these studies show that the
-different dimensions of network structure are closely linked.
+of ecological networks, also covaries with species richness and community
+biomass. In food-webs, connectance, which measures the degree of generalism in a
+network, has been theoretically shown to theoretically positively scale with
+community biomass [@thebault_food-web_2003]. Connectance has been also shown to
+be negatively related to species richness in empirical food-webs
+[@dunne_network_2006]. Trophic level has also been shown to be positively linked
+to total biomass in theoretical models [@wang_biodiversity_2018]. All together,
+these studies show that the different dimensions of network structure are
+closely linked.
 
 The space for time substitution allows to use the studies mentioned above to
 predict how changes in species richness or community biomass will in turn affect
-community and network structure. The hypothesis that space can be use to
+community and network structure. The hypothesis that space can
 surrogate space is often implicitly made in ecological studies. This method
 began to be widely used in the early 20th century to infer the temporal
-succession of vegetation from space variations [@pickett_space-time_1989].  It
+succession of vegetation from space variations [@pickett_space-for-time_1989]. It
 supposes a homology between variations in space and in time i.e. that spatial
-sequence corresponds to temporal sequences. This methods have raised criticisms
-[@damgaard_critique_2019], with studies showing the coherent in space and time
+sequences corresponds to temporal sequences. This method have raised criticisms
+[@damgaard_critique_2019], with studies showing analogous patterns in space and time
 [@blois_space_2013] or not [@johnson_testing_2008; @adler_contrasting_2007].
 Spatial turnover of species composition, dispersal limitation, disturbance and
-stochastic processes  has been hypothesised to be responsible for the failure of
+stochastic processes have been hypothesised to be responsible for the failure of
 space for time substitution [@adler_contrasting_2007; @blois_space_2013].
 
-In this line, how biomass and species richness temporal trends are linked to
+In this line, how community biomass and species richness temporal trends are linked to
 change in food-web structure is still an open question, as well as if space for
-time substitution works in food-web assembly. The increasing availability of
-ecological temporal series makes possible to assess those questions.
-  
+time substitution works to infer consequences of species richness and community
+biomass on food-web structure. The increasing availability of ecological
+temporal series makes possible to assess those questions.
 
 Using a standardized monitoring of fish freshwater communities on the period
 1995-2018, we assessed the relationships among temporal trends of food-web
 structure, trends of community biomass and trends in species richness.  
 Moreover, we tested if the those relationships differs between communities that
-lossed or gained biomass/species richness across time, reflecting potential
+loosed or gained biomass/species richness across time, reflecting potential
 difference between disassembly and assembly processes. We finally assessed if
-spatial relationships display the same patterns than temporal ones, to assess
+spatial relationships display the same patterns as temporal ones, to assess
 the validity of space for time substitution. 
 
 # Methods
@@ -131,7 +147,7 @@ selected only the fish-fish interactions in subsequent analysis.
 ## Food-web and community structure
 
 We characterized food-webs by its connectance, describing the degree of
-generalism in a network [@dunne_network_2006, @delmas_analysing_2019]. It is
+generalism in a network [@dunne_network_2006; @delmas_analysing_2019]. It is
 computed as the ratio between the actual number of links and the number of
 potential links ($C = \frac{L}{S(S-1)}$, with $L$ being the number of links and
 $S$ the number of trophic species). We also computed the average trophic level,
@@ -146,11 +162,12 @@ divided by the number of species ($P = \frac{H'}{N}$, with $H'$ being the
 Shannon diversity index and $N$ the number of species).
 
 ```{r}
-loadd(com_analysis_data, full_data2, st_mono_trends_combined_list)
+loadd(full_data2, st_mono_trends_combined_list)
 ```
 ```{r}
 nb_st <- unique(full_data2$station) %>% length
-nb_st_var <- map_dbl(st_mono_trends_combined_list$station, length) 
+rm(full_data2)
+nb_st_var <- map_dbl(st_mono_trends_combined_list$station, length)
 names(nb_st_var) <- st_mono_trends_combined_list$variable
 ```
 
@@ -164,7 +181,7 @@ community structure at each site. We used a method based on second order
 polynomial which allows to assess both the direction and the monotony of
 temporal trends [@rigal_method_2020]. To avoid complex variations of biomass and
 species richness, we selected the stations that displayed monotonic trends for
-theses variable. Over the `r nb_st` stations, the selection procedure resulted
+these variable. Over the `r nb_st` stations, the selection procedure resulted
 in respectively `r nb_st_var["log_bm_std"]` stations  and `r nb_st_var["log_rich_std"]`
 for community biomass and species richness analysis.
 
@@ -184,11 +201,11 @@ small/big communities, we modelled the dynamics the temporal trends of food-web
 structure ($dN$) in function of the temporal trends of community biomass ($dB$) and species
 richness ($dR$), if the latter was positive of not (Inc) and with respectively the median
 community biomass ($B_i$) and species richness ($R_i$)of the three first years of the temporal
-series .
+series.
 
-$dN = dB + B_i + dB \times B + Inc \times B_i + dB \times Inc \times B_i$
+$dN = dB + B_i + dB \times B + Inc_B \times B_i + dB \times Inc_B \times B_i$
 
-$dN = dR + R_i + dR \times R_i + Inc \times R_i + dR \times Inc \times R_i$
+$dN = dR + R_i + dR \times R_i + Inc_R \times R_i + dR \times Inc_R \times R_i$
 
 With:
 
@@ -197,12 +214,13 @@ With:
   - $dR$: temporal trend of (log) species richness 
   - $B_i$: median community biomass of the first three year
   - $R_i$: median species richness of the first three year
-  - $Inc$: Is $dB > 0$?
+  - $Inc_B$: Is $dB > 0$?
+  - $Inc_R$: Is $dR > 0$?
 
 
-In order to control for the uncertainties of the estimated temporal trends, we
-weighted each temporal trends by the inverse of the product between the standard
-error of the estimated trends, i.e. slopes, for the response and the explicative
+In order to control for the uncertainties of the estimated temporal trends, each
+temporal trend was weighted by the inverse of the product of the standard errors of the
+estimated trends, i.e. slopes for the response and the explicative
 variable.
 
 ## Spatial trends
@@ -213,14 +231,15 @@ synthesizing respectively (1) stream size and (2) average temperature and
 enrichment. Enrichment was characterized by the average Biological Oxygen
 Demand [BOD, @mallin_factors_2006].
  
-
-$N =  B + R + E_1 + E_2 $
+$N =  B + R + E_1 + E_2$
 
 With:
 
   - $N$: median network structure and communities structure
   - $B$: median community biomass
   - $R$: median species richness 
+  - $E_1$: PCA1 related to stream size
+  - $E_2$: PCA2 related to average temperature and average BOD
 
 
 # Results
@@ -355,7 +374,7 @@ previous studies which found a negative relationship between biomass and eveness
 of individual in marine and plant communities [@drobner_relation_1998;
 @maureaud_biodiversityecosystem_2019] or studies that found more even plant
 communities in terms of individual number display higher community biomass
-[@wisley_biodiversity_2000].
+[@wilsey_biodiversity_2000].
 
 We further found that the temporal trends of connectance was positively
 linked to that one of community biomass, meaning that connectance increases through
@@ -364,11 +383,11 @@ This is in line with the fact that the fishes located at higher trophic level
 also display a larger number of links as the size of the predation window
 increases with the size of the fishes. This result is also in accordance with  
 theoretical work showing that higher food-web connectance result in higher
-community biomass [@thebaut_food-web_2003].
+community biomass [@thebault_food-web_2003].
 
 ##  Biomass and richness variation are not the same process 
 
-To the difference with community biomass, the temporal trends evenness of
+To the difference with community biomass, the temporal trends of evenness of
 biomass and individual were positively related to the temporal trends of species
 richness, meaning that as species richness temporally increase, the
 distribution of biomass and abondance become more even. Our results indicate
@@ -432,7 +451,7 @@ then reflect the assembly/disassembly trajectories in time of communities [@].
 This result has profound implications for conservation. As more and more
 studies report community biomass and richness trends [@hallmann_more_2017;
 @ceballos_biological_2017], it is important to note that they might not be
-equivalent in terms of consequences on the structure of the community. Further
+equivalent in terms of consequences on the structure of the community. Further,
 studies should investigate the temporal trends of several dimensions of
 community structure simultaneously because it drives many aspects of ecosystem
 functioning.
@@ -441,7 +460,7 @@ functioning.
 
 We found no case in which gain or losses of biomass and richness lead to
 different relationship between the temporal dynamic of community structure and
-the one of biomass and species richness. We could have imagine that
+the one of biomass and species richness. We could have imagined that
 extinction/colonisation processes or immigration/extinction debt could have lead
 to different relationships.
 
@@ -464,8 +483,9 @@ fig_bm_cap <- paste0(
   displays the relationships between the temporal trends of community structure
   and the one of community biomass. Lines correspond to the predictions of the
   linear models while the points are colored according the median community
-  biomass of the three first years of the given temporal series. The lines surrounding each point represent
-  the standard error associated to the temporal trends. Right panel displays the
+  biomass of the three first years of the given temporal series. The lines
+  surrounding each point represent the standard error associated to the temporal
+  trends. Right panel displays the
   spatial relationship between median community structure over time and the
   median community biomass over time."
 
@@ -484,37 +504,38 @@ fig_rich_cap <- paste0(
 )
 ```
 
-
 ```{r}
 loadd(p_fig1_2, sp_relation_plot2, predict_plot2)
 theme_set(theme_cowplot())
 p_bm <- get_plot_fig1_2(predict_plot = predict_plot2, get_list = TRUE,
   bm_x = "log_bm_std", rich_x = "log_rich_std",
-  bm_y = c("ct_ff", "w_trph_lvl_avg", "piel_nind", "piel_bm", "log_rich_std") 
+  bm_y = c("ct_ff", "w_trph_lvl_avg", "piel_nind", "piel_bm", "log_rich_std")
   )$bm
 names(p_bm) <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_nind",
-  "piel_bm") 
+  "piel_bm")
 #plot_grid(plotlist = p_bm)
 
 sp_bm <- sp_relation_plot2 %>%
   filter(x == "log_bm_std")
-p_sp_bm <- sp_bm$gg 
-names(p_sp_bm) <- sp_bm$y 
+p_sp_bm <- sp_bm$gg
+names(p_sp_bm) <- sp_bm$y
 ```
 
 ```{r}
 ti <- list()
-for (i in c("log_rich_std", "w_trph_lvl_avg",  "piel_bm", "piel_nind", "ct_ff")) {
-  ti[[i]] <- list(p_bm[[i]], p_sp_bm[[i]]) 
+for (
+  i in c("log_rich_std", "w_trph_lvl_avg", "piel_bm", "piel_nind", "ct_ff")
+  ) {
+  ti[[i]] <- list(p_bm[[i]], p_sp_bm[[i]])
 }
 ```
 
 
 
 ```{r bm, fig.height = 12, fig.cap=fig_bm_cap}
-# Make the label on two lines 
+# Make the label on two lines
 top <- plot_grid(plotlist = c(ti[[1]], ti[[2]], ti[[3]], ti[[4]], ti[[5]]), ncol = 2)
-fig1 <- plot_grid(top, p_bm[[6]], ncol = 1, rel_heights = c(1, .1)) 
+fig1 <- plot_grid(top, p_bm[[6]], ncol = 1, rel_heights = c(1, .1))
 fig1
 ```
 
@@ -523,7 +544,7 @@ p_rich <- get_plot_fig1_2(
   predict_plot = predict_plot2,
   get_list = TRUE,
   rich_x = "log_rich_std",
-  rich_y = c("ct_ff", "w_trph_lvl_avg", "piel_nind", "piel_bm", "log_bm_std") 
+  rich_y <- c("ct_ff", "w_trph_lvl_avg", "piel_nind", "piel_bm", "log_bm_std")
   )$rich
 names(p_rich) <- c(
   "ct_ff", "w_trph_lvl_avg", "piel_nind",
@@ -539,17 +560,19 @@ names(p_sp_rich) <- sp_rich$y
 ```{r}
 fig2_left <- plot_grid(plotlist = p_rich, ncol = 1)
 fig2_right <- plot_grid(plotlist = p_sp_rich, ncol = 1)
-#plot_grid(plotlist = list(p_bm[[1]], p_sp_bm[[1]], ), ncol = 1)
+# plot_grid(plotlist = list(p_bm[[1]], p_sp_bm[[1]], ), ncol = 1)
 
 trich <- list()
 for (i in c("log_bm_std", "w_trph_lvl_avg",  "piel_bm", "piel_nind", "ct_ff")) {
-  trich[[i]] <- list(p_rich[[i]], p_sp_rich[[i]]) 
+  trich[[i]] <- list(p_rich[[i]], p_sp_rich[[i]])
 }
 ```
 
 ```{r rich, fig.height = 12, fig.cap=fig_rich_cap}
-# Make the label on two lines 
-top_rich <- plot_grid(plotlist = c(trich[[1]], trich[[2]], trich[[3]], trich[[4]], trich[[5]]), ncol = 2)
+# Make the label on two lines
+top_rich <- plot_grid(
+  plotlist = c(trich[[1]], trich[[2]], trich[[3]], trich[[4]], trich[[5]]),
+  ncol = 2)
 fig2 <- plot_grid(top_rich, p_rich[[6]], ncol = 1, rel_heights = c(1, .1))
 fig2
 ```
@@ -561,25 +584,20 @@ fig2
 ### Temporal
 
 ```{r}
-loadd(model_log_bm_f3y_table_medium, model_log_rich_f3y_table_medium)
-```
-
-
-```{r}
-model_log_bm_f3y_table_medium[["anova_table"]] %>% 
+model_log_bm_f3y_table_medium[["anova_table"]] %>%
   filter(y %in% net_var_bm) %>%
   select(-mod_summary_table) %>%
   format_anova_table() %>%
-  kable(., booktabs = TRUE,
-    caption = 
+  kable(.,
+    booktabs = TRUE,
+    caption =
       paste0(
-      "ANOVA results for the links between the temporal trends of 
+      "ANOVA results for the links between the temporal trends of
       community biomass and the temporal trends of the network structure."
     ),
-  label = "tab:aov-bm"
-
+  label = "aov-bm"
   ) %>%
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  kable_styling(latex_options = c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
@@ -594,7 +612,7 @@ model_log_rich_f3y_table_medium[["anova_table"]] %>%
       "ANOVA results for the links between the temporal trends of species
       richness and the temporal trends of the network structure."
     ),
-  label = "tab:aov-rich"
+  label = "aov-rich"
   ) %>%
   kable_styling(latex_options =c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
@@ -610,7 +628,7 @@ model_log_bm_f3y_table_medium$reg_table %>%
       "Regression coefficients for the linear models explaining the links
       between the temporal trends of community biomass and the temporal trends
       of the network structure."),
-  label = "tab:reg-bm"
+  label = "reg-bm"
   ) %>%
   kable_styling(latex_options =c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
@@ -627,7 +645,7 @@ model_log_rich_f3y_table_medium$reg_table %>%
       between the temporal trends of species richness and the temporal trends of
       the network structure."
     ),
-  label = "tab:reg-rich"
+  label = "reg-rich"
   ) %>%
   kable_styling(latex_options =c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
@@ -644,7 +662,7 @@ rsq %>%
     caption = 
       paste0(
       "Squared and adjusted squared R for linear models of spatial relationships."),
-  label = "tab:rsq"
+  label = "rsq"
       ) %>% # 
   kable_styling(latex_options =c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
@@ -666,13 +684,13 @@ tab_sp_anova$log_bm_std %>%
     term = str_replace_all(term, var_replacement()),
   ) %>%
   kable(., booktabs = TRUE,
-    caption = 
+    caption =
       paste0(
       "ANOVA results for the links between the spatial variation of community
       biomass and the one of network structure."),
-  label = "tab:aov-bm-sp"
+  label = "aov-bm-sp"
   ) %>%
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  kable_styling(latex_options = c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
@@ -684,12 +702,12 @@ tab_sp_anova$log_rich_std %>%
     term = str_replace_all(term, var_replacement()),
   ) %>%
   kable(., booktabs = TRUE,
-    caption = 
+    caption =
       paste0(
       "ANOVA results for the links between the spatial variation of species
       richness and the one of network structure."),
-  label = "tab:aov-rich-sp"
-      ) %>% # 
+  label = "aov-rich-sp"
+      ) %>% #
   kable_styling(latex_options = c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
@@ -710,13 +728,12 @@ table_rsq_sp %>%
     Response = str_replace_all(Response, var_replacement())
   ) %>%
   kable(., booktabs = TRUE,
-    caption = 
+    caption =
       paste0(
       "Marginal and conditional squared R for spatial models."),
-  label = "tab:rsq-sp"
-      ) %>% # 
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+  label = "rsq-sp"
+      ) %>% #
+  kable_styling(latex_options = c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
-
 ```
 

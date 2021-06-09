@@ -81,10 +81,10 @@ plan <- drake_plan(
     arrange(year) %>%
     summarise(med = median(value), f3y = median(value[1:3])) %>%
     ungroup(),
-  summary_var_med = summary_var %>% 
+  summary_var_med = summary_var %>%
     select(-f3y) %>%
     pivot_wider(names_from = "variable", values_from = "med"),
-  summary_var_f3y = summary_var %>% 
+  summary_var_f3y = summary_var %>%
     select(-med) %>%
     pivot_wider(names_from = variable, values_from = "f3y"),
   stream_group = get_stream_group(
@@ -118,7 +118,8 @@ plan <- drake_plan(
     st_mono = st_mono_trends_combined_list, type = "min_max"),
 
   # 2.2 Environment
-  st_analysis_by_var = get_station_analysis_by_var(classif = rigal_classification),
+  st_analysis_by_var = get_station_analysis_by_var(
+    classif = rigal_classification),
   st_analysis = get_all_station_analysis(classif = rigal_classification),
   data_for_pca = habitat_press %>%
     filter(station %in% st_analysis) %>%
@@ -137,10 +138,10 @@ plan <- drake_plan(
   comb = list(
     y = c(get_com_str_var(all = TRUE), get_biomass_var()),
     x = model_x_var
-  ) %>% 
+  ) %>%
   expand.grid(., stringsAsFactors = FALSE) %>%
   as_tibble %>%
-  # filtering combination: 
+  # filtering combination:
   filter(y != x) %>%
   mutate(
     covar = ifelse(str_detect(x, "log_"), str_remove(x, "log_"), x)
@@ -152,12 +153,17 @@ plan <- drake_plan(
 	  filter(station %in% get_st_mono_trends(.df = classif, xvar = myx)$station)
       }, classif = rigal_classification),
       data_model = map2(data_model, covar,
-	~left_join(.x, summary_var_f3y[, colnames(summary_var_f3y) %in% c("station", .y)], by = "station")
+	~left_join(
+	  .x,
+	  summary_var_f3y[, colnames(summary_var_f3y) %in% c("station", .y)],
+	  by = "station"
+	)
       )
     ),
-  model = data4model %>% 
+  model = data4model %>%
     mutate(
-      mods = pmap(list(.df = data_model, x = x, covar = covar), compute_my_lm_vs_net_model,
+      mods = pmap(list(.df = data_model, x = x, covar = covar),
+	compute_my_lm_vs_net_model,
 	var_to_group = "variable")
       ) %>%
     unnest(c(mods)) %>%
@@ -167,6 +173,12 @@ plan <- drake_plan(
 	starts_with("mod")))
     ),
   model_summary = get_model_summary(model),
+  model_summary_scale = model %>%
+  mutate(
+    scaled_mod = map(mod_medium_bm, lm.beta::lm.beta),
+    resume = map(scaled_mod, ~summary.lm.beta(.x, standardized = TRUE)),
+    anova = map(scaled_mod, ~anova(.x))
+  ),
 
   #temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
   temporal_dynamics_coef = get_lm_coeff(
@@ -180,7 +192,7 @@ plan <- drake_plan(
   net_dyn_lm_plot = get_net_dyn_lm_plot(net_dyn_lm = net_dyn_lm),
   net_dyn_lm_coeff = get_lm_coeff(.data = net_dyn_lm, col_names = "model"),
 
-  # 3.2 Analysis for the spatial models 
+  # 3.2 Analysis for the spatial models
   basin_station = get_basin_station(),
   sp_st_data = summary_var_med %>%
     left_join(environment_pca, by = "station") %>%
@@ -197,7 +209,7 @@ plan <- drake_plan(
   #4. The plots
   p_bm_vs_bm_slope = plot_bm_vs_bm_slope(
     tps_dyn_coef = temporal_dynamics_coef,
-    bm_group = biomass_group  
+    bm_group = biomass_group
     ),
   p_hist_med_bm = plot_hist_med_bm(.data = full_data2),
   p_cross_classif_bm_rich = plot_matrix_bm_rich_cross_classif(
@@ -219,7 +231,7 @@ plan <- drake_plan(
   ),
 
 
-  #5. Tables 
+  #5. Tables
   effect_quad2_piece = tibble(
     effect = c("Dynamic of biomass", "disassembly/assembly", "com size", "bm dyn dep on com size?", "bm dyn dep on disassembly/assembly?", "bm dyn dep on both dis/assembly and com size ?"),
     mod_bm_quad2 = c("bm_slope", "I(bm_slope^2)", "bm", "bm_slope:bm", "I(bm_slope^2)", "bm:I(bm_slope^2)"),
@@ -234,9 +246,16 @@ plan <- drake_plan(
       anova_table = map(anova, broom::tidy)
       ) %>%
   select(any_of(c("x", "y", "covar", "model", "model_obj", "reg_table", "mod_summary_table", "anova_table"))),
+  summary_table_scale = model_summary_scale %>%
+    mutate(
+      reg_table = map(scaled_mod, broom::tidy),
+      mod_summary_table = map(scaled_mod, broom::glance),
+      anova_table = map(anova, broom::tidy)
+      ) %>%
+  select(any_of(c("x", "y", "covar", "model", "model_obj", "reg_table", "mod_summary_table", "anova_table"))),
   predict_table = summary_table %>%
      mutate(
-	ggpred_term = map(anova_table, 
+	ggpred_term = map(anova_table,
 	  ~get_ggpredict_term_from_anova(aov_tab = .x,
 	    bound = slope_x_bound)),
 	tmp_pred_table = map2(model_obj, ggpred_term, ~ ggpredict(.x, .y) %>% as_tibble),
@@ -250,7 +269,7 @@ plan <- drake_plan(
 	raw_plot = map2(data, covar,
 	  ~plot_raw_data(.df = .x, covar = .y, std_error = TRUE)
 	  ),
-	 pred_plot = map2(pred_table, raw_plot, 
+	 pred_plot = map2(pred_table, raw_plot,
 	  ~plot_add_pred_data(pred = .x, gg = .y)
 	  )
 	) %>%
@@ -284,7 +303,7 @@ plan <- drake_plan(
 	raw_plot = map2(data, covar,
 	  ~plot_raw_data(.df = .x, covar = .y, std_error = TRUE)
 	  ),
-	pred_plot = map2(pred_table, raw_plot, 
+	pred_plot = map2(pred_table, raw_plot,
 	  ~plot_add_pred_data(pred = .x, gg = .y)
 	)
 	) %>%
@@ -302,12 +321,15 @@ plan <- drake_plan(
     map(., ~ .x %>% filter(x == "log_rich_std") %>%
       select(-any_of(c("x", "covar", "model", "model_obj", "reg_table", "anova_table")))),
 
-    #5.2 Table for spatial analysis 
+    #5.2 Table for spatial analysis
     anova_table_sp = map(sp_models, ~map(.x, ~anova(.x))),
     tab_sp_anova = map(anova_table_sp, get_anova_table_from_named_list),
     reg_table_sp = map(sp_models, ~map(.x, ~broom::tidy(.x))),
     mod_summary_table_sp = map(sp_models, ~map(.x, ~broom::glance(.x))),
-    rsq_sp_mod = map(sp_models, ~piecewiseSEM::rsquared(modelList = .x, method = NULL)),
+    rsq_sp_mod = map(
+      sp_models,
+      ~piecewiseSEM::rsquared(modelList = .x, method = NULL)
+      ),
 
     # Reporting
 
@@ -330,11 +352,234 @@ plan <- drake_plan(
     function(...) rmarkdown::render(...),
     args = list(
       input = drake::knitr_in("paper/manuscript.Rmd"),
-      output_file = drake::file_out("paper/manuscript.html"),
+      output_file = drake::file_out("paper/manuscript.pdf"),
+      output_dir = "paper"
+    )
+    ),
+  appendix = callr::r(
+    function(...) rmarkdown::render(...),
+    args = list(
+      input = drake::knitr_in("paper/appendix.Rmd"),
+      output_file = drake::file_out("paper/appendix.pdf"),
       output_dir = "paper"
     )
     ),
 
+  # Supplementary analysis
+
+  ## Make the temporal analysis with together log_bm_std and log_rich_std
+
+  ### Get both slopes
+  var_slope_to_keep = c("station", "linear_slope", "linear_slope_strd_error"),
+  slope_com_var = map(
+    unique(c(get_com_str_var(), "log_bm_std", "log_rich_std")),
+    function(x, var_to_keep, classif_var) {
+
+      x_data <- classif_var[classif_var$variable == x, ] %>%
+	unnest(classif)
+      x_data <- x_data[, colnames(x_data) %in% var_to_keep]
+
+      # Rename according to the variable
+      colnames(x_data)[colnames(x_data) %in% var_to_keep[2:3]] <-
+	paste0(x, c("_slope", "_strd_error"))
+      return(x_data)
+
+    },
+    var_to_keep = c("station", "linear_slope", "linear_slope_strd_error"),
+  classif_var = rigal_classification) %>%
+  Reduce(merge.all, .) %>%
+  left_join(summary_var_f3y[, c("station", "bm_std", "rich_std")]) %>%
+  mutate(
+    inc_f_log_rich = ifelse(log_rich_std_slope > 0, TRUE, FALSE),
+    inc_f_log_bm = ifelse(log_bm_std_slope > 0, TRUE, FALSE)
+    ),
+  ### Monotonuous station
+  st_mono_trends_rich_bm = map(c("log_rich_std", "log_bm_std"),
+    ~get_st_mono_trends(rigal_classification, .x)$station) %>%
+    Reduce(intersect, .),
+  slope_com_var_no_covar = {
+    slope_com_var_no_covar <- slope_com_var[,
+      !colnames(slope_com_var) %in% c("bm_std", "rich_std")
+      ]
+    colnames(slope_com_var_no_covar) <-
+      str_remove(colnames(slope_com_var_no_covar), "_slope")
+    slope_com_var_no_covar
+  },
+  #### Monotonuous station but with stable
+  st_mono_trends_stable_rich_bm = map(c("log_rich_std", "log_bm_std"),
+    ~get_st_mono_trends(rigal_classification, .x, stable = TRUE)$station) %>%
+    Reduce(intersect, .),
+  ### Non monotonous station
+  st_trends_rich_bm = map(c("log_rich_std", "log_bm_std"),
+    ~get_st_all_trends(rigal_classification, .x)$station) %>%
+    Reduce(intersect, .),
+  ### Non monotonous stations with stable = all stations
+
+
+  ### Modelling
+  model_bm_rich_mono_trends = get_model_bm_rich_no_covar_no_inc(
+    .data = filter(slope_com_var_no_covar, station %in% st_mono_trends_rich_bm)
+    ) %>%
+  map(., lm.beta::lm.beta),
+  model_bm_rich_mono_stable_trends = get_model_bm_rich_no_covar_no_inc(
+    .data = filter(slope_com_var_no_covar,
+      station %in% st_mono_trends_stable_rich_bm)
+    ) %>%
+  map(., lm.beta::lm.beta),
+  model_bm_rich_trends = get_model_bm_rich_no_covar_no_inc(
+    .data = filter(slope_com_var_no_covar,
+      station %in% st_trends_rich_bm)
+    ) %>%
+  map(., lm.beta::lm.beta),
+  model_bm_rich = get_model_bm_rich_no_covar_no_inc(
+    .data = slope_com_var_no_covar
+    ) %>%
+  map(., lm.beta::lm.beta),
+  vif_bm_rich_mod_mono_trends = map(
+    model_bm_rich_mono_trends,
+    ~try(car::vif(.x))),
+  vif_bm_rich_mod_mono_stable_trends = map(
+    model_bm_rich_mono_stable_trends,
+    ~try(car::vif(.x))),
+  vif_bm_rich_mod_trends = map(
+    model_bm_rich_trends,
+    ~try(car::vif(.x))),
+  vif_bm_rich_mod = map(
+    model_bm_rich,
+    ~try(car::vif(.x))),
+  resume_bm_rich_mod_mono_trends = map(
+    model_bm_rich_mono_trends,
+    ~summary(.x,  standardized = TRUE)),
+  resume_bm_rich_mod_mono_stable_trends = map(
+    model_bm_rich_mono_stable_trends,
+    ~summary(.x,  standardized = TRUE)),
+  resume_bm_rich_mod_trends = map(
+    model_bm_rich_trends,
+    ~summary(.x,  standardized = TRUE)),
+  resume_bm_rich_mod = map(
+    model_bm_rich,
+    ~summary(.x,  standardized = TRUE)),
+  anova_bm_rich_mod_mono_trends = map(
+    model_bm_rich_mono_trends,
+    car::Anova),
+  anova_bm_rich_mod_mono_stable_trends = map(
+    model_bm_rich_mono_stable_trends,
+    car::Anova),
+  anova_bm_rich_mod_trends = map(
+    model_bm_rich_trends,
+    car::Anova),
+  anova_bm_rich_mod = map(model_bm_rich,
+    car::Anova),
+
+  ### Plot
+  pred_bm_rich_trends = get_pred_plot_from_new_model(
+    model = model_bm_rich_trends,
+    dataset = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
+    x_bound = slope_x_bound
+  ),
+  pred_bm_rich_mono_trends = get_pred_plot_from_new_model(
+    model = model_bm_rich_mono_trends,
+    dataset = filter(
+      slope_com_var_no_covar,
+      station %in% st_mono_trends_rich_bm),
+    x_bound = slope_x_bound
+  ),
+  pred_bm_rich_mono_stable_trends = get_pred_plot_from_new_model(
+    model = model_bm_rich_mono_stable_trends,
+    dataset = filter(
+      slope_com_var_no_covar,
+      station %in% st_mono_trends_stable_rich_bm),
+    x_bound = slope_x_bound
+  ),
+  pred_bm_rich = get_pred_plot_from_new_model(
+    model = model_bm_rich,
+    dataset = slope_com_var_no_covar,
+    x_bound = slope_x_bound
+  ),
+
+  ## Keep station with trends only (i.e. non monotonic)
+
+  ### Table
+  reg_table_bm_rich_mono_trends = map2(
+    model_bm_rich_mono_trends,
+    names(model_bm_rich_mono_trends),
+    function(model, name) {
+      ml <- broom::tidy(model) %>%
+	mutate(response = name) %>%
+	select(response, everything())
+    }
+    ) %>%
+  do.call(rbind, .),
+  reg_table_bm_rich_mono_stable_trends = map2(
+    model_bm_rich_mono_stable_trends,
+    names(model_bm_rich_mono_stable_trends),
+    function(model, name) {
+      ml <- broom::tidy(model) %>%
+	mutate(response = name) %>%
+	select(response, everything())
+    }
+    ) %>%
+  do.call(rbind, .),
+  reg_table_bm_rich_trends = map2(
+    model_bm_rich_trends,
+    names(model_bm_rich_trends),
+    function(model, name) {
+      ml <- broom::tidy(model) %>%
+	mutate(response = name) %>%
+	select(response, everything())
+    }
+    ) %>%
+  do.call(rbind, .),
+  reg_table_bm_rich = map2(
+    model_bm_rich,
+    names(model_bm_rich),
+    function(model, name) {
+      ml <- broom::tidy(model) %>%
+	mutate(response = name) %>%
+	select(response, everything())
+    }
+    ) %>%
+  do.call(rbind, .),
+  anova_table_bm_rich_mono_trends = map2(
+    anova_bm_rich_mod_mono_trends,
+    names(anova_bm_rich_mod_mono_trends),
+    function(model, name) {
+      ml <- broom::tidy(model) %>%
+	mutate(response = name) %>%
+	select(response, everything())
+    }
+    ) %>%
+  do.call(rbind, .),
+  anova_table_bm_rich_mono_stable_trends = map2(
+    anova_bm_rich_mod_mono_stable_trends,
+    names(anova_bm_rich_mod_mono_stable_trends),
+    function(model, name) {
+      ml <- broom::tidy(model) %>%
+	mutate(response = name) %>%
+	select(response, everything())
+    }
+    ) %>%
+  do.call(rbind, .),
+  anova_table_bm_rich_trends = map2(
+    anova_bm_rich_mod_trends,
+    names(anova_bm_rich_mod_trends),
+    function(model, name) {
+      ml <- broom::tidy(model) %>%
+	mutate(response = name) %>%
+	select(response, everything())
+    }
+    ) %>%
+  do.call(rbind, .),
+  anova_table_bm_rich = map2(
+    anova_bm_rich_mod,
+    names(anova_bm_rich_mod),
+    function(model, name) {
+      ml <- broom::tidy(model) %>%
+	mutate(response = name) %>%
+	select(response, everything())
+    }
+    ) %>%
+  do.call(rbind, .),
+
   trace = TRUE
 )
-

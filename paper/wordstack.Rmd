@@ -11,6 +11,13 @@ output:
     math: katex
 ---
 
+# Main messages
+
+- Different assembly processes between biomass and richness
+  - 
+- Space for time works well for biomass but less for species richness
+  - Connectance and average trophic level
+
 # Wordstack
 
 - Foodwebs
