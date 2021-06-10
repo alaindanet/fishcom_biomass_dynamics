@@ -368,24 +368,27 @@ ti %>%
 get_pred_plot_from_new_model <- function(
   model = NULL,
   dataset = NULL,
-  x_bound = slope_x_bound) {
+  x_bound = slope_x_bound, std_error_bar = TRUE) {
 
   # Get significativity from anova and make prediction
-  aov_pred <- get_predict_from_new_model(model = model, x_bound = x_bound)
+  aov_pred <- get_predict_from_new_model(
+    model = model,
+    x_bound = x_bound
+  )
 
-  # build raw plot and add prediction 
+  # build raw plot and add prediction
   aov_pred %>%
     mutate(
       raw_plot = map2(term, response,
-	~plot_raw_data_new_model(
-	  .df = dataset,
-	  x_var = .x, y_var = .y,
-	  std_error = TRUE, covar = NULL
-	  )),
+        ~plot_raw_data_new_model(
+          .df = dataset,
+          x_var = .x, y_var = .y,
+          std_error = std_error_bar, covar = NULL
+          )),
       pred_plot = pmap(list(prediction, raw_plot, p.value),
-	function(pred, raw_p, s) {
-	  plot_add_pred_data(pred = pred, gg = raw_p, signif = s)
-	}
+        function(pred, raw_p, s) {
+          plot_add_pred_data(pred = pred, gg = raw_p, signif = s)
+        }
       )
     )
 

@@ -37,9 +37,8 @@ plan <- drake_plan(
   pivot_longer(cols = c(betadiv:betadiv_bin_diag)) %>%
   mutate(name = str_c(name, variable, sep = "_")) %>%
   select(-variable) %>%
-  pivot_wider(names_from = "name", values_from = "value")
-  ,
-  betapart_bin = 
+  pivot_wider(names_from = "name", values_from = "value"),
+  betapart_bin =
     get_com_mat_station(
       com = com_analysis_data,
       .op = op_data,
@@ -116,13 +115,23 @@ plan <- drake_plan(
   slope_x_bound = get_slope_x_bound(
     classif = rigal_classification,
     st_mono = st_mono_trends_combined_list, type = "min_max"),
+  sp_slope_x_bound = {
+    out <- map(
+    c(get_all_var_analysis(), "log_RC1", "log_RC2"),
+    ~c(
+      min(sp_st_data[[.x]], na.rm = TRUE),
+      max(sp_st_data[[.x]], na.rm = TRUE)
+    )
+    )
+    names(out) <- c(get_all_var_analysis(), "log_RC1", "log_RC2")
+    out
+    },
 
   # 2.2 Environment
   st_analysis_by_var = get_station_analysis_by_var(
     classif = rigal_classification),
   st_analysis = get_all_station_analysis(classif = rigal_classification),
   data_for_pca = habitat_press %>%
-    filter(station %in% st_analysis) %>%
     select(all_of(c("station", get_var_for_pca()))),
   pca = get_pca_environment(.data = data_for_pca),
   environment_pca = data_for_pca %>%
@@ -146,26 +155,26 @@ plan <- drake_plan(
   mutate(
     covar = ifelse(str_detect(x, "log_"), str_remove(x, "log_"), x)
   ),
-  data4model = comb %>%
-    mutate(
-      data_model = map2(x, y, function (myx, myy, classif) {
-	get_y_versus_x_trends(classif = classif, x_var = myx, y_var = myy) %>%
-	  filter(station %in% get_st_mono_trends(.df = classif, xvar = myx)$station)
-      }, classif = rigal_classification),
-      data_model = map2(data_model, covar,
-	~left_join(
-	  .x,
-	  summary_var_f3y[, colnames(summary_var_f3y) %in% c("station", .y)],
-	  by = "station"
-	)
-      )
-    ),
-  model = data4model %>%
-    mutate(
-      mods = pmap(list(.df = data_model, x = x, covar = covar),
-	compute_my_lm_vs_net_model,
-	var_to_group = "variable")
-      ) %>%
+data4model = comb %>%
+  mutate(
+    data_model = map2(x, y, function (myx, myy, classif) {
+      get_y_versus_x_trends(classif = classif, x_var = myx, y_var = myy) %>%
+        filter(station %in% get_st_mono_trends(.df = classif, xvar = myx)$station)
+    }, classif = rigal_classification),
+  data_model = map2(data_model, covar,
+    ~left_join(
+      .x,
+      summary_var_f3y[, colnames(summary_var_f3y) %in% c("station", .y)],
+      by = "station"
+    )
+  )
+  ),
+model = data4model %>%
+  mutate(
+    mods = pmap(list(.df = data_model, x = x, covar = covar),
+      compute_my_lm_vs_net_model,
+      var_to_group = "variable")
+    ) %>%
     unnest(c(mods)) %>%
     select(-data_model, -variable) %>%
     select(-mod_all_bm),
@@ -197,12 +206,15 @@ plan <- drake_plan(
   sp_st_data = summary_var_med %>%
     left_join(environment_pca, by = "station") %>%
     left_join(basin_station, by = "station") %>%
-    filter(station %in% st_analysis) %>%
-    select(all_of(c("station", "basin", "log_RC1", "log_RC2", get_all_var_analysis()))) %>%
-    na.omit,
+    #filter(station %in% st_analysis) %>%
+    select(all_of(c("station", "basin", "log_RC1", "log_RC2", get_all_var_analysis()))),
   st_sp = st4sp_model(my_x_var = model_x_var, .data4model = data4model),
   sp_models = map(st_sp,
-    ~get_mod_list(.data = as.data.frame(sp_st_data[sp_st_data$station %in% .x, ]))),
+    ~get_mod_list(
+      .data = sp_st_data[sp_st_data$station %in% .x, ] %>%
+        as.data.frame %>%
+        na.omit
+        )),
   colin_sp_models = map(sp_models, ~map(.x, car::vif)),
   est_sp_models = map(sp_models, ~map(.x, broom.mixed::tidy)),
 
@@ -222,12 +234,50 @@ plan <- drake_plan(
     label_size = 4, force_pull = 0.01, force = 10,
     seed = 1
   ),
-  sp_relation_plot = map(sp_models, get_sp_model_plot),
+  sp_relation_plot_mono_stable_trends = map(
+    sp_models,
+    ~get_pred_plot_from_new_model(
+      model = .x,
+      dataset = filter(sp_st_data, station %in% st_mono_trends_stable_rich_bm),
+      x_bound = sp_slope_x_bound,
+      std_error_bar = FALSE
+  )
+    ),
+  sp_relation_plot_mono_trends = map(
+    sp_models,
+    ~get_pred_plot_from_new_model(
+    model = .x,
+    dataset = filter(sp_st_data, station %in% st_mono_trends_rich_bm),
+    x_bound = sp_slope_x_bound,
+    std_error_bar = FALSE
+  )
+    ),
+  sp_relation_plot = map(
+    sp_models,
+    ~get_pred_plot_from_new_model(
+    model = .x,
+    dataset = sp_st_data,
+    x_bound = sp_slope_x_bound,
+    std_error_bar = FALSE
+  )
+    ),
   sp_relation_plot2 = rbind(
     sp_relation_plot$rich_std %>%
-      filter(x == "log_rich_std"),
+      filter(response == "log_rich_std"),
     sp_relation_plot$bm_std %>%
-      filter(x == "log_bm_std")
+      filter(response == "log_bm_std")
+  ),
+  sp_relation_plot2_mono_trends = rbind(
+    sp_relation_plot_mono_trends$rich_std %>%
+      filter(response == "log_rich_std"),
+    sp_relation_plot_mono_trends$bm_std %>%
+      filter(response == "log_bm_std")
+  ),
+  sp_relation_plot2_mono_stable_trends = rbind(
+    sp_relation_plot_mono_stable_trends$rich_std %>%
+      filter(response == "log_rich_std"),
+    sp_relation_plot_mono_stable_trends$bm_std %>%
+      filter(response == "log_bm_std")
   ),
 
 
@@ -255,24 +305,26 @@ plan <- drake_plan(
   select(any_of(c("x", "y", "covar", "model", "model_obj", "reg_table", "mod_summary_table", "anova_table"))),
   predict_table = summary_table %>%
      mutate(
-	ggpred_term = map(anova_table,
-	  ~get_ggpredict_term_from_anova(aov_tab = .x,
-	    bound = slope_x_bound)),
-	tmp_pred_table = map2(model_obj, ggpred_term, ~ ggpredict(.x, .y) %>% as_tibble),
-	pred_table = map2(tmp_pred_table, ggpred_term, ~rename_pred_table(pred_table = .x, term = .y)),
-	) %>%
-      select(any_of(c("x", "y", "covar", "model", "model_obj", "ggpred_term", "tmp_pred_table", "pred_table"))),
+       ggpred_term = map(anova_table,
+         ~get_ggpredict_term_from_anova(aov_tab = .x,
+           bound = slope_x_bound)),
+       tmp_pred_table = map2(model_obj, ggpred_term,
+         ~ ggpredict(.x, .y) %>% as_tibble),
+       pred_table = map2(tmp_pred_table, ggpred_term,
+         ~rename_pred_table(pred_table = .x, term = .y)),
+       ) %>%
+  select(any_of(c("x", "y", "covar", "model", "model_obj", "ggpred_term", "tmp_pred_table", "pred_table"))),
 
   predict_plot = predict_table %>%
       left_join(select(model, x, y, covar, data), by = c("x", "y", "covar")) %>%
       mutate(
-	raw_plot = map2(data, covar,
-	  ~plot_raw_data(.df = .x, covar = .y, std_error = TRUE)
-	  ),
-	 pred_plot = map2(pred_table, raw_plot,
-	  ~plot_add_pred_data(pred = .x, gg = .y)
-	  )
-	) %>%
+        raw_plot = map2(data, covar,
+          ~plot_raw_data(.df = .x, covar = .y, std_error = TRUE)
+          ),
+        pred_plot = map2(pred_table, raw_plot,
+          ~plot_add_pred_data(pred = .x, gg = .y)
+        )
+        ) %>%
       select(any_of(c("x", "y", "covar", "model", "pred_table", "raw_plot", "pred_plot"))),
 
     predict_table2 = summary_table %>%
@@ -417,36 +469,62 @@ plan <- drake_plan(
 
 
   ### Modelling
-  model_bm_rich_mono_trends = get_model_bm_rich_no_covar_no_inc(
-    .data = filter(slope_com_var_no_covar, station %in% st_mono_trends_rich_bm)
-    ) %>%
-  map(., lm.beta::lm.beta),
-  model_bm_rich_mono_stable_trends = get_model_bm_rich_no_covar_no_inc(
-    .data = filter(slope_com_var_no_covar,
-      station %in% st_mono_trends_stable_rich_bm)
-    ) %>%
-  map(., lm.beta::lm.beta),
-  model_bm_rich_trends = get_model_bm_rich_no_covar_no_inc(
-    .data = filter(slope_com_var_no_covar,
-      station %in% st_trends_rich_bm)
-    ) %>%
-  map(., lm.beta::lm.beta),
-  model_bm_rich = get_model_bm_rich_no_covar_no_inc(
-    .data = slope_com_var_no_covar
-    ) %>%
-  map(., lm.beta::lm.beta),
-  vif_bm_rich_mod_mono_trends = map(
-    model_bm_rich_mono_trends,
-    ~try(car::vif(.x))),
-  vif_bm_rich_mod_mono_stable_trends = map(
-    model_bm_rich_mono_stable_trends,
-    ~try(car::vif(.x))),
-  vif_bm_rich_mod_trends = map(
-    model_bm_rich_trends,
-    ~try(car::vif(.x))),
-  vif_bm_rich_mod = map(
-    model_bm_rich,
-    ~try(car::vif(.x))),
+  #### Temporal
+  target_model_bm_rich = target(
+    get_model_bm_rich_no_covar_no_inc(.data = y) %>%
+      map(., lm.beta::lm.beta),
+    transform = map(
+      y = list(
+        filter(slope_com_var_no_covar, station %in% st_mono_trends_rich_bm),
+        filter(slope_com_var_no_covar, station %in%
+          st_mono_trends_stable_rich_bm),
+        filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
+        slope_com_var_no_covar
+        ),
+      .names = c(
+        "model_bm_rich_mono_trends",
+        "model_bm_rich_mono_stable_trends",
+        "model_bm_rich_trends",
+        "model_bm_rich"
+      )
+    )
+  ),
+  #### Spatial
+  target_sp_model_bm_rich = target(
+    get_mod_list(.data = filter(sp_st_data, station %in% y) %>% na.omit),
+    transform = map(
+      y = list(
+        st_mono_trends_rich_bm,
+        st_mono_trends_stable_rich_bm,
+        st_trends_rich_bm,
+        sp_st_data$station
+        ),
+      .names = c(
+        "sp_model_bm_rich_mono_trends",
+        "sp_model_bm_rich_mono_stable_trends",
+        "sp_model_bm_rich_trends",
+        "sp_model_bm_rich"
+      )
+    )
+  ),
+  ### Resume
+  target_vif_model_bm_rich = target(
+    map(y, ~try(car::vif(.x))),
+    transform = map(
+      y = list(
+        st_mono_trends_rich_bm,
+        st_mono_trends_stable_rich_bm,
+        st_trends_rich_bm,
+        sp_st_data$station
+        ),
+      .names = c(
+        "vif_model_bm_rich_mono_trends",
+        "vif_model_bm_rich_mono_stable_trends",
+        "vif_model_bm_rich_trends",
+        "vif_model_bm_rich"
+      )
+    )
+  ),
   resume_bm_rich_mod_mono_trends = map(
     model_bm_rich_mono_trends,
     ~summary(.x,  standardized = TRUE)),
@@ -496,9 +574,28 @@ plan <- drake_plan(
     dataset = slope_com_var_no_covar,
     x_bound = slope_x_bound
   ),
-
-  ## Keep station with trends only (i.e. non monotonic)
-
+  target_sp_pred_bm_rich = target(
+    get_pred_plot_from_new_model(
+      model = y,
+      dataset = sp_st_data,
+      x_bound = sp_slope_x_bound,
+      std_error_bar = FALSE
+    ),
+    transform = map(
+      y = list(
+        sp_model_bm_rich_mono_trends,
+        sp_model_bm_rich_mono_stable_trends,
+        sp_model_bm_rich_trends,
+        sp_model_bm_rich
+        ),
+      .names = c(
+        "sp_pred_bm_rich_mono_trends",
+        "sp_pred_bm_rich_mono_stable_trends",
+        "sp_pred_bm_rich_trends",
+        "sp_pred_bm_rich"
+      )
+    )
+  ),
   ### Table
   reg_table_bm_rich_mono_trends = map2(
     model_bm_rich_mono_trends,

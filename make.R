@@ -29,10 +29,21 @@ print(plan, n = 40)
 library(future)
 plan(multisession, workers = 3)
 
-attr(body(get_st_all_trends), "srcfile")
+attr(body(get_pred_plot_from_new_model), "srcfile")
+
+loadd(bm_rich_trends, st_sp, sp_st_data, summary_var_med, data_for_pca,
+  st_analysis, sp_slope_x_bound, sp_model_bm_rich_mono_trends)
+loadd(sp_relation_plot)
 
 
-loadd(bm_rich_trends)
+debugonce(get_predict_from_new_model)
+get_pred_plot_from_new_model(
+  model = sp_model_bm_rich_mono_trends,
+  dataset = sp_st_data,
+  x_bound = sp_slope_x_bound,
+  std_error_bar = FALSE
+)
+
 loadd(slope_com_var)
 loadd(model_summary, comb)
 loadd(st_mono_trends_rich_bm, st_trends_rich_bm,  slope_com_var_no_covar)
@@ -46,11 +57,30 @@ loadd(model,
   model_summary,
   anova_bm_rich_mod_mono_trends,
   anova_table_bm_rich_mono_trends,
+  anova_bm_rich_mod,
+  anova_bm_rich_mod_trends,
+  anova_bm_rich_mod_mono_stable_trends,
   slope_x_bound,
   predict_table
 )
 
 loadd(pred_bm_rich_mono_stable_trends)
+loadd(sp_models, slope_x_bound, sp_st_data, st_trends_rich_bm, sp_model_bm_rich_mono_trends)
+map(sp_models, get_sp_model_plot)
+
+loadd(sp_slope_x_bound, slope_x_bound)
+
+HERE
+debugonce(get_predict_from_new_model)
+test <- get_pred_plot_from_new_model(
+  model =sp_model_bm_rich_mono_trends ,
+  dataset = filter(sp_st_data, station %in% st_trends_rich_bm),
+  x_bound = sp_slope_x_bound,
+  std_error_bar = FALSE
+)
+loadd(sp_relation_plot_mono_trends)
+sp_relation_plot_mono_trends
+test$pred_plot[[1]]
 
 # Test variability of the results according to the number of sites
 loadd(sp_models)
@@ -64,8 +94,6 @@ trends_plot <- get_sp_model_plot(model_bm_rich_trends)
 plot_grid(plotlist = trends_plot$gg)
 all_plot <- get_sp_model_plot(model_bm_rich)
 plot_grid(plotlist = all_plot$gg)
-
-
 
 theme_set(theme_cowplot())
 p_raw_plot <- map2(
@@ -81,4 +109,5 @@ plot_grid(plotlist = p_raw_plot)
 plot_raw_data_new_model(
   .df = filter(slope_com_var_no_covar, station %in% st_mono_trends_rich_bm),
   x_var = "log_bm_std", y_var = "log_rich_std",
-  std_error = TRUE, covar = NULL)
+  std_error = TRUE, covar = NULL
+)

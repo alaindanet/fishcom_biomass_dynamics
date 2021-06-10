@@ -195,7 +195,7 @@ anova_table_bm_rich_mono_trends %>%
 
 We kept all stations that had a significant trend (decrease or increase) for both
 species richness and community biomass, with resulting 
-`r length(st_mono_trends_rich_bm)` stations. 
+`r length(st_trends_rich_bm)` stations. 
 
 ```{r}
 plot_grid(plotlist = pred_bm_rich_trends$pred_plot)

@@ -73,55 +73,60 @@ net_var_rich <- c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
 
 Biodiversity affects ecosystem properties such as total biomass, productivity
 and stability [@tilman_biodiversity_2014; @loreau_biodiversity_2001]. However,
-current biodiversity is at risk, numerous
-studies reported dramatic declines of population and community biomass
-[@ceballos_biological_2017; @hallmann_more_2017; @albano_native_2021], as well
-as ongoing extinction [@barnosky_has_2011]. Consequences of such trends on various
-aspects of community structure are not well-known whereas numerous ecological studies
-have shown that the different aspects of community structure are tightly linked [REF].
+current biodiversity is at risk, numerous studies reported dramatic declines of
+population and community biomass [@ceballos_biological_2017;
+@hallmann_more_2017; @albano_native_2021], as well as decrease in species
+richness 
+[@barnosky_has_2011; @newbold_global_2015]. Consequences of such trends on
+various aspects of community structure are not well-known whereas numerous
+ecological studies have shown that the different aspects of community structure
+are tightly linked [REF].
 
-The temporal trends of species richness and community biomass are likely to
-affect community structure. The positive link between Biodiversity and ecosystem
-functioning shown in experimental studies predict that loss and gain of species
-richness should respectively result in loss and gain of community biomass
-[@tilman_biodiversity_2014; @pennekamp_biodiversity_2018]. But this relation is
-not always found in natural settings [@grace_integrative_2016;
-@li_relationship_2018; @maureaud_biodiversityecosystem_2019]. Numerous
-studies find relation between species richness and evenness, but their disagree
-on the sign of the relationships [@soininen_relationship_2012; @ma_species_2005;
+The temporal trends of species richness and community biomass are indeed
+predicted to affect community structure. The positive link between Biodiversity
+and ecosystem functioning shown in experimental studies predict that loss and
+gain of species richness should respectively result in loss and gain of
+community biomass [@tilman_biodiversity_2014; @pennekamp_biodiversity_2018]. But
+this relation is not always found in natural settings [@grace_integrative_2016;
+@li_relationship_2018; @maureaud_biodiversityecosystem_2019]. Numerous studies
+find relation between species richness and evenness, but their disagree on the
+sign of the relationships [@soininen_relationship_2012; @ma_species_2005;
 @maureaud_biodiversityecosystem_2019], highlighting the diversity of assembly
 processes in ecological communities.
 
 The distribution and the number of ecological interactions, i.e. the structure
 of ecological networks, also covaries with species richness and community
 biomass. In food-webs, connectance, which measures the degree of generalism in a
-network, has been theoretically shown to theoretically positively scale with
+network, has been theoretically shown to positively scale with
 community biomass [@thebault_food-web_2003]. Connectance has been also shown to
 be negatively related to species richness in empirical food-webs
 [@dunne_network_2006]. Trophic level has also been shown to be positively linked
 to total biomass in theoretical models [@wang_biodiversity_2018]. All together,
-these studies show that the different dimensions of network structure are
-closely linked.
+these studies show that the different dimensions of network structure are 
+closely linked. 
 
-The space for time substitution allows to use the studies mentioned above to
-predict how changes in species richness or community biomass will in turn affect
-community and network structure. The hypothesis that space can
-surrogate space is often implicitly made in ecological studies. This method
-began to be widely used in the early 20th century to infer the temporal
-succession of vegetation from space variations [@pickett_space-for-time_1989]. It
-supposes a homology between variations in space and in time i.e. that spatial
+The links between the different component of community structure often come from
+spatial gradient comparison. The space for time substitution allows to use the
+studies mentioned above to predict how changes in species richness or community
+biomass will in turn affect community and network structure. The hypothesis that
+space can surrogate space is often implicitly made in ecological studies. This
+method began to be widely used in the early 20th century to infer the temporal
+succession of vegetation from space variations [@pickett_space-for-time_1989].
+It supposes a homology between variations in space and in time i.e. that spatial
 sequences corresponds to temporal sequences. This method have raised criticisms
-[@damgaard_critique_2019], with studies showing analogous patterns in space and time
-[@blois_space_2013] or not [@johnson_testing_2008; @adler_contrasting_2007].
-Spatial turnover of species composition, dispersal limitation, disturbance and
-stochastic processes have been hypothesised to be responsible for the failure of
-space for time substitution [@adler_contrasting_2007; @blois_space_2013].
+[@damgaard_critique_2019], with studies showing analogous patterns in space and
+time [@blois_space_2013] or not [@johnson_testing_2008;
+@adler_contrasting_2007]. Spatial turnover of species composition, dispersal
+limitation, disturbance and stochastic processes have been hypothesised to be
+responsible for the failure of space for time substitution
+[@adler_contrasting_2007; @blois_space_2013].
 
-In this line, how community biomass and species richness temporal trends are linked to
-change in food-web structure is still an open question, as well as if space for
-time substitution works to infer consequences of species richness and community
-biomass on food-web structure. The increasing availability of ecological
-temporal series makes possible to assess those questions.
+In this line, how community biomass and species richness temporal trends are
+linked to temporal changes in food-web structure is still an open question, as
+well as if space for time substitution works to infer consequences of species
+richness and community biomass on food-web structure. The increasing
+availability of ecological temporal series makes possible to assess those
+questions.
 
 Using a standardized monitoring of fish freshwater communities on the period
 1995-2018, we assessed the relationships among temporal trends of food-web
@@ -137,7 +142,7 @@ the validity of space for time substitution.
 ## Data selection
 
 We selected the stations that have been monitored at least 10 times on the
-1995-2018 period.   
+1995-2018 period.
 
 ## Food-web inference 
 
