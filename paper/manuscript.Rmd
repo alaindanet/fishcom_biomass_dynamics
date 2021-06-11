@@ -37,7 +37,6 @@ knitr::opts_chunk$set(
   warning = FALSE,
   results = TRUE
 )
-
 ```
 
 
@@ -521,7 +520,7 @@ names(p_bm) <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_nind",
 #plot_grid(plotlist = p_bm)
 
 sp_bm <- sp_relation_plot2 %>%
-  filter(x == "log_bm_std")
+  filter(response == "log_bm_std")
 p_sp_bm <- sp_bm$gg
 names(p_sp_bm) <- sp_bm$y
 ```
@@ -557,8 +556,8 @@ names(p_rich) <- c(
 #plot_grid(plotlist = p_rich)
 
 sp_rich <- sp_relation_plot2 %>%
-  filter(x == "log_rich_std")
-p_sp_rich <- sp_rich$gg
+  filter(term == "log_rich_std")
+p_sp_rich <- sp_rich$pred_plot
 names(p_sp_rich) <- sp_rich$y
 ```
 

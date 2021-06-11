@@ -131,13 +131,14 @@ loadd(
   anova_table_bm_rich_mono_stable_trends,
   anova_table_bm_rich_trends,
   anova_table_bm_rich,
-  anova_bm_rich_mod,
-  st_trends_rich_bm,
-  st_mono_trends_rich_bm,
-  st_mono_trends_stable_rich_bm
+  anova_bm_rich_mod
 )
+loadd(st_trends_rich_bm, st_mono_trends_rich_bm,
+  st_mono_trends_stable_rich_bm)
 
-loadd(pred_bm_rich_mono_trends, pred_bm_rich, pred_bm_rich_trends, pred_bm_rich_mono_stable_trends)
+loadd(pred_bm_rich_mono_trends, pred_bm_rich, pred_bm_rich_trends,
+  pred_bm_rich_mono_stable_trends)
+
 ```
 
 We modeled the temporal trends of food-web structure as dependant of the

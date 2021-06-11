@@ -261,25 +261,14 @@ model = data4model %>%
     std_error_bar = FALSE
   )
     ),
-  sp_relation_plot2 = rbind(
-    sp_relation_plot$rich_std %>%
-      filter(response == "log_rich_std"),
-    sp_relation_plot$bm_std %>%
-      filter(response == "log_bm_std")
-  ),
-  sp_relation_plot2_mono_trends = rbind(
+  sp_relation_plot2 = sp_relation_plot$rich_std %>%
+      filter(term == "log_rich_std"),
+  sp_relation_plot2_mono_trends =
     sp_relation_plot_mono_trends$rich_std %>%
-      filter(response == "log_rich_std"),
-    sp_relation_plot_mono_trends$bm_std %>%
-      filter(response == "log_bm_std")
-  ),
-  sp_relation_plot2_mono_stable_trends = rbind(
+      filter(term == "log_rich_std"),
+  sp_relation_plot2_mono_stable_trends =
     sp_relation_plot_mono_stable_trends$rich_std %>%
-      filter(response == "log_rich_std"),
-    sp_relation_plot_mono_stable_trends$bm_std %>%
-      filter(response == "log_bm_std")
-  ),
-
+      filter(term == "log_rich_std"),
 
   #5. Tables
   effect_quad2_piece = tibble(
@@ -491,7 +480,10 @@ model = data4model %>%
   ),
   #### Spatial
   target_sp_model_bm_rich = target(
-    get_mod_list(.data = filter(sp_st_data, station %in% y) %>% na.omit),
+    get_mod_list(.data = filter(sp_st_data, station %in% y) %>%
+      na.omit %>%
+      as.data.frame
+      ),
     transform = map(
       y = list(
         st_mono_trends_rich_bm,

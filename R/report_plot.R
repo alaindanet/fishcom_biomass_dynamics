@@ -345,20 +345,20 @@ get_predict_from_new_model <- function(model = NULL, x_bound = slope_x_bound) {
     aov_tab = map(aov_mod, ~broom::tidy(.x) %>%
       filter(term != "Residuals") %>%
       select(term, p.value)
-    )
-    ) %>%
+    )) %>%
   unnest(aov_tab) %>%
   left_join(x_bound, by = "term")
 
 # get prediction terms and predictions
-
 ti %>%
   mutate(
     pred_term = map2(term, min_max,
       ~paste0(.x, " [", .y[1], ", -0.000000001, 0.000000001, ", .y[2], "]")
       ),
-    prediction = map2(model, pred_term, ~ggpredict(model = .x, terms = .y) %>%
-      as_tibble()
+    prediction = map2(model, pred_term,
+      ~try(ggpredict(model = .x, terms = .y) %>%
+        as_tibble()
+      )
     )
   )
 

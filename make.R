@@ -65,15 +65,14 @@ loadd(model,
 )
 
 loadd(pred_bm_rich_mono_stable_trends)
-loadd(sp_models, slope_x_bound, sp_st_data, st_trends_rich_bm, sp_model_bm_rich_mono_trends)
-map(sp_models, get_sp_model_plot)
+loadd(sp_models, slope_x_bound, sp_st_data, st_trends_rich_bm,
+  sp_model_bm_rich_mono_trends)
+sp_models$log_rich_std
 
 loadd(sp_slope_x_bound, slope_x_bound)
 
-HERE
-debugonce(get_predict_from_new_model)
 test <- get_pred_plot_from_new_model(
-  model =sp_model_bm_rich_mono_trends ,
+  model = sp_model_bm_rich_mono_trends,
   dataset = filter(sp_st_data, station %in% st_trends_rich_bm),
   x_bound = sp_slope_x_bound,
   std_error_bar = FALSE
