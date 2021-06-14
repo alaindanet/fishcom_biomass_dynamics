@@ -1,5 +1,9 @@
 # This is where you write your drake plan.
 # Details: https://books.ropensci.org/drake/plans.html
+mytheme <- theme_cowplot() +
+background_grid()
+
+theme_set(mytheme)
 
 # Variable:
 model_x_var <- c("log_rich_std", "log_bm_std", "bm_std", "rich_std", "ct_ff", "w_trph_lvl_avg", "nind_std")
@@ -545,7 +549,7 @@ model = data4model %>%
   pred_bm_rich_trends = get_pred_plot_from_new_model(
     model = model_bm_rich_trends,
     dataset = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
-    x_bound = slope_x_bound
+    x_bound = slope_x_bound, std_error_bar = TRUE
   ),
   pred_bm_rich_mono_trends = get_pred_plot_from_new_model(
     model = model_bm_rich_mono_trends,
@@ -587,15 +591,41 @@ model = data4model %>%
         "sp_pred_bm_rich"
       )
     )
-  ),
+    ),
+  target_sp_fig1_2 = target(
+    get_plot_rich_bm(
+      predict_plot = y,
+      get_list = TRUE,
+      rm_legend = FALSE,
+      bm_x = "log_bm_std",
+      bm_y = c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
+      rich_y = c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"),
+      rich_x = "log_rich_std",
+      temporal_label = FALSE
+      ),
+    transform = map(
+      y = list(
+        sp_pred_bm_rich_mono_trends,
+        sp_pred_bm_rich_mono_stable_trends,
+        sp_pred_bm_rich_trends,
+        sp_pred_bm_rich
+        ),
+      .names = c(
+        "sp_fig1_2_bm_rich_mono_trends",
+        "sp_fig1_2_bm_rich_mono_stable_trends",
+        "sp_fig1_2_bm_rich_trends",
+        "sp_fig1_2_bm_rich"
+      )
+    )
+    ),
   ### Table
   reg_table_bm_rich_mono_trends = map2(
     model_bm_rich_mono_trends,
     names(model_bm_rich_mono_trends),
     function(model, name) {
       ml <- broom::tidy(model) %>%
-	mutate(response = name) %>%
-	select(response, everything())
+        mutate(response = name) %>%
+        select(response, everything())
     }
     ) %>%
   do.call(rbind, .),
@@ -604,8 +634,8 @@ model = data4model %>%
     names(model_bm_rich_mono_stable_trends),
     function(model, name) {
       ml <- broom::tidy(model) %>%
-	mutate(response = name) %>%
-	select(response, everything())
+        mutate(response = name) %>%
+        select(response, everything())
     }
     ) %>%
   do.call(rbind, .),
@@ -614,8 +644,8 @@ model = data4model %>%
     names(model_bm_rich_trends),
     function(model, name) {
       ml <- broom::tidy(model) %>%
-	mutate(response = name) %>%
-	select(response, everything())
+        mutate(response = name) %>%
+        select(response, everything())
     }
     ) %>%
   do.call(rbind, .),
@@ -624,18 +654,41 @@ model = data4model %>%
     names(model_bm_rich),
     function(model, name) {
       ml <- broom::tidy(model) %>%
-	mutate(response = name) %>%
-	select(response, everything())
-    }
-    ) %>%
+        mutate(response = name) %>%
+        select(response, everything())
+    }) %>%
   do.call(rbind, .),
+  target_sp_reg_table_bm_rich = target(
+    map2(
+      model_bm_rich,
+      names(model_bm_rich),
+      function(model, name) {
+        ml <- broom::tidy(model) %>%
+          mutate(response = name) %>%
+          select(response, everything())
+      }) %>%
+    do.call(rbind, .),
+  transform = map(
+      y = list(
+        sp_model_bm_rich_mono_trends,
+        sp_model_bm_rich_mono_stable_trends,
+        sp_model_bm_rich_trends,
+        sp_model_bm_rich
+        ),
+      .names = c(
+        "sp_reg_table_bm_rich_mono_trends",
+        "sp_reg_table_bm_rich_mono_stable_trends",
+        "sp_reg_table_bm_rich_trends",
+        "sp_reg_table_bm_rich"
+      )
+  )),
   anova_table_bm_rich_mono_trends = map2(
     anova_bm_rich_mod_mono_trends,
     names(anova_bm_rich_mod_mono_trends),
     function(model, name) {
       ml <- broom::tidy(model) %>%
-	mutate(response = name) %>%
-	select(response, everything())
+        mutate(response = name) %>%
+        select(response, everything())
     }
     ) %>%
   do.call(rbind, .),
@@ -644,8 +697,8 @@ model = data4model %>%
     names(anova_bm_rich_mod_mono_stable_trends),
     function(model, name) {
       ml <- broom::tidy(model) %>%
-	mutate(response = name) %>%
-	select(response, everything())
+        mutate(response = name) %>%
+        select(response, everything())
     }
     ) %>%
   do.call(rbind, .),
@@ -654,8 +707,9 @@ model = data4model %>%
     names(anova_bm_rich_mod_trends),
     function(model, name) {
       ml <- broom::tidy(model) %>%
-	mutate(response = name) %>%
-	select(response, everything())
+        mutate(response = name) %>%
+        select(response, everything())
+      ml
     }
     ) %>%
   do.call(rbind, .),
@@ -664,11 +718,81 @@ model = data4model %>%
     names(anova_bm_rich_mod),
     function(model, name) {
       ml <- broom::tidy(model) %>%
-	mutate(response = name) %>%
-	select(response, everything())
+        mutate(response = name) %>%
+        select(response, everything())
+      ml
     }
     ) %>%
   do.call(rbind, .),
+  target_sp_anova_table_bm_rich = target(
+    map2(
+    y,
+    names(y),
+    function(model, name) {
+      ml <- car::Anova(model) %>%
+        tidy %>%
+        mutate(response = name) %>%
+        select(response, everything())
+      ml
+    }
+    ) %>%
+    do.call(rbind, .),
+  transform = map(
+      y = list(
+        sp_model_bm_rich_mono_trends,
+        sp_model_bm_rich_mono_stable_trends,
+        sp_model_bm_rich_trends,
+        sp_model_bm_rich
+        ),
+      .names = c(
+        "sp_anova_table_bm_rich_mono_trends",
+        "sp_anova_table_bm_rich_mono_stable_trends",
+        "sp_anova_table_bm_rich_trends",
+        "sp_anova_table_bm_rich"
+      )
+  )),
+  target_sp_rsq_table_bm_rich = target(
+    piecewiseSEM::rsquared(
+      modelList = y,
+      method = NULL) %>%
+    select(Response, Marginal, Conditional),
+  transform = map(
+      y = list(
+        sp_model_bm_rich_mono_trends,
+        sp_model_bm_rich_mono_stable_trends,
+        sp_model_bm_rich_trends,
+        sp_model_bm_rich
+        ),
+      .names = c(
+        "sp_rsq_table_bm_rich_mono_trends",
+        "sp_rsq_table_bm_rich_mono_stable_trends",
+        "sp_rsq_table_bm_rich_trends",
+        "sp_rsq_table_bm_rich"
+      )
+  )),
+  target_rsq_table_bm_rich = target(
+    # first transform beta.lm to lm
+    map(y,
+      function(ml) {
+        class(ml) <- "lm"
+        ml
+      }) %>%
+    piecewiseSEM::rsquared(modelList = .),
+    transform = map(
+      y = list(
+        model_bm_rich_mono_trends,
+        model_bm_rich_mono_stable_trends,
+        model_bm_rich_trends,
+        model_bm_rich
+        ),
+      .names = c(
+        "rsq_table_bm_rich_mono_trends",
+        "rsq_table_bm_rich_mono_stable_trends",
+        "rsq_table_bm_rich_trends",
+        "rsq_table_bm_rich"
+      )
+    )
+  ),
 
   trace = TRUE
 )

@@ -1,6 +1,6 @@
 ---
 title: "Biomass and species richness temporal trends drives the assembly and the disassembly of food-web in natural fish assemblages"
-author: Alain Danet, Maud Mouchet, Willem Bonnaffé, Elisa Thébault and Colin Fontaine
+author: Alain Danet, Maud Mouchet, Loubna El Madouri, Elisa Thébault and Colin Fontaine (ordre non fixé)
 date: \today 
 output:
   bookdown::pdf_document2:
@@ -48,7 +48,7 @@ library(cowplot)
 library(viridis)
 library(kableExtra)
 library(sf)
-mypath <- rprojroot::find_package_root_file 
+mypath <- rprojroot::find_package_root_file
 source(mypath("R/variable_shortcut.R")) # Define your custom code as a bunch of functions.
 source(mypath("R/misc.R"))
 source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
@@ -59,6 +59,7 @@ background_grid()
 theme_set(mytheme)
 options(knitr.table.format = "latex")
 ```
+
 ```{r}
 net_var_bm <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
       "piel_nind")
@@ -479,6 +480,8 @@ space for time subtitution does not always work.
 
 <div id="refs"></div>
 
+\newpage
+
 # Figures {-}
 
 ```{r}
@@ -509,21 +512,28 @@ fig_rich_cap <- paste0(
 ```
 
 ```{r}
-loadd(p_fig1_2, sp_relation_plot2, predict_plot2)
-theme_set(theme_cowplot())
-p_bm <- get_plot_fig1_2(predict_plot = predict_plot2, get_list = TRUE,
-  bm_x = "log_bm_std", rich_x = "log_rich_std",
-  bm_y = c("ct_ff", "w_trph_lvl_avg", "piel_nind", "piel_bm", "log_rich_std")
-  )$bm
-names(p_bm) <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_nind",
-  "piel_bm")
+loadd(sp_fig1_2_bm_rich_mono_stable_trends,
+  pred_bm_rich_mono_stable_trends)
+
+fig1_2 <- get_plot_rich_bm(
+  predict_plot = pred_bm_rich_mono_stable_trends,
+  get_list = TRUE,
+  rm_legend = FALSE,
+  bm_x = "log_bm_std",
+  bm_y = c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
+  rich_y = c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"),
+  rich_x = "log_rich_std"
+  )
+p_bm <- fig1_2$bm
+names(p_bm) <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg",
+  "piel_bm", "piel_nind")
 #plot_grid(plotlist = p_bm)
 
-sp_bm <- sp_relation_plot2 %>%
-  filter(response == "log_bm_std")
-p_sp_bm <- sp_bm$gg
-names(p_sp_bm) <- sp_bm$y
+p_sp_bm <- sp_fig1_2_bm_rich_mono_stable_trends$bm
+names(p_sp_bm) <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg",
+  "piel_bm", "piel_nind")
 ```
+
 
 ```{r}
 ti <- list()
@@ -538,34 +548,16 @@ for (
 
 ```{r bm, fig.height = 12, fig.cap=fig_bm_cap}
 # Make the label on two lines
-top <- plot_grid(plotlist = c(ti[[1]], ti[[2]], ti[[3]], ti[[4]], ti[[5]]), ncol = 2)
-fig1 <- plot_grid(top, p_bm[[6]], ncol = 1, rel_heights = c(1, .1))
+fig1 <- plot_grid(plotlist = c(ti[[1]], ti[[2]], ti[[3]], ti[[4]], ti[[5]]), ncol = 2)
 fig1
 ```
 
 ```{r}
-p_rich <- get_plot_fig1_2(
-  predict_plot = predict_plot2,
-  get_list = TRUE,
-  rich_x = "log_rich_std",
-  rich_y <- c("ct_ff", "w_trph_lvl_avg", "piel_nind", "piel_bm", "log_bm_std")
-  )$rich
-names(p_rich) <- c(
-  "ct_ff", "w_trph_lvl_avg", "piel_nind",
-  "piel_bm", "log_bm_std")
-#plot_grid(plotlist = p_rich)
-
-sp_rich <- sp_relation_plot2 %>%
-  filter(term == "log_rich_std")
-p_sp_rich <- sp_rich$pred_plot
-names(p_sp_rich) <- sp_rich$y
+p_rich <- fig1_2$rich
+p_sp_rich <- sp_fig1_2_bm_rich_mono_stable_trends$rich
 ```
 
 ```{r}
-fig2_left <- plot_grid(plotlist = p_rich, ncol = 1)
-fig2_right <- plot_grid(plotlist = p_sp_rich, ncol = 1)
-# plot_grid(plotlist = list(p_bm[[1]], p_sp_bm[[1]], ), ncol = 1)
-
 trich <- list()
 for (i in c("log_bm_std", "w_trph_lvl_avg",  "piel_bm", "piel_nind", "ct_ff")) {
   trich[[i]] <- list(p_rich[[i]], p_sp_rich[[i]])
@@ -574,12 +566,13 @@ for (i in c("log_bm_std", "w_trph_lvl_avg",  "piel_bm", "piel_nind", "ct_ff")) {
 
 ```{r rich, fig.height = 12, fig.cap=fig_rich_cap}
 # Make the label on two lines
-top_rich <- plot_grid(
+fig2 <- plot_grid(
   plotlist = c(trich[[1]], trich[[2]], trich[[3]], trich[[4]], trich[[5]]),
   ncol = 2)
-fig2 <- plot_grid(top_rich, p_rich[[6]], ncol = 1, rel_heights = c(1, .1))
 fig2
 ```
+
+\newpage
 
 # Tables {-}
 
@@ -588,87 +581,61 @@ fig2
 ### Temporal
 
 ```{r}
-model_log_bm_f3y_table_medium[["anova_table"]] %>%
-  filter(y %in% net_var_bm) %>%
-  select(-mod_summary_table) %>%
-  format_anova_table() %>%
+loadd(pred_bm_rich_mono_stable_trends, anova_table_bm_rich_mono_stable_trends)
+anova_table_bm_rich_mono_stable_trends %>%
+  mutate(
+    response = str_replace_all(response, var_replacement()),
+    term = str_replace_all(term, var_replacement())
+  ) %>%
   kable(.,
     booktabs = TRUE,
+    row.names = FALSE,
     caption =
       paste0(
       "ANOVA results for the links between the temporal trends of
       community biomass and the temporal trends of the network structure."
     ),
-  label = "aov-bm"
+  label = "aov-bm-rich"
   ) %>%
   kable_styling(latex_options = c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
 ```{r}
-model_log_rich_f3y_table_medium[["anova_table"]] %>% 
-  filter(y %in% net_var_rich) %>%
-  select(-mod_summary_table) %>%
-  format_anova_table() %>%
-  kable(., booktabs = TRUE,
-    caption = 
-      paste0(
-      "ANOVA results for the links between the temporal trends of species
-      richness and the temporal trends of the network structure."
-    ),
-  label = "aov-rich"
-  ) %>%
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
-model_log_bm_f3y_table_medium$reg_table %>% 
-  filter(y %in% net_var_bm) %>%
-  format_reg_table() %>%
-  kable(., booktabs = TRUE,
-    caption = 
-      paste0(
+loadd(reg_table_bm_rich_mono_stable_trends)
+reg_table_bm_rich_mono_stable_trends %>%
+  mutate(
+    response = str_replace_all(response, var_replacement()),
+    term = str_replace_all(term, var_replacement())
+    ) %>%
+kable(., booktabs = TRUE,
+  row.names = FALSE,
+  caption =
+    paste0(
       "Regression coefficients for the linear models explaining the links
       between the temporal trends of community biomass and the temporal trends
       of the network structure."),
-  label = "reg-bm"
-  ) %>%
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+      label = "reg-bm-rich"
+      ) %>%
+  kable_styling(latex_options = c("scale_down", "striped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
-```{r}
-model_log_rich_f3y_table_medium$reg_table %>%
-  filter(y %in% net_var_rich) %>%
-  format_reg_table() %>%
-  kable(., booktabs = TRUE,
-    caption = 
-      paste0(
-      "Regression coefficients for the linear models explaining the links
-      between the temporal trends of species richness and the temporal trends of
-      the network structure."
-    ),
-  label = "reg-rich"
-  ) %>%
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
+
 
 ```{r}
-rsq %>%
-  rename(
-    Response = y, Explicative = x, 
-    `Squared R` = r.squared, `Adjusted squared R` = adj.r.squared
-  ) %>% 
-  select(Explicative, Response, everything()) %>%
+loadd(rsq_table_bm_rich_mono_stable_trends)
+rsq_table_bm_rich_mono_stable_trends %>%
+  mutate(
+    Response = str_replace_all(Response, var_replacement())
+  ) %>%
   kable(., booktabs = TRUE,
-    caption = 
+    caption =
       paste0(
-      "Squared and adjusted squared R for linear models of spatial relationships."),
-  label = "rsq"
-      ) %>% # 
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
+      "Marginal and conditional squared R for temporal models."),
+  label = "rsq-sp"
+      ) %>% #
+  kable_styling(latex_options = c("striped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
@@ -676,59 +643,33 @@ rsq %>%
 ### Spatial
 
 ```{r}
-loadd(tab_sp_anova)
+loadd(
+  sp_anova_table_bm_rich_mono_stable_trends,
+  sp_rsq_table_bm_rich_mono_stable_trends
+)
 ```
 
 
 ```{r}
-tab_sp_anova$log_bm_std %>%
-  filter(y %in% net_var_bm) %>%
+sp_anova_table_bm_rich_mono_stable_trends %>%
   mutate(
-    y = str_replace_all(y, var_replacement()),
+    response = str_replace_all(response, var_replacement()),
     term = str_replace_all(term, var_replacement()),
   ) %>%
   kable(., booktabs = TRUE,
     caption =
       paste0(
-      "ANOVA results for the links between the spatial variation of community
-      biomass and the one of network structure."),
-  label = "aov-bm-sp"
+      "ANOVA results for the links among the spatial variation of community
+      biomass and species richness and the one of network structure."),
+  label = "aov-sp"
   ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
+  kable_styling(latex_options = c("scale_down", "striped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 
 ```{r}
-tab_sp_anova$log_rich_std %>%
-  filter(y %in% net_var_rich) %>%
+sp_rsq_table_bm_rich_mono_stable_trends %>%
   mutate(
-    y = str_replace_all(y, var_replacement()),
-    term = str_replace_all(term, var_replacement()),
-  ) %>%
-  kable(., booktabs = TRUE,
-    caption =
-      paste0(
-      "ANOVA results for the links between the spatial variation of species
-      richness and the one of network structure."),
-  label = "aov-rich-sp"
-      ) %>% #
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-
-```{r}
-table_rsq_sp <- map2(rsq_sp_mod, names(rsq_sp_mod),
-  ~mutate(.x, Explicative = .y) %>%
-    select(Explicative, Response, Marginal, Conditional)
-) %>%
-do.call(rbind, .)
-rownames(table_rsq_sp) <- NULL
-
-table_rsq_sp %>%
-  filter(Explicative %in% c("log_rich_std", "log_bm_std")) %>%
-  mutate(
-    Explicative = str_replace_all(Explicative, var_replacement()),
     Response = str_replace_all(Response, var_replacement())
   ) %>%
   kable(., booktabs = TRUE,
@@ -737,7 +678,7 @@ table_rsq_sp %>%
       "Marginal and conditional squared R for spatial models."),
   label = "rsq-sp"
       ) %>% #
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
+  kable_styling(latex_options = c("striped")) %>%
   collapse_rows(columns = 1, valign = "top")
 ```
 

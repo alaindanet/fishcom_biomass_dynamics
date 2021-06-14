@@ -456,6 +456,8 @@ plot_raw_data  <- function(.df = NULL, covar = NULL, std_error = TRUE) {
 
 plot_add_pred_data <- function (pred = NULL, gg = NULL, signif = FALSE) {
 
+  signif <- ifelse(signif <= 0.05, TRUE, FALSE)
+
   if (is.null(gg)) {
     p <- pred %>%
       ggplot(aes(y = predicted, x = x))
@@ -466,17 +468,17 @@ plot_add_pred_data <- function (pred = NULL, gg = NULL, signif = FALSE) {
   if ("covar" %in% colnames(pred)) {
     p <- p +
       geom_line(
-	data = pred,
-	aes(y = predicted, x = x, linetype = covar),
-	inherit.aes = FALSE,
-	color = ifelse(!is.null(signif) & signif, "red", "black")
+        data = pred,
+        aes(y = predicted, x = x, linetype = covar),
+        inherit.aes = FALSE,
+        color = ifelse(signif, "red", "black")
       )
   } else {
     p <- p +
       geom_line(data = pred,
-	aes(y = predicted, x = x),
-	inherit.aes = FALSE,
-	color = ifelse(signif, "red", "black")
+        aes(y = predicted, x = x),
+        inherit.aes = FALSE,
+        color = ifelse(signif, "red", "black")
       )
   }
 

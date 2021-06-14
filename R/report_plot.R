@@ -173,47 +173,59 @@ get_plot_fig1_2 <- function(
 
   pred_plot_signif_bm <- predict_plot %>%
     filter(y %in% bm_y, !y %in% bm_x, x == bm_x)
+
   pred_plot_signif_rich <- predict_plot %>%
     filter(y %in% rich_y, x == rich_x) %>%
     filter(!y %in% rich_x)
-  pred_plot_other <- predict_plot %>%
-    filter( y %in% c("ct_ff", "w_trph_lvl_avg"), x %in% c("ct_ff", "w_trph_lvl_avg"))
-  pred_plot_ind <- predict_plot %>%
-    filter( y %in% c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"), x == "nind_std") %>%
-    filter(!y %in% c("nind_std"))
 
-  the_plot <- map(list(pred_plot_signif_bm, pred_plot_signif_rich, pred_plot_other, pred_plot_ind), function (x) {
-    
-  legend_signif <- get_legend(
-    x$pred_plot[[1]] +
-      theme(legend.position = "bottom")
-  )
-  x %<>%
-    mutate(
-      pred_plot = pmap(list(pred_plot, y, x),
-	function(p, y, x) {
-	  # Replace label
-	  label <- str_replace_all(c(x, y), var_replacement(slope = TRUE))
-	  p +
-	    labs(x = label[1], y = label[2]) +
-	    theme(legend.position = "none")
-	})
+  pred_plot_other <- predict_plot %>%
+    filter(
+      y %in% c("ct_ff", "w_trph_lvl_avg"),
+      x %in% c("ct_ff", "w_trph_lvl_avg")
     )
 
-  list_p <- x$pred_plot
-  list_p[[length(list_p) + 1]] <- legend_signif
+  pred_plot_ind <- predict_plot %>%
+    filter(
+      y %in% c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"),
+      x == "nind_std") %>%
+    filter(!y %in% c("nind_std"))
 
-  pred_plot <- plot_grid(
-    plotlist = list_p,
-    labels = "AUTO",
-    nrow = 2
-  )
+  the_plot <- map(
+    list(pred_plot_signif_bm,
+      pred_plot_signif_rich,
+      pred_plot_other,
+      pred_plot_ind),
+    function(x) {
+      legend_signif <- get_legend(
+        x$pred_plot[[1]] +
+          theme(legend.position = "bottom")
+      )
+      x %<>%
+        mutate(
+          pred_plot = pmap(list(pred_plot, y, x),
+            function(p, y, x) {
+              # Replace label
+              label <- str_replace_all(c(x, y), var_replacement(slope = TRUE))
+              p +
+                labs(x = label[1], y = label[2]) +
+                theme(legend.position = "none")
+            })
+        )
 
-  if (get_list) {
-    return(list_p)
-  }
+      list_p <- x$pred_plot
+      list_p[[length(list_p) + 1]] <- legend_signif
 
-  return(pred_plot)
+      pred_plot <- plot_grid(
+        plotlist = list_p,
+        labels = "AUTO",
+        nrow = 2
+      )
+
+      if (get_list) {
+        return(list_p)
+      }
+
+      return(pred_plot)
 
     }
   )
@@ -222,6 +234,74 @@ get_plot_fig1_2 <- function(
 
   return(the_plot)
 
+}
+
+get_plot_rich_bm <- function(
+  predict_plot = pred_bm_rich_mono_stable_trends,
+  get_list = FALSE,
+  rm_legend = FALSE,
+  bm_x = "log_bm_std",
+  bm_y = c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
+  rich_y = c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"),
+  rich_x = "log_rich_std",
+  temporal_label = TRUE
+  ) {
+
+  pred_plot_signif_bm <- predict_plot %>%
+    filter(
+      response %in% bm_y,
+      !response %in% bm_x, term == bm_x
+    )
+
+  pred_plot_signif_rich <- predict_plot %>%
+    filter(
+      response %in% rich_y,
+      term == rich_x
+      ) %>%
+    filter(!response %in% rich_x)
+
+
+  the_plot <- map(
+    list(
+      pred_plot_signif_bm,
+      pred_plot_signif_rich
+      ),
+    function(x) {
+      legend_signif <- get_legend(
+        x$pred_plot[[1]] +
+          theme(legend.position = "bottom")
+      )
+      x %<>%
+        mutate(
+          pred_plot = pmap(list(pred_plot, response, term),
+            function(p, y, x) {
+              # Replace label
+              label <- str_replace_all(c(x, y), var_replacement(slope = temporal_label))
+              p +
+                labs(x = label[1], y = label[2]) +
+                theme(legend.position = "none")
+            })
+        )
+
+      list_p <- x$pred_plot
+      list_p[[length(list_p) + 1]] <- legend_signif
+
+      pred_plot <- plot_grid(
+        plotlist = list_p,
+        labels = "AUTO",
+        nrow = 2
+      )
+
+      if (get_list) {
+        return(list_p)
+      }
+      return(pred_plot)
+    }
+  )
+
+  names(the_plot) <- c("bm", "rich")
+
+  return(the_plot)
 }
 
 plot_raw_data_new_model <- function(.df = NULL, x_var = NULL, y_var = NULL, covar = NULL, std_error = FALSE) {
@@ -252,21 +332,23 @@ plot_raw_data_new_model <- function(.df = NULL, x_var = NULL, y_var = NULL, cova
       geom_point()
   }
   if (std_error) {
-    p <- p + 
+    p <- p +
       geom_errorbar(
-	data = .df,
-	aes_string(
-	  xmin = paste0(x_var, " - ", x_var_error),
-	  xmax = paste0(x_var, " + ", x_var_error)
-	  ),
-	alpha = 0.3) +
+        data = .df,
+        aes_string(
+          xmin = paste0(x_var, " - ", x_var_error),
+          xmax = paste0(x_var, " + ", x_var_error)
+          ),
+        color = "gray50") +
       geom_errorbar(
-	data = .df,
-	aes_string(
-	  ymin = paste0(y_var, " - ", y_var_error),
-	  ymax = paste0(y_var, " + ", y_var_error)
-	  ),
-	alpha = 0.3)
+        data = .df,
+        aes_string(
+          ymin = paste0(y_var, " - ", y_var_error),
+          ymax = paste0(y_var, " + ", y_var_error)
+          ),
+        color = "gray50") +
+      geom_point()
+
   }
   return(p)
 }
@@ -364,7 +446,6 @@ ti %>%
 
 }
 
-
 get_pred_plot_from_new_model <- function(
   model = NULL,
   dataset = NULL,
@@ -393,4 +474,3 @@ get_pred_plot_from_new_model <- function(
     )
 
 }
-

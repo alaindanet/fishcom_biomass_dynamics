@@ -16,6 +16,8 @@ drake::make(plan)
 drake::vis_drake_graph(plan)
 
 make(plan, parallelism = "future", jobs = 3)
+rm(list = ls())
+gc()
 
 #drake::drake_cache("/home/alain/Documents/post-these/mnhn/fishcom_biomass_dynamics/.drake")$unlock()
 # If you do not change any code or data,
@@ -26,6 +28,7 @@ print(plan, n = 40)
 
 #TODO check rigor of automatic plotting; all the conditions are respected?
 
+
 library(future)
 plan(multisession, workers = 3)
 
@@ -33,16 +36,39 @@ attr(body(get_pred_plot_from_new_model), "srcfile")
 
 loadd(bm_rich_trends, st_sp, sp_st_data, summary_var_med, data_for_pca,
   st_analysis, sp_slope_x_bound, sp_model_bm_rich_mono_trends)
-loadd(sp_relation_plot)
 
+loadd(model_bm_rich_mono_stable_trends)
+class(model_bm_rich_mono_stable_trends[[1]]) <- "lm"
+model_bm_rich_mono_trends
+"model_bm_rich_mono_stable_trends",
+"model_bm_rich_trends",
+"model_bm_rich"
 
-debugonce(get_predict_from_new_model)
-get_pred_plot_from_new_model(
-  model = sp_model_bm_rich_mono_trends,
-  dataset = sp_st_data,
-  x_bound = sp_slope_x_bound,
-  std_error_bar = FALSE
-)
+theme_set(theme_cowplot())
+
+loadd(model_bm_rich_trends, slope_com_var_no_covar, st_trends_rich_bm, slope_x_bound)
+plot_raw_data_new_model(
+          .df = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
+          x_var = "log_bm_std", y_var = "ct_ff",
+          std_error = TRUE,
+          covar = NULL
+          )
+pred_bm_rich_trends <- get_pred_plot_from_new_model(
+  model = model_bm_rich_trends,
+  dataset = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
+  x_bound = slope_x_bound, std_error_bar = TRUE
+  )
+pred_bm_rich_trends$raw_plot[[3]]
+
+fig_test <- get_plot_rich_bm(
+  predict_plot = pred_bm_rich_mono_stable_trends,
+  get_list = FALSE,
+  rm_legend = FALSE,
+  bm_x = "log_bm_std",
+  bm_y = c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
+  rich_y = c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"),
+  rich_x = "log_rich_std"
+  )
 
 loadd(slope_com_var)
 loadd(model_summary, comb)
@@ -68,45 +94,3 @@ loadd(pred_bm_rich_mono_stable_trends)
 loadd(sp_models, slope_x_bound, sp_st_data, st_trends_rich_bm,
   sp_model_bm_rich_mono_trends)
 sp_models$log_rich_std
-
-loadd(sp_slope_x_bound, slope_x_bound)
-
-test <- get_pred_plot_from_new_model(
-  model = sp_model_bm_rich_mono_trends,
-  dataset = filter(sp_st_data, station %in% st_trends_rich_bm),
-  x_bound = sp_slope_x_bound,
-  std_error_bar = FALSE
-)
-loadd(sp_relation_plot_mono_trends)
-sp_relation_plot_mono_trends
-test$pred_plot[[1]]
-
-# Test variability of the results according to the number of sites
-loadd(sp_models)
-test2 <- get_sp_model_plot(model_bm_rich_no_covar_no_inc)
-plot_grid(plotlist = test2$gg)
-mono_plot <- get_sp_model_plot(model_bm_rich_mono_trends)
-plot_grid(plotlist = mono_plot$gg)
-mono_plot <- get_sp_model_plot(model_bm_rich_mono_trends)
-plot_grid(plotlist = mono_plot$gg)
-trends_plot <- get_sp_model_plot(model_bm_rich_trends)
-plot_grid(plotlist = trends_plot$gg)
-all_plot <- get_sp_model_plot(model_bm_rich)
-plot_grid(plotlist = all_plot$gg)
-
-theme_set(theme_cowplot())
-p_raw_plot <- map2(
-  filter(model, x %in% c("log_bm_std", "log_rich_std"), y %in% names(model_bm_rich_no_covar_no_inc))$x,
-  filter(model, x %in% c("log_bm_std", "log_rich_std"), y %in% names(model_bm_rich_no_covar_no_inc))$y,
-  ~plot_raw_data_new_model(
-    .df = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
-    x_var = .x, y_var = .y,
-    std_error = TRUE, covar = NULL
-  )
-)
-plot_grid(plotlist = p_raw_plot)
-plot_raw_data_new_model(
-  .df = filter(slope_com_var_no_covar, station %in% st_mono_trends_rich_bm),
-  x_var = "log_bm_std", y_var = "log_rich_std",
-  std_error = TRUE, covar = NULL
-)
