@@ -160,68 +160,67 @@ weighted by the biomass of the trophic species. The trophic level of a trophic
 species is computed recursively as 1 added to the mean trophic level of the
 preys that it consumes.
 
-We described community structure by its community biomass, species richness and the
-evenness of the number of individual and the amount of biomass across species. The evenness was
-quantified with the Pielou index, computed as the Shannon diversity index
-divided by the number of species ($P = \frac{H'}{N}$, with $H'$ being the
-Shannon diversity index and $N$ the number of species).
+We described community structure by its community biomass, species richness and
+the evenness of the number of individual and the amount of biomass across
+species. The evenness was quantified with the Pielou index, computed as the
+Shannon diversity index divided by the number of species ($P = \frac{H'}{N}$,
+with $H'$ being the Shannon diversity index and $N$ the number of species).
 
 ```{r}
-loadd(full_data2, st_mono_trends_combined_list)
+loadd(slope_com_var_no_covar, st_mono_trends_stable_rich_bm)
 ```
 ```{r}
-nb_st <- unique(full_data2$station) %>% length
-rm(full_data2)
-nb_st_var <- map_dbl(st_mono_trends_combined_list$station, length)
-names(nb_st_var) <- st_mono_trends_combined_list$variable
+nb_st <- unique(slope_com_var_no_covar$station) %>% length
+rm(slope_com_var_no_covar)
+nb_st_rich_bm <- st_mono_trends_stable_rich_bm %>% length
 ```
 
 
 ## Classification of temporal trajectories
 
-With the goal to characterize the links among the temporal variations of network
-and community structure and the temporal variations of community biomass and
-species richness, we characterized the temporal trajectories of network and
-community structure at each site. We used a method based on second order
-polynomial which allows to assess both the direction and the monotony of
-temporal trends [@rigal_method_2020]. To avoid complex variations of biomass and
-species richness, we selected the stations that displayed monotonic trends for
-these variable. Over the `r nb_st` stations, the selection procedure resulted
-in respectively `r nb_st_var["log_bm_std"]` stations  and `r nb_st_var["log_rich_std"]`
-for community biomass and species richness analysis.
+To characterize the links among the temporal trends of network and community
+structure and the temporal trends of community biomass and species richness, we
+characterized the temporal trajectories of network and community structure at
+each site. We used a method based on second order polynomial which allows to
+assess both the direction and the monotony of temporal trends
+[@rigal_method_2020]. To avoid complex variations of biomass and species
+richness, we selected the stations that displayed monotonic trends for these
+variables, i.e. the ones for which the second order polynomial term was non
+significant. Over the `r nb_st` stations, the selection procedure resulted in 
+`r nb_st_rich_bm` for community biomass and species richness analysis.
 
-## Spatial  
+There was a clear relationship between the size of the communities and their
+temporal dynamics. Communities that displayed low community biomass at the
+beginning of their monitoring tend to display increase in biomass through time
+and reversely. There same the same pattern for species richness, with
+communities that displayed high species richness at the
+beginning of their monitoring tend to display decrease in species richness through time
+and reversely.
 
-We selected the same stations that was used for the temporal analysis. 
+
+## Spatial
+
+In spatial analysis, we selected the same stations that were used for the
+temporal analysis. We summarised temporal series of each stations by the median
+value over time of each variable.
  
 # Statistical analysis
 
 ## Temporal trends 
 
-With the aim to test (1) the relationship among the temporal dynamics of network
+With the aim to test the relationship among the temporal dynamics of network
 structure from one side and species richness and community biomass from another
-side, (2) if those relationships were different if the communities were
-assembling or disassembling, (3) if those relationships were different if
-small/big communities, we modelled the dynamics the temporal trends of food-web
+side, we modelled the dynamics the temporal trends of food-web
 structure ($dN$) in function of the temporal trends of community biomass ($dB$) and species
-richness ($dR$), if the latter was positive of not (Inc) and with respectively the median
-community biomass ($B_i$) and species richness ($R_i$)of the three first years of the temporal
-series.
+richness ($dR$).
 
-$dN = dB + B_i + dB \times B + Inc_B \times B_i + dB \times Inc_B \times B_i$
-
-$dN = dR + R_i + dR \times R_i + Inc_R \times R_i + dR \times Inc_R \times R_i$
+$dN = dB + dR$
 
 With:
 
   - $dN$: temporal trend of network structure and communities structure
   - $dB$: temporal trend of community (log) biomass
   - $dR$: temporal trend of (log) species richness 
-  - $B_i$: median community biomass of the first three year
-  - $R_i$: median species richness of the first three year
-  - $Inc_B$: Is $dB > 0$?
-  - $Inc_R$: Is $dR > 0$?
-
 
 In order to control for the uncertainties of the estimated temporal trends, each
 temporal trend was weighted by the inverse of the product of the standard errors of the
@@ -251,40 +250,47 @@ With:
 
 ```{r}
 loadd(rsq_sp_mod, summary_table, sp_models, model_summary)
-rsq <- summary_table %>%
-  filter(y %in% unique(c(net_var_bm, net_var_rich))) %>%
-select(y, x, mod_summary_table) %>%
-unnest(mod_summary_table) %>%
-select(y, x, r.squared, adj.r.squared)
+
+loadd(rsq_table_bm_rich_mono_stable_trends, sp_rsq_table_bm_rich_mono_stable_trends)
 ```
 
 ```{r}
-rsq_nind_bm <- rsq[rsq$y == "piel_nind" & rsq$x == "log_bm_std",]$adj.r.squared %>%
+rsq_piel_nind <- rsq_table_bm_rich_mono_stable_trends %>%
+  filter(Response == "piel_nind") %>%
+  .$R.squared %>%
   round(., 3)
-rsq_bm_rich <- rsq[rsq$y == "log_bm_std" & rsq$x == "log_rich_std",]$adj.r.squared %>%
+
+rsq_tlvl <- rsq_table_bm_rich_mono_stable_trends %>%
+  filter(Response == "w_trph_lvl_avg") %>%
+  .$R.squared %>%
   round(., 3)
-rsq_tlvl_rich_sp <- rsq_sp_mod$log_rich_std[
-  rsq_sp_mod$log_rich_std$Response == "w_trph_lvl_avg", 
-  ]$Conditional %>%
-    round(., 3)
-rsq_piel_bm_rich_sp <- rsq_sp_mod$log_bm_std[
-  rsq_sp_mod$log_rich_std$Response == "piel_bm", 
-  ]$Conditional %>%
-    round(., 3)
+
+
+rsq_tlvl_sp <- sp_rsq_table_bm_rich_mono_stable_trends %>%
+  filter(Response == "w_trph_lvl_avg") %>%
+  .$Conditional %>%
+  round(., 3)
+
+rsq_piel_bm_sp <- sp_rsq_table_bm_rich_mono_stable_trends %>%
+  filter(Response == "piel_bm") %>%
+  .$Conditional %>%
+  round(., 3)
 ```
 
 Overall, we found high heterogeneity in the explicative power of statistical
 models linking temporal dynamics of food-web structure and the one of community
-biomass and species richness spanning from $R_{adj}^2= `r rsq_nind_bm`$ for the
-relationships between to $R_{adj}^2= `r rsq_bm_rich`$ between biomass and
-species richness (Table \@ref(tab:rsq)). The spatial relationships among
-food-web structure aspects were more performant, with $R_{cond}^2$ varing from 
-`r rsq_tlvl_rich_sp` to `r rsq_piel_bm_rich_sp` (Table \@ref(tab:rsq-sp)).
+biomass and species richness spanning from $R_{adj}^2= `r rsq_piel_nind`$ for
+pielou of individual number to $R_{adj}^2= `r rsq_tlvl`$ for average trophic
+level (Table \@ref(tab:rsq)). The spatial models
+ were more performant, with $R_{cond}^2$ varing from 
+`r rsq_tlvl_sp` to `r rsq_piel_bm_sp` (Table \@ref(tab:rsq-sp)).
 
-Overall, we found no significant effect of the temporal gain or losses of
-communinity biomass biomass and species richness on the relationship between the
-temporal trends of community structure and that of biomass and species richness
-(Table \@ref(tab:aov-bm), \@ref(tab:aov-rich)).
+---
+#Overall, we found no significant effect of the temporal gain or losses of
+#communinity biomass biomass and species richness on the relationship between the
+#temporal trends of community structure and that of biomass and species richness
+#(Table \@ref(tab:aov)).
+---
 
 ## Relationships between temporal trends 
 
@@ -297,31 +303,34 @@ reg_bm <- model_log_bm_f3y_table_medium$reg_table
 ```
 We found a significant positive relationship between the temporal trends of
 community biomass from one side and species richness, average trophic level,
-connectance from the other side (Fig. \@ref(fig:bm), Table \@ref(tab:aov-bm)),
+connectance from the other side (Fig. \@ref(fig:bm), Table \@ref(tab:aov)),
 meaning that they temporally increased when the community biomass temporally increased and
 respectively that they temporally decreased when the community biomass decreased in
 time.
 
 We found a significant negative relationship between the temporal trends of
 community biomass and that of the pielou of biomass (Figure \@ref(fig:bm), Table
-\@ref(tab:aov-bm)), meaning that the eveness of biomass across species
+\@ref(tab:aov)), meaning that the eveness of biomass across species
 temporally increased when the community biomass temporally decreased and
 respectively that the evenness temporally decreased when the community biomass
-temporally increased (Fig. \@ref(fig:bm), Table \@ref(tab:aov-bm)). However, we
-found no significant relationship between the temporal trends of community biomass and that
-of the pielou of individual.
+temporally increased (Fig. \@ref(fig:bm), Table \@ref(tab:aov)). We observed the
+same pattern between the temporal trends of
+community biomass and that of the pielou of individual number. 
 
-Overall, we did not find effect of assembly/disassembly on the relationships
-between the temporal trends of community structure and the one of community
-biomass. We also found that the median community biomass had no effect on the
-relationship between the temporal trends of community structure and the one of community
-biomass.
+---
+#Overall, we did not find effect of assembly/disassembly on the relationships
+#between the temporal trends of community structure and the one of community
+#biomass. We also found that the median community biomass had no effect on the
+#relationship between the temporal trends of community structure and the one of community
+#biomass.
+---
 
 ### Community structure and species richness 
 
+HERE
 The temporal trends of community biomass, average trophic level, pielou of biomass,
 pielou of individual had a positive relationship with that of species richness
-(Fig. \@ref(fig:rich), Table \@ref(tab:aov-rich)). However, the direct
+(Fig. \@ref(fig:rich), Table \@ref(tab:aov)). However, the direct
 relationship between the temporal trends of average trophic level and the one of
 species richness was not significant after controling for community biomass temporal
 trends [**TO CHECK: refaire tous les modèles temporels en mettant à la fois la
@@ -330,12 +339,12 @@ pente des biomasses et de la richness en même temps??**].
 We also found that the relationship between the temporal trends of pielou of
 individual and connectance and that of species richness was dependant of the
 overall species richness of the community (Fig. \@ref(fig:rich), Table
-\@ref(tab:aov-rich)), meaning that the relationship between temporal trends of
+\@ref(tab:aov)), meaning that the relationship between temporal trends of
 pielou of individual and that of species richness was more positive as the
 community contained more species (Fig. \@ref(fig:rich), Table
-\@ref(tab:reg-rich)). While the relationship between temporal trends of pielou
+\@ref(tab:reg)). While the relationship between temporal trends of pielou
 of individual and that of species richness was more negative as the community
-contained more species (Fig. \@ref(fig:rich), Table \@ref(tab:reg-rich)).
+contained more species (Fig. \@ref(fig:rich), Table \@ref(tab:reg)).
 
 ## Spatial relationships 
 
@@ -343,7 +352,7 @@ contained more species (Fig. \@ref(fig:rich), Table \@ref(tab:reg-rich)).
 
 We found that species richness, connectance, average trophic level were
 spatially positively related to community biomass while the pielou of biomass was negatively related to
-community biomass (Fig. \@ref(fig:bm), Table \@ref(tab:aov-rich-sp)). However,
+community biomass (Fig. \@ref(fig:bm), Table \@ref(tab:aov-sp)). However,
 we found no spatial relation between the pielou of individual and community
 biomass. 
 
@@ -352,7 +361,7 @@ biomass.
 We found that community biomass, the pielou of biomass and individual were
 positively related to species richness while average trophic level and
 connectance were negatively related to
-community biomass (Fig. \@ref(fig:rich), Table \@ref(tab:aov-rich-sp)).
+community biomass (Fig. \@ref(fig:rich), Table \@ref(tab:aov-sp)).
 
 # Discussion
 
@@ -595,7 +604,7 @@ anova_table_bm_rich_mono_stable_trends %>%
       "ANOVA results for the links between the temporal trends of
       community biomass and the temporal trends of the network structure."
     ),
-  label = "aov-bm-rich"
+  label = "aov"
   ) %>%
   kable_styling(latex_options = c("scale_down", "stripped")) %>%
   collapse_rows(columns = 1, valign = "top")
@@ -615,7 +624,7 @@ kable(., booktabs = TRUE,
       "Regression coefficients for the linear models explaining the links
       between the temporal trends of community biomass and the temporal trends
       of the network structure."),
-      label = "reg-bm-rich"
+      label = "reg"
       ) %>%
   kable_styling(latex_options = c("scale_down", "striped")) %>%
   collapse_rows(columns = 1, valign = "top")
@@ -633,7 +642,7 @@ rsq_table_bm_rich_mono_stable_trends %>%
     caption =
       paste0(
       "Marginal and conditional squared R for temporal models."),
-  label = "rsq-sp"
+  label = "rsq"
       ) %>% #
   kable_styling(latex_options = c("striped")) %>%
   collapse_rows(columns = 1, valign = "top")
@@ -656,7 +665,9 @@ sp_anova_table_bm_rich_mono_stable_trends %>%
     response = str_replace_all(response, var_replacement()),
     term = str_replace_all(term, var_replacement()),
   ) %>%
-  kable(., booktabs = TRUE,
+  kable(.,
+    booktabs = TRUE,
+    row.names = FALSE,
     caption =
       paste0(
       "ANOVA results for the links among the spatial variation of community
