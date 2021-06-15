@@ -831,6 +831,36 @@ model = data4model %>%
       )
     )
   ),
+  target_std_table_sp_temporal = target(
+    map2_dfr(
+      list(sp, temp),
+      c("spatial", "temporal"),
+      function(x, type) {
+        get_std_coef_from_reg_tab(tab = x) %>%
+          mutate(type = type) %>%
+          select(type, everything())
+      }),
+    transform = map(
+      temp = list(
+        reg_table_bm_rich_mono_trends,
+        reg_table_bm_rich_mono_stable_trends,
+        reg_table_bm_rich_trends,
+        reg_table_bm_rich
+        ),
+      sp = list(
+        sp_reg_table_bm_rich_mono_trends,
+        sp_reg_table_bm_rich_mono_stable_trends,
+        sp_reg_table_bm_rich_trends,
+        sp_reg_table_bm_rich
+        ),
+      .names = c(
+        "std_table_bm_rich_mono_trends",
+        "std_table_bm_rich_mono_stable_trends",
+        "std_table_bm_rich_trends",
+        "std_table_bm_rich"
+      )
+    )
+    ),
 
   trace = TRUE
 )

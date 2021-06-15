@@ -335,12 +335,26 @@ get_mod_list_lme4 <- function(.data = NULL) {
 }
 
 stdCoef.merMod <- function(object) {
-  sdy <- sd(getME(object,"y"))
-  sdx <- apply(getME(object,"X"), 2, sd)
-  sc <- fixef(object)*sdx/sdy
-  se.fixef <- coef(summary(object))[,"Std. Error"]
-  se <- se.fixef*sdx/sdy
+  sdy <- sd(lme4::getME(object, "y"))
+  sdx <- apply(lme4::getME(object, "X"), 2, sd)
+  sc <- fixef(object) * sdx / sdy
+  se.fixef <- coef(summary(object))[, "Std. Error"]
+  se <- se.fixef * sdx / sdy
   return(data.frame(std_estimate = sc, stdse = se))
+}
+
+stdse.lm <- function(model) {
+
+  ti <- get_data_from_lm_model(model)
+  x <- attr(model$terms, "term.labels")
+  y <- names(attr(test$terms, "dataClasses")) %>%
+    .[! . %in% c("(weights)", x)]
+  sdx <- apply(ti[, colnames(ti) %in% x], 2, sd, na.rm = T)
+  sdy <- sd(ti[[y]], na.rm = T)
+  se.fixef <- coef(summary(model))[!row.names(coef(summary(model))) %in% "(Intercept)", "Std. Error"] * sdx / sdy
+  #TODO: recompute std coef
+  return(data.frame(std_estimate = NA, stdse = se.fixef))
+
 }
 
 #' Compute PCA

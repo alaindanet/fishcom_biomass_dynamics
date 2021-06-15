@@ -228,3 +228,12 @@ st4sp_model <- function(my_x_var = NULL, .data4model = NULL) {
   return(out)
 
 }
+
+get_data_from_lm_model <- function(model) {
+  eval(
+    getCall(model)$data,
+    environment(
+      formula(model)
+    )
+  )
+}

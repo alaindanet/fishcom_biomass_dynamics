@@ -28,3 +28,8 @@ format_reg_table <- function(x = NULL) {
     )
 
 }
+
+get_std_coef_from_reg_tab <- function(tab = NULL) {
+  tab %>%
+    select(response, term, estimate, std_estimate, std.error, statistic)
+}
