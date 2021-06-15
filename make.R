@@ -26,8 +26,9 @@ gc()
 plan
 print(plan, n = 40)
 
-#TODO check rigor of automatic plotting; all the conditions are respected?
 
+loadd(sp_reg_table_bm_rich_mono_stable_trends,
+  sp_std_coef_bm_rich_mono_stable_trends)
 
 library(future)
 plan(multisession, workers = 3)
@@ -37,12 +38,6 @@ attr(body(get_pred_plot_from_new_model), "srcfile")
 loadd(bm_rich_trends, st_sp, sp_st_data, summary_var_med, data_for_pca,
   st_analysis, sp_slope_x_bound, sp_model_bm_rich_mono_trends)
 
-loadd(model_bm_rich_mono_stable_trends)
-class(model_bm_rich_mono_stable_trends[[1]]) <- "lm"
-model_bm_rich_mono_trends
-"model_bm_rich_mono_stable_trends",
-"model_bm_rich_trends",
-"model_bm_rich"
 
 theme_set(theme_cowplot())
 

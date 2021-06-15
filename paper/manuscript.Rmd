@@ -312,10 +312,10 @@ We found a significant negative relationship between the temporal trends of
 community biomass and that of the pielou of biomass (Figure \@ref(fig:bm), Table
 \@ref(tab:aov)), meaning that the eveness of biomass across species
 temporally increased when the community biomass temporally decreased and
-respectively that the evenness temporally decreased when the community biomass
-temporally increased (Fig. \@ref(fig:bm), Table \@ref(tab:aov)). We observed the
-same pattern between the temporal trends of
-community biomass and that of the pielou of individual number. 
+respectively that the evenness of biomass temporally decreased when the community biomass
+temporally increased (Fig. \@ref(fig:bm), Table \@ref(tab:aov)). We also found the
+same pattern between the temporal trends of community biomass and that of the
+pielou of individual number. 
 
 ---
 #Overall, we did not find effect of assembly/disassembly on the relationships
@@ -327,34 +327,34 @@ community biomass and that of the pielou of individual number.
 
 ### Community structure and species richness 
 
-HERE
-The temporal trends of community biomass, average trophic level, pielou of biomass,
-pielou of individual had a positive relationship with that of species richness
-(Fig. \@ref(fig:rich), Table \@ref(tab:aov)). However, the direct
-relationship between the temporal trends of average trophic level and the one of
-species richness was not significant after controling for community biomass temporal
-trends [**TO CHECK: refaire tous les modèles temporels en mettant à la fois la
-pente des biomasses et de la richness en même temps??**].
+The temporal trends of community biomass and pielou of biomass, had a positive
+relationship with that of species richness (Fig. \@ref(fig:rich), Table
+\@ref(tab:aov)) while we did not find significant relationships between the
+temporal trends of average trophic level, connectance, pielou of individual
+number and the one of species richness (Fig. \@ref(fig:rich), Table
+\@ref(tab:aov)).
 
-We also found that the relationship between the temporal trends of pielou of
-individual and connectance and that of species richness was dependant of the
-overall species richness of the community (Fig. \@ref(fig:rich), Table
-\@ref(tab:aov)), meaning that the relationship between temporal trends of
-pielou of individual and that of species richness was more positive as the
-community contained more species (Fig. \@ref(fig:rich), Table
-\@ref(tab:reg)). While the relationship between temporal trends of pielou
-of individual and that of species richness was more negative as the community
-contained more species (Fig. \@ref(fig:rich), Table \@ref(tab:reg)).
+---
+#We also found that the relationship between the temporal trends of pielou of
+#individual and connectance and that of species richness was dependant of the
+#overall species richness of the community (Fig. \@ref(fig:rich), Table
+#\@ref(tab:aov)), meaning that the relationship between temporal trends of
+#pielou of individual and that of species richness was more positive as the
+#community contained more species (Fig. \@ref(fig:rich), Table
+#\@ref(tab:reg)). While the relationship between temporal trends of pielou
+#of individual and that of species richness was more negative as the community
+#contained more species (Fig. \@ref(fig:rich), Table \@ref(tab:reg)).
+---
 
 ## Spatial relationships 
 
 ### Community structure and community biomass
 
 We found that species richness, connectance, average trophic level were
-spatially positively related to community biomass while the pielou of biomass was negatively related to
-community biomass (Fig. \@ref(fig:bm), Table \@ref(tab:aov-sp)). However,
-we found no spatial relation between the pielou of individual and community
-biomass. 
+spatially positively related to community biomass while the pielou of biomass
+was negatively related to community biomass (Fig. \@ref(fig:bm), Table
+\@ref(tab:aov-sp)). However, we found no spatial relation between the pielou of
+individual and community biomass. 
 
 ### Community structure and species richness 
 

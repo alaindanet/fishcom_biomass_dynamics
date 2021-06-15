@@ -484,7 +484,7 @@ model = data4model %>%
   ),
   #### Spatial
   target_sp_model_bm_rich = target(
-    get_mod_list(.data = filter(sp_st_data, station %in% y) %>%
+    get_mod_list_lme4(.data = filter(sp_st_data, station %in% y) %>%
       na.omit %>%
       as.data.frame
       ),
@@ -503,6 +503,35 @@ model = data4model %>%
       )
     )
   ),
+#### get standardized coefficients 
+  target_std_coef_sp_model_bm_rich = target(
+
+    map2_dfr(y, names(y),
+      function(model, name) {
+        x <- stdCoef.merMod(model)
+        x$term <- row.names(x)
+        row.names(x) <- NULL
+        x$response <- name
+        x %>%
+          select(response, term, std_estimate)
+      }
+    ),
+    transform = map(
+      y = list(
+        sp_model_bm_rich_mono_trends,
+        sp_model_bm_rich_mono_stable_trends,
+        sp_model_bm_rich_trends,
+        sp_model_bm_rich
+        ),
+      .names = c(
+        "sp_std_coef_bm_rich_mono_trends",
+        "sp_std_coef_bm_rich_mono_stable_trends",
+        "sp_std_coef_bm_rich_trends",
+        "sp_std_coef_bm_rich"
+      )
+    )
+  ),
+
   ### Resume
   target_vif_model_bm_rich = target(
     map(y, ~try(car::vif(.x))),
@@ -660,14 +689,17 @@ model = data4model %>%
   do.call(rbind, .),
   target_sp_reg_table_bm_rich = target(
     map2(
-      model_bm_rich,
-      names(model_bm_rich),
+      y,
+      names(y),
       function(model, name) {
         ml <- broom::tidy(model) %>%
           mutate(response = name) %>%
           select(response, everything())
       }) %>%
-    do.call(rbind, .),
+    do.call(rbind, .) %>%
+    left_join(std, by = c("response", "term")) %>%
+    select(-group) %>%
+    select(response, effect, term, estimate, std_estimate, everything()),
   transform = map(
       y = list(
         sp_model_bm_rich_mono_trends,
@@ -675,6 +707,12 @@ model = data4model %>%
         sp_model_bm_rich_trends,
         sp_model_bm_rich
         ),
+      std = list(
+        sp_std_coef_bm_rich_mono_trends,
+        sp_std_coef_bm_rich_mono_stable_trends,
+        sp_std_coef_bm_rich_trends,
+        sp_std_coef_bm_rich
+      ),
       .names = c(
         "sp_reg_table_bm_rich_mono_trends",
         "sp_reg_table_bm_rich_mono_stable_trends",

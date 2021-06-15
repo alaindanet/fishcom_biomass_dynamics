@@ -303,7 +303,47 @@ get_mod_list <- function(.data = NULL, st_by_var = NULL) {
       ))
 }
 
-#' Compute PCA 
+get_mod_list_lme4 <- function(.data = NULL) {
+  rlang::eval_tidy(rlang::quo(
+      list(
+        log_bm_std = lme4::lmer(
+          log_bm_std ~ log_RC1 + log_RC2 + log_rich_std + (1 | basin),
+          data = {{.data}}),
+
+        log_rich_std = lme4::lmer(
+          log_rich_std ~ log_RC1 + log_RC2 + log_bm_std + (1 | basin),
+          data = {{.data}}),
+
+        ct_ff = lme4::lmer(
+          ct_ff ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std + (1 | basin),
+          data = {{.data}}),
+
+        w_trph_lvl_avg = lme4::lmer(
+          w_trph_lvl_avg ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std + (1 | basin),
+          data = {{.data}}),
+
+        piel_bm = lme4::lmer(
+          piel_bm ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std + (1 | basin),
+          data = {{.data}}),
+
+        piel_nind = lme4::lmer(
+          piel_nind ~ log_RC1 + log_RC2 + log_rich_std + log_bm_std +
+          (1 | basin),
+          data = {{.data}})
+      )
+      ))
+}
+
+stdCoef.merMod <- function(object) {
+  sdy <- sd(getME(object,"y"))
+  sdx <- apply(getME(object,"X"), 2, sd)
+  sc <- fixef(object)*sdx/sdy
+  se.fixef <- coef(summary(object))[,"Std. Error"]
+  se <- se.fixef*sdx/sdy
+  return(data.frame(std_estimate = sc, stdse = se))
+}
+
+#' Compute PCA
 
 get_pca_environment <- function (.data = data_for_pca) {
   # Perform PCA
