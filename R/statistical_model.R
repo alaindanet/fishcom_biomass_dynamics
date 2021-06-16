@@ -347,13 +347,14 @@ stdse.lm <- function(model) {
 
   ti <- get_data_from_lm_model(model)
   x <- attr(model$terms, "term.labels")
-  y <- names(attr(test$terms, "dataClasses")) %>%
+  y <- names(attr(model$terms, "dataClasses")) %>%
     .[! . %in% c("(weights)", x)]
   sdx <- apply(ti[, colnames(ti) %in% x], 2, sd, na.rm = T)
   sdy <- sd(ti[[y]], na.rm = T)
+  coef.fixef <- coef(summary(model))[!row.names(coef(summary(model))) %in% "(Intercept)", "Estimate"] * sdx / sdy
   se.fixef <- coef(summary(model))[!row.names(coef(summary(model))) %in% "(Intercept)", "Std. Error"] * sdx / sdy
   #TODO: recompute std coef
-  return(data.frame(std_estimate = NA, stdse = se.fixef))
+  return(data.frame(std_estimate = coef.fixef, stdse = se.fixef))
 
 }
 

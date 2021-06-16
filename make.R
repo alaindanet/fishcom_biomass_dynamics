@@ -26,25 +26,17 @@ gc()
 plan
 print(plan, n = 40)
 
-loadd(model_bm_rich_mono_stable_trends)
-test <- model_bm_rich_mono_stable_trends[[3]]
-
-stdse.lm(test)
-
+loadd(sp_reg_table_bm_rich_mono_trends, reg_table_bm_rich_mono_trends,std_coef_bm_rich_trends, sp_std_coef_bm_rich_trends)
+loadd(reg_table_bm_rich_trends)
 
 loadd(
+std_coef_bm_rich_mono_stable_trends,
   sp_reg_table_bm_rich_mono_stable_trends,
+reg_table_bm_rich_mono_trends,
   reg_table_bm_rich_mono_stable_trends,
   std_table_bm_rich_mono_stable_trends
   )
 
-std_table_bm_rich_mono_stable_trends %>%
-  filter(term %in% c("log_rich_std", "log_bm_std")) %>%
-  mutate_at(vars(term, response), ~str_replace_all(., var_replacement())) %>%
-  ggplot(aes(y = std_estimate, x = response, fill = type)) +
-  facet_grid(cols = vars(term)) +
-  geom_bar(stat = "identity", position = position_dodge()) +
-  labs(x = "Response", y = "Standardized estimate")
 
 library(future)
 plan(multisession, workers = 3)

@@ -513,7 +513,7 @@ model = data4model %>%
         row.names(x) <- NULL
         x$response <- name
         x %>%
-          select(response, term, std_estimate)
+          select(response, term, std_estimate, stdse)
       }
     ),
     transform = map(
@@ -528,6 +528,34 @@ model = data4model %>%
         "sp_std_coef_bm_rich_mono_stable_trends",
         "sp_std_coef_bm_rich_trends",
         "sp_std_coef_bm_rich"
+      )
+    )
+  ),
+  target_std_coef_model_bm_rich = target(
+
+    map2_dfr(y, names(y),
+      function(model, name) {
+        x <- stdse.lm(model)
+        x$term <- row.names(x)
+        row.names(x) <- NULL
+        x$response <- name
+        x %>%
+          select(response, term, stdse)#, std_estimate
+        # do not put std_estimate since already computed in model
+      }
+    ),
+    transform = map(
+      y = list(
+        model_bm_rich_mono_trends,
+        model_bm_rich_mono_stable_trends,
+        model_bm_rich_trends,
+        model_bm_rich
+        ),
+      .names = c(
+        "std_coef_bm_rich_mono_trends",
+        "std_coef_bm_rich_mono_stable_trends",
+        "std_coef_bm_rich_trends",
+        "std_coef_bm_rich"
       )
     )
   ),
@@ -648,7 +676,7 @@ model = data4model %>%
     )
     ),
   ### Table
-  reg_table_bm_rich_mono_trends = map2(
+  reg_table_bm_rich_mono_trends = map2_dfr(
     model_bm_rich_mono_trends,
     names(model_bm_rich_mono_trends),
     function(model, name) {
@@ -657,8 +685,9 @@ model = data4model %>%
         select(response, everything())
     }
     ) %>%
-  do.call(rbind, .),
-  reg_table_bm_rich_mono_stable_trends = map2(
+  left_join(std_coef_bm_rich_mono_trends, by = c("response", "term")) %>%
+  select(response, term, estimate, std.error, std_estimate, stdse, everything()),
+  reg_table_bm_rich_mono_stable_trends = map2_dfr(
     model_bm_rich_mono_stable_trends,
     names(model_bm_rich_mono_stable_trends),
     function(model, name) {
@@ -667,8 +696,9 @@ model = data4model %>%
         select(response, everything())
     }
     ) %>%
-  do.call(rbind, .),
-  reg_table_bm_rich_trends = map2(
+  left_join(std_coef_bm_rich_mono_stable_trends, by = c("response", "term")) %>%
+  select(response, term, estimate, std.error, std_estimate, stdse, everything()),
+  reg_table_bm_rich_trends = map2_dfr(
     model_bm_rich_trends,
     names(model_bm_rich_trends),
     function(model, name) {
@@ -677,8 +707,9 @@ model = data4model %>%
         select(response, everything())
     }
     ) %>%
-  do.call(rbind, .),
-  reg_table_bm_rich = map2(
+  left_join(std_coef_bm_rich_trends, by = c("response", "term")) %>%
+  select(response, term, estimate, std.error, std_estimate, stdse, everything()),
+  reg_table_bm_rich = map2_dfr(
     model_bm_rich,
     names(model_bm_rich),
     function(model, name) {
@@ -686,9 +717,10 @@ model = data4model %>%
         mutate(response = name) %>%
         select(response, everything())
     }) %>%
-  do.call(rbind, .),
+  left_join(std_coef_bm_rich_trends, by = c("response", "term")) %>%
+  select(response, term, estimate, std.error, std_estimate, stdse, everything()),
   target_sp_reg_table_bm_rich = target(
-    map2(
+    map2_dfr(
       y,
       names(y),
       function(model, name) {
@@ -696,10 +728,9 @@ model = data4model %>%
           mutate(response = name) %>%
           select(response, everything())
       }) %>%
-    do.call(rbind, .) %>%
     left_join(std, by = c("response", "term")) %>%
     select(-group) %>%
-    select(response, effect, term, estimate, std_estimate, everything()),
+    select(response, effect, term, estimate, std.error, std_estimate, stdse, everything()),
   transform = map(
       y = list(
         sp_model_bm_rich_mono_trends,
@@ -861,6 +892,16 @@ model = data4model %>%
       )
     )
     ),
+  fig_std_coef = std_table_bm_rich_mono_stable_trends %>%
+  filter(term %in% c("log_rich_std", "log_bm_std")) %>%
+  mutate_at(vars(term, response), ~str_replace_all(., var_replacement())) %>%
+  ggplot(aes(y = std_estimate, x = response, fill = type)) +
+  facet_grid(cols = vars(term)) +
+  geom_col(position = position_dodge(width = .9)) +
+  geom_linerange(aes(ymin = std_estimate - stdse, ymax = std_estimate + stdse),
+    position = position_dodge(width = .9)) +
+  labs(x = "Response", y = "Standardized estimate", fill = "Model type") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)),
 
   trace = TRUE
 )
