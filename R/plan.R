@@ -107,15 +107,14 @@ plan <- drake_plan(
       .names = c("rich_vs_net_trends", "log_rich_vs_net_trends") 
     )
   ),
-  st_mono_trends_combined_list = 
+  st_mono_trends_combined_list =
     rigal_classification %>%
     mutate(
       classif = map(classif, ~ .x %>%
 	filter(shape_class %in% c("increase_constant", "decrease_constant")) %>%
 	select(station, shape_class)),
       station = map(classif, ~.x$station)) %>%
-    select(-classif)
-    ,
+    select(-classif),
   slope_x_bound = get_slope_x_bound(
     classif = rigal_classification,
     st_mono = st_mono_trends_combined_list, type = "min_max"),
@@ -273,6 +272,36 @@ model = data4model %>%
   sp_relation_plot2_mono_stable_trends =
     sp_relation_plot_mono_stable_trends$rich_std %>%
       filter(term == "log_rich_std"),
+  corr_plot_f3y = summary_var_f3y %>%
+    filter(station %in% st_mono_trends_stable_rich_bm) %>%
+    select(c(get_com_str_var(), "nbnode_std", "nb_pisc_rich_std",
+        "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich", "bm_std",
+        "log_bm_std")) %>% na.omit() %>%
+    cor() %>%
+    corrplot::corrplot(corr = ., type = "upper"),
+  corr_plot_med = summary_var_med %>%
+    filter(station %in% st_mono_trends_stable_rich_bm) %>%
+    select(c(get_com_str_var(), "nbnode_std", "nb_pisc_rich_std",
+        "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich", "bm_std",
+        "log_bm_std")) %>% na.omit() %>%
+    cor() %>%
+    corrplot::corrplot(corr = ., type = "upper"),
+  corr_plot_tps = get_corr_plot_tps_trends(
+    classif = rigal_classification,
+    st = st_mono_trends_stable_rich_bm) %>%
+    corrplot::corrplot(corr = ., type = "upper"),
+  p_range = get_range_variable_plot(
+    full_data = full_data2,
+    sp_data = summary_var_med,
+    st = st_mono_trends_stable_rich_bm,
+    var_to_keep = c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
+      "piel_bm", "piel_nind")
+  ),
+  p_st_mono_trends_stable_rich_bm = ggplot() +
+    geom_sf(data = region_polygon) +
+    geom_sf(data = filter(station_analysis,
+        id %in% st_mono_trends_stable_rich_bm)) +
+    theme_map(),
 
   #5. Tables
   effect_quad2_piece = tibble(

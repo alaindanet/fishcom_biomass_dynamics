@@ -193,9 +193,9 @@ There was a clear relationship between the size of the communities and their
 temporal dynamics. Communities that displayed low community biomass at the
 beginning of their monitoring tend to display increase in biomass through time
 and reversely. There same the same pattern for species richness, with
-communities that displayed high species richness at the
-beginning of their monitoring tend to display decrease in species richness through time
-and reversely.
+communities that displayed high species richness at the beginning of their
+monitoring tend to display decrease in species richness through time and
+reversely.
 
 
 ## Spatial
@@ -210,8 +210,8 @@ value over time of each variable.
 
 With the aim to test the relationship among the temporal dynamics of network
 structure from one side and species richness and community biomass from another
-side, we modelled the dynamics the temporal trends of food-web
-structure ($dN$) in function of the temporal trends of community biomass ($dB$) and species
+side, we modelled the dynamics the temporal trends of food-web structure ($dN$)
+in function of the temporal trends of community biomass ($dB$) and species
 richness ($dR$).
 
 $dN = dB + dR$

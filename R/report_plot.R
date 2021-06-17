@@ -474,3 +474,96 @@ get_pred_plot_from_new_model <- function(
     )
 
 }
+
+get_corr_plot_tps_trends <- function(
+  classif = NULL,
+  st = st_mono_trends_stable_rich_bm,
+  var_to_keep = c(get_com_str_var(),
+    "nbnode_std", "nb_pisc_rich_std",
+    "nb_pisc_node_std", "prop_pisc_node",
+    "prop_pisc_rich", "bm_std", "log_bm_std")) {
+
+  ti <- classif %>%
+    unnest(classif) %>%
+    select(station, variable, linear_slope, linear_slope_strd_error) %>%
+    filter(station %in% st) %>%
+    filter(variable %in% var_to_keep)
+
+    var_slope <- ti %>%
+      select(station, variable, linear_slope) %>%
+      pivot_wider(names_from = variable, values_from = linear_slope) %>%
+      na.omit
+
+    var_slope_error <- ti %>%
+      select(station, variable, linear_slope_strd_error) %>%
+      pivot_wider(names_from = variable, values_from = linear_slope_strd_error) %>%
+      filter(station %in% var_slope$station) %>%
+      select(-station) %>%
+      rowMeans(., na.rm = TRUE)
+
+    weighted_corr <- cov.wt(
+      var_slope[, !colnames(var_slope) %in% "station"],
+      wt = var_slope_error, cor = TRUE)$cor
+
+    #g <- corrplot::corrplot(weighted_corr,  type = "upper")
+    # does not bc it is a base plot 
+    return(weighted_corr)
+}
+
+get_range_variable_plot <- function(
+  full_data = NULL,
+  sp_data = NULL,
+  st = NULL,
+  var_to_keep = c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
+    "piel_bm", "piel_nind")
+  ) {
+
+  range_spatial_variable <- sp_data %>%
+    filter(station %in% st) %>%
+    select(c("station", all_of(var_to_keep))) %>%
+    pivot_longer(!station, names_to = "variable", values_to = "values") %>%
+    mutate(variable = str_replace_all(variable, var_replacement())) %>%
+    group_by(variable) %>%
+    summarise(
+      min = min(values, na.rm = TRUE),
+      max = max(values, na.rm = TRUE)) %>%
+    mutate(range = max - min)
+
+  range_variable_station <- full_data %>%
+    filter(station %in% st) %>%
+    select(c("station", all_of(var_to_keep))) %>%
+    pivot_longer(!station, names_to = "variable", values_to = "values") %>%
+    mutate(variable = str_replace_all(variable, var_replacement())) %>%
+    group_by(station, variable) %>%
+    summarise(
+      min = min(values, na.rm = TRUE),
+      max = max(values, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  p_min_max <- range_variable_station %>%
+    pivot_longer(
+      cols = c(min, max),
+      names_to = "minmax",
+      values_to = "values") %>%
+    ggplot(aes(x = values, fill = minmax)) +
+    geom_histogram() +
+    geom_vline(data = range_spatial_variable %>%
+      pivot_longer(
+        cols = c(min, max),
+        names_to = "minmax",
+        values_to = "values"),
+    aes(xintercept = values, color = minmax), size = 2
+    ) +
+  facet_wrap(~variable, scale = "free_x")
+
+
+  p_range <- range_variable_station %>%
+    mutate(range = abs(max - min)) %>%
+    ggplot(aes(x = range)) +
+    geom_histogram() +
+    geom_vline(data = range_spatial_variable, aes(xintercept = range), size = 2) +
+    facet_wrap(~variable, scale = "free")
+
+  return(list(min_max = p_min_max, range = p_range))
+}

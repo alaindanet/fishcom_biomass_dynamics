@@ -70,11 +70,83 @@ options(knitr.table.format = "latex")
 ```{r}
 var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
   "piel_bm", "piel_nind")
+```
+
+\beginsupplement
+
+# Data exploration 
+
+
+## Maps 
+
+```{r}
+loadd(p_st_mono_trends_stable_rich_bm, st_mono_trends_stable_rich_bm)
+
+st_cap <- paste0(
+  "Repartion of the", length(st_mono_trends_stable_rich_bm), " stations used in
+  the data analysis.")
 
 ```
 
+```{r st, fig.cap = st_cap}
+p_st_mono_trends_stable_rich_bm
+```
 
-\beginsupplement
+
+## Range of variation 
+
+```{r}
+range_cap <- paste0(
+  "Range of variation of variables in spatial (vertical line) and temporal
+  dataset for the (A) minimum and maximum values and (B) the range (i.e. maximum
+    - minimum)."
+)
+```
+
+
+```{r range, fig.cap=range_cap, fig.height=10}
+loadd(p_range)
+
+
+plot_grid(plotlist = p_range, nrow = 2, labels = "AUTO")
+```
+
+
+## Correlation
+
+
+```{r}
+cor_cap <- paste0("Correlation plot among variables for spatial and temporal
+  relationships. ", "Median values over temporal series in each station were
+  used for spatial relationships. ", "For temporal relationships, we used the
+  temporal trends in each station. Futhermore, each station was weighted by the
+  average error standard on the temporal trends of the variables.")
+```
+
+
+```{r cor, fig.cap=cor_cap}
+oldpar <- par()
+loadd(corr_plot_med, corr_plot_tps)
+
+set_names_corr <- function(mat = NULL) {
+  colnames(mat) <- str_replace_all(colnames(mat), var_replacement())
+  rownames(mat) <- str_replace_all(rownames(mat), var_replacement())
+  return(mat)
+}
+
+corr_plot_tps %<>% set_names_corr(.)
+corr_plot_med %<>% set_names_corr(.)
+
+par(mfrow = c(1, 2))
+corrplot::corrplot(corr_plot_med, type = "upper", diag = FALSE, order =
+  "alphabet")
+title("Spatial")
+corrplot::corrplot(corr_plot_tps, type = "upper", diag = FALSE, order =
+  "alphabet")
+title("Temporal trends")
+```
+
+\newpage
 
 # Statistical analysis
 
@@ -138,7 +210,6 @@ loadd(st_trends_rich_bm, st_mono_trends_rich_bm,
 
 loadd(pred_bm_rich_mono_trends, pred_bm_rich, pred_bm_rich_trends,
   pred_bm_rich_mono_stable_trends)
-
 ```
 
 We modeled the temporal trends of food-web structure as dependant of the

@@ -305,45 +305,18 @@ model_log_bm_f3y_table_medium[["anova_table"]] %>%
 # Get the range of variable variation in temporal data and compare it to spatial
 # data
 
-loadd(data4model, rigal_classification, full_data2, summary_var_f3y)
-rigal_classification$classif[[1]]
+loadd(data4model, rigal_classification, full_data2, summary_var_med,
+  st_mono_trends_stable_rich_bm)
 
-range_spatial_variable <- summary_var_f3y %>%
-  select(c("station", get_biomass_var(), get_com_str_var(all = FALSE))) %>%
-  pivot_longer(!station, names_to = "variable", values_to = "values") %>%
-  group_by(variable) %>% 
-  summarise(min = min(values, na.rm = TRUE), max = max(values, na.rm = TRUE)) %>%
-  mutate(range = max - min)
+loadd(p_range)
 
-range_variable_station <- full_data2 %>% 
-  select(c("station", get_biomass_var(), get_com_str_var(all = TRUE))) %>%
-  pivot_longer(!station, names_to = "variable", values_to = "values") %>%
-  group_by(station, variable) %>% 
-  summarise(min = min(values, na.rm = TRUE), max = max(values, na.rm = TRUE))
-
-range_variable_station %>%
-  filter(variable %in% c(get_biomass_var(), get_com_str_var(all = FALSE))) %>%
-  pivot_longer(cols = c(min, max), names_to = "minmax", values_to = "values") %>%
-  ggplot(aes(x = values, fill = minmax)) +
-  geom_histogram() +
-  geom_vline(data = range_spatial_variable %>%
-    pivot_longer(cols = c(min, max), names_to = "minmax", values_to = "values"),
-  aes(xintercept = values, color = minmax)) + facet_wrap(~variable, scale =
-  "free") 
-
-# Range distibution 
-range_variable_station %>%
-  filter(variable %in% c(get_biomass_var(), get_com_str_var(all = FALSE))) %>%
-  mutate(range = abs(max - min)) %>%
-  ggplot(aes(x = range)) +
-  geom_histogram() +
-  geom_vline(data = range_spatial_variable, aes(xintercept = range)) +
-  facet_wrap(~variable, scale = "free") 
+plot_grid(plotlist = p_range)
+# Range distibution
 ```
 
 ```{r}
-# Refaire temporal range avec first last year  
-range_year_station <- full_data2 %>% 
+# Refaire temporal range avec first last year
+range_year_station <- full_data2 %>%
   select(c("station", year, get_biomass_var(), get_com_str_var(all = TRUE))) %>%
   pivot_longer(!c(station, year), names_to = "variable", values_to = "values") %>%
   group_by(station, variable) %>% 

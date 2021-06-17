@@ -19,6 +19,17 @@ make(plan, parallelism = "future", jobs = 3)
 rm(list = ls())
 gc()
 
+loadd(full_data2, summary_var_med, st_mono_trends_stable_rich_bm)
+
+debugonce(get_range_variable_plot)
+get_range_variable_plot(
+    full_data = full_data2,
+    sp_data = summary_var_med,
+    st = st_mono_trends_stable_rich_bm,
+    var_to_keep = c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
+      "piel_bm", "piel_nind")
+  )
+
 #drake::drake_cache("/home/alain/Documents/post-these/mnhn/fishcom_biomass_dynamics/.drake")$unlock()
 # If you do not change any code or data,
 # subsequent make()'s do not build targets.
@@ -26,74 +37,11 @@ gc()
 plan
 print(plan, n = 40)
 
-loadd(sp_reg_table_bm_rich_mono_trends, reg_table_bm_rich_mono_trends,std_coef_bm_rich_trends, sp_std_coef_bm_rich_trends)
-loadd(reg_table_bm_rich_trends)
-
-loadd(
-std_coef_bm_rich_mono_stable_trends,
-  sp_reg_table_bm_rich_mono_stable_trends,
-reg_table_bm_rich_mono_trends,
-  reg_table_bm_rich_mono_stable_trends,
-  std_table_bm_rich_mono_stable_trends
-  )
-
-
 library(future)
 plan(multisession, workers = 3)
 
 attr(body(get_pred_plot_from_new_model), "srcfile")
 
-loadd(bm_rich_trends, st_sp, sp_st_data, summary_var_med, data_for_pca,
-  st_analysis, sp_slope_x_bound, sp_model_bm_rich_mono_trends)
 
+loadd(rigal_classification, st_mono_trends_stable_rich_bm)
 
-theme_set(theme_cowplot())
-
-loadd(model_bm_rich_trends, slope_com_var_no_covar, st_trends_rich_bm, slope_x_bound)
-plot_raw_data_new_model(
-          .df = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
-          x_var = "log_bm_std", y_var = "ct_ff",
-          std_error = TRUE,
-          covar = NULL
-          )
-pred_bm_rich_trends <- get_pred_plot_from_new_model(
-  model = model_bm_rich_trends,
-  dataset = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
-  x_bound = slope_x_bound, std_error_bar = TRUE
-  )
-pred_bm_rich_trends$raw_plot[[3]]
-
-fig_test <- get_plot_rich_bm(
-  predict_plot = pred_bm_rich_mono_stable_trends,
-  get_list = FALSE,
-  rm_legend = FALSE,
-  bm_x = "log_bm_std",
-  bm_y = c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
-  rich_y = c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"),
-  rich_x = "log_rich_std"
-  )
-
-loadd(slope_com_var)
-loadd(model_summary, comb)
-loadd(st_mono_trends_rich_bm, st_trends_rich_bm,  slope_com_var_no_covar)
-loadd(model,
-  model_bm_rich_no_covar_no_inc,
-  model_bm_rich_trends,
-  model_bm_rich_mono_trends,
-  model_bm_rich,
-  resume_bm_rich_mod,
-  resume_bm_rich_mod_mono_trends,
-  model_summary,
-  anova_bm_rich_mod_mono_trends,
-  anova_table_bm_rich_mono_trends,
-  anova_bm_rich_mod,
-  anova_bm_rich_mod_trends,
-  anova_bm_rich_mod_mono_stable_trends,
-  slope_x_bound,
-  predict_table
-)
-
-loadd(pred_bm_rich_mono_stable_trends)
-loadd(sp_models, slope_x_bound, sp_st_data, st_trends_rich_bm,
-  sp_model_bm_rich_mono_trends)
-sp_models$log_rich_std
