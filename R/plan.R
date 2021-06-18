@@ -158,35 +158,34 @@ plan <- drake_plan(
   mutate(
     covar = ifelse(str_detect(x, "log_"), str_remove(x, "log_"), x)
   ),
-data4model = comb %>%
-  mutate(
-    data_model = map2(x, y, function (myx, myy, classif) {
-      get_y_versus_x_trends(classif = classif, x_var = myx, y_var = myy) %>%
-        filter(station %in% get_st_mono_trends(.df = classif, xvar = myx)$station)
+  data4model = comb %>%
+    mutate(
+      data_model = map2(x, y, function (myx, myy, classif) {
+        get_y_versus_x_trends(classif = classif, x_var = myx, y_var = myy) %>%
+          filter(station %in% get_st_mono_trends(.df = classif, xvar = myx)$station,
+            stable = TRUE)
     }, classif = rigal_classification),
   data_model = map2(data_model, covar,
     ~left_join(
       .x,
       summary_var_f3y[, colnames(summary_var_f3y) %in% c("station", .y)],
       by = "station"
-    )
-  )
-  ),
-model = data4model %>%
-  mutate(
-    mods = pmap(list(.df = data_model, x = x, covar = covar),
-      compute_my_lm_vs_net_model,
-      var_to_group = "variable")
-    ) %>%
-    unnest(c(mods)) %>%
-    select(-data_model, -variable) %>%
-    select(-mod_all_bm),
-  model_vif = get_vif(model, model_cols = all_of(tidyselect::vars_select(names(model),
-	starts_with("mod")))
-    ),
+    ))),
+  model = data4model %>%
+    mutate(
+      mods = pmap(list(.df = data_model, x = x, covar = covar),
+        compute_my_lm_vs_net_model,
+        var_to_group = "variable")
+      ) %>%
+  unnest(c(mods)) %>%
+  select(-data_model, -variable) %>%
+  select(-mod_all_bm),
+model_vif = get_vif(model,
+  model_cols = 
+    all_of(tidyselect::vars_select(names(model), starts_with("mod")))),
   model_summary = get_model_summary(model),
   model_summary_scale = model %>%
-  mutate(
+    mutate(
     scaled_mod = map(mod_medium_bm, lm.beta::lm.beta),
     resume = map(scaled_mod, ~summary.lm.beta(.x, standardized = TRUE)),
     anova = map(scaled_mod, ~anova(.x))

@@ -14,5 +14,5 @@ Suggests: testthat,
     xtable,
     cowplot
 VignetteBuilder: knitr
-RoxygenNote: 6.1.0
+RoxygenNote: 7.1.1
 Imports: tidyverse

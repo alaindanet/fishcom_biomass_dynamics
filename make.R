@@ -19,17 +19,6 @@ make(plan, parallelism = "future", jobs = 3)
 rm(list = ls())
 gc()
 
-loadd(full_data2, summary_var_med, st_mono_trends_stable_rich_bm)
-
-debugonce(get_range_variable_plot)
-get_range_variable_plot(
-    full_data = full_data2,
-    sp_data = summary_var_med,
-    st = st_mono_trends_stable_rich_bm,
-    var_to_keep = c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
-      "piel_bm", "piel_nind")
-  )
-
 #drake::drake_cache("/home/alain/Documents/post-these/mnhn/fishcom_biomass_dynamics/.drake")$unlock()
 # If you do not change any code or data,
 # subsequent make()'s do not build targets.
@@ -41,7 +30,3 @@ library(future)
 plan(multisession, workers = 3)
 
 attr(body(get_pred_plot_from_new_model), "srcfile")
-
-
-loadd(rigal_classification, st_mono_trends_stable_rich_bm)
-
