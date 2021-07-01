@@ -437,6 +437,14 @@ model_vif = get_vif(model,
       output_dir = "paper"
     )
     ),
+  talk = callr::r(
+    function(...) rmarkdown::render(...),
+    args = list(
+      input = drake::knitr_in("talk/talk.Rmd"),
+      output_file = drake::file_out("talk/talk.html"),
+      output_dir = "talk"
+    )
+    ),
 
   # Supplementary analysis
 
@@ -510,6 +518,11 @@ model_vif = get_vif(model,
       )
     )
   ),
+  model_bm_rich_int_mono_stable_trends = get_model_bm_rich_int(
+    .data = filter(slope_com_var_no_covar, station %in%
+    st_mono_trends_stable_rich_bm)
+  ),
+
   #### Spatial
   target_sp_model_bm_rich = target(
     get_mod_list_lme4(.data = filter(sp_st_data, station %in% y) %>%

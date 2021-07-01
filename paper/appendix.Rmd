@@ -388,3 +388,234 @@ kable_styling(latex_options =c("scale_down", "stripped")) %>%
 collapse_rows(columns = 1, valign = "top")
 ```
 
+## Interaction between community biomass trends and species richness trends
+
+```{r}
+loadd(model_bm_rich_int_mono_stable_trends)
+```
+
+### ANOVA
+
+```{r}
+model_bm_rich_int_mono_stable_trends %>%
+  .[names(.) %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")] %>%
+  map(., car::Anova) %>%
+  map(., tidy) %>%
+  map2_dfr(., names(.), ~.x %>% mutate(response = .y) %>% select(response,
+      everything())) %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+  caption =
+    paste0(
+      "ANOVA results with interactions."
+      ),
+    label = "aov-int"
+    ) %>%
+kable_styling(latex_options =c("scale_down", "stripped")) %>%
+collapse_rows(columns = 1, valign = "top")
+#map(model_bm_rich_int_mono_stable_trends, ~try(car::vif(.x)))
+```
+
+```{r}
+model_bm_rich_int_mono_stable_trends %>%
+  .[names(.) %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")] %>%
+  map(., tidy) %>%
+  map2_dfr(., names(.), ~.x %>% mutate(response = .y) %>% select(response,
+      everything())) %>%
+  kable(., booktabs = TRUE,
+  row.names = FALSE,
+  caption =
+    paste0(
+      "Regression results with interactions."
+      ),
+    label = "aov-int"
+    ) %>%
+kable_styling(latex_options =c("scale_down", "stripped")) %>%
+collapse_rows(columns = 1, valign = "top")
+```
+
+### Plots
+
+```{r}
+pred_int_rich <- map(model_bm_rich_int_mono_stable_trends,
+      ~ggpredict(.x,
+        terms = c("log_rich_std", "log_bm_std [quart2]")) %>%
+        as_tibble() %>%
+        mutate(group = as.numeric(as.character(group))) %>%
+        rename("log_rich_std" = x, "log_bm_std" = group)
+        ) %>%
+enframe(name = "response", value = "pred_int")
+
+ti <- pred_bm_rich_mono_stable_trends %>%
+  filter(term == "log_rich_std", response %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")) %>%
+  select(response, raw_plot) %>%
+  left_join(pred_int_rich) %>%
+  mutate(pred_plot_color = pmap(
+      list(raw_plot, response, pred_int),
+      function(p, resp, pred) {
+        p +
+          geom_line(data = pred,
+            aes(
+              y = predicted,
+              x = log_rich_std,
+              color = as.factor(log_bm_std)
+            ), size = 1
+          ) +
+        scale_color_discrete()
+      }
+      )
+  )
+rich_leg <- get_legend(ti$pred_plot_color[[1]])
+
+plot_grid(plotlist = map(ti$pred_plot_color, ~.x + theme(legend.position = "none")), rich_leg)
+```
+
+```{r}
+test <- pred_int_rich[3, ]$pred_int[[1]] %>%
+  select(predicted, log_rich_std, log_bm_std) %>%
+  arrange(log_rich_std, log_bm_std)
+
+mat <- reshape2::acast(test, log_rich_std~log_bm_std, value.var = "predicted")
+library(plotly)
+plot_ly(
+  x = ~as.numeric(colnames(mat)),
+  y = ~as.numeric(rownames(mat)),
+  z = ~mat) %>%
+  add_surface()
+```
+
+
+```{r}
+pred_int_bm <- map(model_bm_rich_int_mono_stable_trends,
+      ~ggpredict(.x,
+        terms = c("log_bm_std", "log_rich_std [quart2]")) %>%
+        as_tibble() %>%
+        mutate(group = as.numeric(as.character(group))) %>%
+        rename("log_bm_std" = x, "log_rich_std" = group)
+        ) %>%
+enframe(name = "response", value = "pred_int")
+
+ti_bm <- pred_bm_rich_mono_stable_trends %>%
+  filter(term == "log_bm_std", response %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")) %>%
+  select(response, raw_plot) %>%
+  left_join(pred_int_bm) %>%
+  mutate(pred_plot_color = pmap(
+      list(raw_plot, response, pred_int),
+      function(p, resp, pred) {
+        p +
+          geom_line(data = pred,
+            aes(
+              y = predicted,
+              x = log_bm_std,
+              color = as.factor(log_rich_std)
+            ), size = 1
+          ) +
+        scale_color_discrete()
+      }
+      )
+  )
+
+bm_leg <- get_legend(ti_bm$pred_plot_color[[1]])
+plot_grid(plotlist = map(ti_bm$pred_plot_color, ~.x + theme(legend.position = "none")), bm_leg)
+```
+
+```{r, eval=FALSE}
+test <- model_bm_rich_int_mono_stable_trends[["ct_ff"]]
+co <- coef(test)
+pred <- ggpredict(
+  test,
+  terms = c("log_bm_std ", "log_rich_std")
+  ) %>%
+  as_tibble() %>%
+  mutate(group = as.numeric(as.character(group))) %>%
+  rename("log_bm_std" = x, "log_rich_std" = group)
+
+pred$y <- co[1] +
+  co["log_rich_std"] * pred[["log_rich_std"]] +
+  co["log_bm_std"] * pred[["log_bm_std"]] +
+  co["log_rich_std:log_bm_std"] * pred[["log_rich_std"]] * pred[["log_bm_std"]]
+
+# all.equal(pred$y, pred$predicted)
+
+mat <- reshape2::acast(pred, log_rich_std~log_bm_std, value.var = "y")
+library(plotly)
+plot_ly(
+  x = ~as.numeric(colnames(mat)),
+  y = ~as.numeric(rownames(mat)),
+  z = ~mat, ) %>%
+  add_surface() %>%
+  layout(scene = list(
+      xaxis = list(title = "species richness"),
+      yaxis = list(title = "Community biomass"),
+      zaxis = list(title = "Connectance")
+      ))
+```
+
+```{r, eval=FALSE}
+mod4_3d <- model_bm_rich_int_mono_stable_trends[
+  names(model_bm_rich_int_mono_stable_trends) %in%
+    c("ct_ff", "w_trph_lvl_avg")]
+
+pred_list <- map(mod4_3d,
+  function (modl, p) {
+    co <- coef(modl)
+    p$y <- co[1] +
+#      co["log_rich_std"] * p[["log_rich_std"]] +
+      co["log_bm_std"] * p[["log_bm_std"]] +
+      co["log_rich_std:log_bm_std"] * p[["log_rich_std"]] * p[["log_bm_std"]]
+    return(p)
+
+  }, p = pred)
+```
+
+```{r,eval=FALSE}
+mat <- reshape2::acast(
+  pred_list$w_trph_lvl_avg,
+  log_rich_std~log_bm_std,
+  value.var = "y")
+plot_ly(
+  x = ~as.numeric(colnames(mat)),
+  y = ~as.numeric(rownames(mat)),
+  z = ~mat, ) %>%
+  add_surface() %>%
+  layout(scene = list(
+      xaxis = list(title = "Community biomass"),
+      yaxis = list(title = "species richness"),
+      zaxis = list(title = "Avg trophic level")
+      ))
+```
+
+```{r,eval=FALSE}
+test <- model_bm_rich_int_mono_stable_trends[["piel_bm"]]
+car::Anova(test)
+co <- coef(test)
+pred <- ggpredict(
+  test,
+  terms = c("log_bm_std ", "log_rich_std")
+  ) %>%
+  as_tibble() %>%
+  mutate(group = as.numeric(as.character(group))) %>%
+  rename("log_bm_std" = x, "log_rich_std" = group)
+
+pred$y <- co[1] +
+  co["log_rich_std"] * pred[["log_rich_std"]] +
+  co["log_bm_std"] * pred[["log_bm_std"]] +
+  co["log_rich_std:log_bm_std"] * pred[["log_rich_std"]] * pred[["log_bm_std"]]
+
+# all.equal(pred$y, pred$predicted)
+
+mat <- reshape2::acast(pred, log_rich_std~log_bm_std, value.var = "y")
+plot_ly(
+  x = ~as.numeric(colnames(mat)),
+  y = ~as.numeric(rownames(mat)),
+  z = ~mat, ) %>%
+  add_surface() %>%
+  layout(scene = list(
+      xaxis = list(title = "species richness"),
+      yaxis = list(title = "Community biomass"),
+      zaxis = list(title = "Eveness of biomass")
+      ))
+```
+
+
+

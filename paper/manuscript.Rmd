@@ -591,33 +591,59 @@ fig1_2 <- get_plot_rich_bm(
   get_list = TRUE,
   rm_legend = FALSE,
   bm_x = "log_bm_std",
-  bm_y = c(get_com_str_var(), "log_rich_std", "piel_nind", "piel_bm"),
-  rich_y = c(get_com_str_var(), "log_bm_std", "piel_nind", "piel_bm"),
+  bm_y = c("ct_ff", "w_trph_lvl_avg", "piel_bm"), #, "piel_nind"
+  rich_y = c("ct_ff", "w_trph_lvl_avg", "log_bm_std", "piel_bm"), #, "piel_nind"
   rich_x = "log_rich_std"
   )
 p_bm <- fig1_2$bm
-names(p_bm) <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg",
-  "piel_bm", "piel_nind")
-#plot_grid(plotlist = p_bm)
+names(p_bm) <- c("ct_ff", "w_trph_lvl_avg", "piel_bm")
+plot_grid(plotlist = p_bm)
 
 p_sp_bm <- sp_fig1_2_bm_rich_mono_stable_trends$bm
 names(p_sp_bm) <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg",
   "piel_bm", "piel_nind")
 ```
 
+```{r}
+fig_bef_cap <- paste0(
+  "Relationship between the temporal trends of community structure
+  and the one of species richness. Lines correspond to the predictions of the
+  linear models. The lines surrounding each point represent the standard error
+  associated to the temporal trends."
+)
+```
+```{r bef, fig.cap=fig_bef_cap}
+fig1_2$rich$log_bm_std
+```
 
 ```{r}
+fig_bm_rich_cap <- paste0(
+  "Relationship among the temporal trends of community structure
+  and the one of species richness and community biomass. The lines
+  surrounding each point represent the standard error associated to the temporal
+  trends."
+)
+```
+```{r bmr, fig.height = 12, fig.cap=fig_bm_rich_cap}
+fig2 <- fig1_2
+fig2$rich$log_bm_std <- NULL
+plot_grid(
+  plot_grid(plotlist = fig2$bm, nrow = 1),
+  plot_grid(plotlist = fig2$rich, nrow = 1),
+  nrow = 2
+)
+```
+
+
+```{r bm, eval=FALSE, fig.height = 12, fig.cap=fig_bm_cap}
 ti <- list()
 for (
   i in c("log_rich_std", "w_trph_lvl_avg", "piel_bm", "piel_nind", "ct_ff")
   ) {
   ti[[i]] <- list(p_bm[[i]], p_sp_bm[[i]])
 }
-```
 
 
-
-```{r bm, fig.height = 12, fig.cap=fig_bm_cap}
 # Make the label on two lines
 fig1 <- plot_grid(plotlist = c(ti[[1]], ti[[2]], ti[[3]], ti[[4]], ti[[5]]), ncol = 2)
 fig1
@@ -628,14 +654,12 @@ p_rich <- fig1_2$rich
 p_sp_rich <- sp_fig1_2_bm_rich_mono_stable_trends$rich
 ```
 
-```{r}
+```{r rich, eval=FALSE,fig.height = 12, fig.cap=fig_rich_cap}
 trich <- list()
 for (i in c("log_bm_std", "w_trph_lvl_avg",  "piel_bm", "piel_nind", "ct_ff")) {
   trich[[i]] <- list(p_rich[[i]], p_sp_rich[[i]])
 }
-```
 
-```{r rich, fig.height = 12, fig.cap=fig_rich_cap}
 # Make the label on two lines
 fig2 <- plot_grid(
   plotlist = c(trich[[1]], trich[[2]], trich[[3]], trich[[4]], trich[[5]]),

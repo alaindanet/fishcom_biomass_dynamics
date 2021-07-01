@@ -274,6 +274,37 @@ get_model_bm_rich_no_covar_no_inc <- function (.data = NULL) {
 
 }
 
+get_model_bm_rich_int <- function (.data = NULL) {
+
+  list(
+    log_bm_std = lm(
+      log_bm_std ~ log_rich_std,
+      data = {{.data}},
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error),
+    log_rich_std = lm(
+      log_rich_std ~ log_bm_std,
+      data = {{.data}},
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error),
+    ct_ff = lm(
+      ct_ff ~ log_rich_std  * log_bm_std,
+      data = {{.data}},
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error * ct_ff_strd_error),
+    w_trph_lvl_avg = lm(
+      w_trph_lvl_avg ~  log_rich_std * log_bm_std,
+      data = {{.data}},
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error * w_trph_lvl_avg_strd_error),
+    piel_bm = lm(
+      piel_bm ~ log_rich_std * log_bm_std,
+      data = {{.data}},
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error * piel_bm_strd_error),
+    piel_nind = lm(
+      piel_nind ~ log_rich_std * log_bm_std,
+      data = {{.data}},
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error * piel_nind_strd_error)
+  )
+
+}
+
 #' Compute spatial relationships
 
 get_mod_list <- function(.data = NULL, st_by_var = NULL) {
