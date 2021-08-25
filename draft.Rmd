@@ -473,12 +473,15 @@ loadd(map_st)
 
 test_fig_mat_met <- plot_grid(
   map_st,
-  plot_grid( plot_grid(tps_bm_dec, tps_bm_inc)), 
+  plot_grid( plot_grid(tps_bm_dec, tps_bm_inc)),
   plot_grid(plotlist = tps_dec_inc),
   nrow = 3
 )
-save_plot(test_fig_mat_met,
-  file = get_mypath("figures", "matmet.png") 
+save_plot(
+  test_fig_mat_met,
+  base_height = 7,
+  base_asp = 1.618,
+  file = get_mypath("figures", "matmet.png")
 )
 ```
 

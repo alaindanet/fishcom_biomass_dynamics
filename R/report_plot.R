@@ -304,7 +304,7 @@ get_plot_rich_bm <- function(
   return(the_plot)
 }
 
-plot_raw_data_new_model <- function(.df = NULL, x_var = NULL, y_var = NULL, covar = NULL, std_error = FALSE) {
+plot_raw_data_new_model <- function(.df = NULL, x_var = NULL, y_var = NULL, covar = NULL, std_error = FALSE, pt_size = 1) {
 
   col_df <- colnames(.df)
   if (paste0(x_var, "_slope") %in% col_df) {
@@ -325,11 +325,11 @@ plot_raw_data_new_model <- function(.df = NULL, x_var = NULL, y_var = NULL, cova
     p <- .df %>%
       ggplot(aes_string(x = x_var, y = y_var, color = covar)) +
       viridis::scale_color_viridis() +
-      geom_point()
+      geom_point(size = pt_size)
   } else {
     p <- .df %>% ggplot(aes_string(x = x_var, y = y_var)) +
       viridis::scale_color_viridis() +
-      geom_point()
+      geom_point(size = pt_size)
   }
   if (std_error) {
     p <- p +
@@ -347,7 +347,7 @@ plot_raw_data_new_model <- function(.df = NULL, x_var = NULL, y_var = NULL, cova
           ymax = paste0(y_var, " + ", y_var_error)
           ),
         color = "gray50") +
-      geom_point()
+      geom_point(size = pt_size)
 
   }
   return(p)

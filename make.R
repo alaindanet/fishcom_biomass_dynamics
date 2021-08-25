@@ -110,3 +110,6 @@ persp(x = as.numeric(colnames(mat)),
   theta = 60,
   phi = 20,
   col = "green", shade = 0.5)
+
+plot_add_pred_data
+plot_raw_data_new_model

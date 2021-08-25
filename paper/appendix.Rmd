@@ -44,7 +44,6 @@ knitr::opts_chunk$set(
 
 
 ```{r, echo = FALSE, message = FALSE, collapse = FALSE}
-
 library(drake)
 library(tidyverse)
 library(magrittr)
@@ -59,10 +58,10 @@ source(mypath("R/variable_shortcut.R")) # Define your custom code as a bunch of
 #functions.
 
 source(mypath("R/misc.R"))
-source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
+source_dir(mypath("R")) # Define your custom code as a bunch of functions.
 
 mytheme <- theme_cowplot() +
-background_grid()
+  background_grid()
 
 theme_set(mytheme)
 options(knitr.table.format = "latex")
@@ -85,7 +84,6 @@ loadd(p_st_mono_trends_stable_rich_bm, st_mono_trends_stable_rich_bm)
 st_cap <- paste0(
   "Repartion of the", length(st_mono_trends_stable_rich_bm), " stations used in
   the data analysis.")
-
 ```
 
 ```{r st, fig.cap = st_cap}
@@ -205,11 +203,18 @@ loadd(
   anova_table_bm_rich,
   anova_bm_rich_mod
 )
-loadd(st_trends_rich_bm, st_mono_trends_rich_bm,
-  st_mono_trends_stable_rich_bm)
-
-loadd(pred_bm_rich_mono_trends, pred_bm_rich, pred_bm_rich_trends,
-  pred_bm_rich_mono_stable_trends)
+loadd(
+  st_trends_rich_bm,
+  st_mono_trends_rich_bm,
+  st_mono_trends_stable_rich_bm,
+  basin_station
+)
+loadd(
+  pred_bm_rich_mono_trends,
+  pred_bm_rich,
+  pred_bm_rich_trends,
+  pred_bm_rich_mono_stable_trends
+)
 ```
 
 We modeled the temporal trends of food-web structure as dependant of the
@@ -219,173 +224,48 @@ $dN = dB + dR + \epsilon$
 
 \newpage
 
-### Only mono trends
-
-We kept only the stations that had monotonic trends for biomass and species
-richness, with resulting `r length(st_mono_trends_rich_bm)` stations.
-
-```{r}
-
-plot_grid(plotlist = pred_bm_rich_mono_trends$pred_plot)
-```
-
-
-```{r}
-reg_table_bm_rich_mono_trends %>%
-  kable(., booktabs = TRUE,
-  row.names = FALSE,
-    caption =
-      paste0(
-      "Regression coefficients for the linear models explaining the links
-      between the temporal trends of the network structure and the one of
-      community biomass and species richness."
-    ),
-  label = "reg-rich-mono"
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
-anova_table_bm_rich_mono_trends %>%
-  kable(., booktabs = TRUE,
-  row.names = FALSE,
-    caption =
-      paste0(
-	"ANOVA results for the links between the temporal trends of the network
-	structure and the one of community biomass and species richness."
-	),
-      label = "aov-rich-mono"
-      ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-\newpage
-
-### All trends (non monotonic) 
-
-We kept all stations that had a significant trend (decrease or increase) for both
-species richness and community biomass, with resulting 
-`r length(st_trends_rich_bm)` stations. 
-
-```{r}
-plot_grid(plotlist = pred_bm_rich_trends$pred_plot)
-```
-
-
-```{r}
-reg_table_bm_rich_trends %>%
-  kable(., booktabs = TRUE,
-  row.names = FALSE,
-    caption =
-      paste0(
-	"Regression coefficients for the linear models explaining the links
-	between the temporal trends of the network structure and the one of
-	community biomass and species richness."
-    ),
-  label = "reg-rich-trends"
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
-anova_table_bm_rich_trends %>%
-  kable(., booktabs = TRUE,
-  row.names = FALSE,
-    caption =
-      paste0(
-	"ANOVA results for the links between the temporal trends of species
-	richness and the temporal trends of the network structure."
-	),
-      label = "aov-rich-trends"
-      ) %>%
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-\newpage
-
-### All monotonic stations (i.e + monotonic stable)
-
-```{r}
-plot_grid(plotlist = pred_bm_rich_mono_stable_trends$pred_plot)
-```
-
-
-```{r}
-reg_table_bm_rich_mono_stable_trends %>%
-  kable(., booktabs = TRUE,
-  row.names = FALSE,
-    caption =
-      paste0(
-	"Regression coefficients for the linear models explaining the links
-	between the temporal trends of the network structure and the one of
-	community biomass and species richness."
-    ),
-  label = "reg-rich-trends"
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
-anova_table_bm_rich_mono_stable_trends %>%
-  kable(., booktabs = TRUE,
-  row.names = FALSE,
-    caption =
-      paste0(
-	"ANOVA results for the links between the temporal trends of species
-	richness and the temporal trends of the network structure."
-	),
-      label = "aov-rich-trends"
-      ) %>%
-  kable_styling(latex_options =c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-
-\newpage
-
-### All stations
-
-We kept all the stations. 
-
-```{r}
-plot_grid(plotlist = pred_bm_rich$pred_plot)
-```
-
-
-```{r}
-reg_table_bm_rich %>%
-  kable(., booktabs = TRUE,
-  row.names = FALSE,
-    caption =
-      paste0(
-	"Regression coefficients for the linear models explaining the links
-	between the temporal trends of the network structure and the one of
-	community biomass and species richness."
-    ),
-  label = "reg-rich-all"
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
-anova_table_bm_rich %>%
-  kable(., booktabs = TRUE,
-  row.names = FALSE,
-  caption =
-    paste0(
-      "ANOVA results for the links between the temporal trends of species
-      richness and the temporal trends of the network structure."
+```{r sens, out.width="100%"}
+# Merge reg_table
+merged_reg_table <- pmap_dfr(
+  list(
+    df = list(
+      reg_table_bm_rich_mono_trends,
+      reg_table_bm_rich_mono_stable_trends,
+      reg_table_bm_rich_trends,
+      reg_table_bm_rich
       ),
-    label = "aov-rich-all"
-    ) %>%
-kable_styling(latex_options =c("scale_down", "stripped")) %>%
-collapse_rows(columns = 1, valign = "top")
+    name = list(
+      "Only monotonuous trends",
+      "Monotonuous + stable trends",
+      "All significant trends",
+      "All trends"
+      ),
+    st = list(
+      st_mono_trends_rich_bm,
+      st_mono_trends_stable_rich_bm,
+      st_trends_rich_bm,
+      seq(1,400)
+    )
+    ), function (df, name, st) {
+    df$selection <- paste0(name, " (N = ", length(st),")")
+    return(select(df, selection, everything()))
+  }
+)
+
+merged_reg_table %>%
+  filter(! term %in% "(Intercept)", ! response %in% "piel_nind") %>%
+  mutate(
+   response = str_replace_all(response, var_replacement()),
+   term = str_replace_all(term, var_replacement()),
+  ) %>%
+  ggplot(aes(x = term, y = std_estimate)) +
+  geom_point(aes(color = selection)) +
+  facet_grid(cols = vars(response)) +
+  labs(
+    x = "Explicative variable",
+    y = "Standardized coefficients"
+  ) +
+  theme(legend.position = "bottom", axis.text.x = element_text(hjust=1, angle = 15))
 ```
 
 ## Interaction between community biomass trends and species richness trends
@@ -470,7 +350,7 @@ rich_leg <- get_legend(ti$pred_plot_color[[1]])
 plot_grid(plotlist = map(ti$pred_plot_color, ~.x + theme(legend.position = "none")), rich_leg)
 ```
 
-```{r}
+```{r eval = FALSE}
 test <- pred_int_rich[3, ]$pred_int[[1]] %>%
   select(predicted, log_rich_std, log_bm_std) %>%
   arrange(log_rich_std, log_bm_std)
@@ -483,7 +363,6 @@ plot_ly(
   z = ~mat) %>%
   add_surface()
 ```
-
 
 ```{r}
 pred_int_bm <- map(model_bm_rich_int_mono_stable_trends,
@@ -519,8 +398,9 @@ bm_leg <- get_legend(ti_bm$pred_plot_color[[1]])
 plot_grid(plotlist = map(ti_bm$pred_plot_color, ~.x + theme(legend.position = "none")), bm_leg)
 ```
 
-```{r, eval=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 test <- model_bm_rich_int_mono_stable_trends[["ct_ff"]]
+car::Anova(test)
 co <- coef(test)
 pred <- ggpredict(
   test,
@@ -531,7 +411,7 @@ pred <- ggpredict(
   rename("log_bm_std" = x, "log_rich_std" = group)
 
 pred$y <- co[1] +
-  co["log_rich_std"] * pred[["log_rich_std"]] +
+ # co["log_rich_std"] * pred[["log_rich_std"]] + bc not significant
   co["log_bm_std"] * pred[["log_bm_std"]] +
   co["log_rich_std:log_bm_std"] * pred[["log_rich_std"]] * pred[["log_bm_std"]]
 
@@ -539,7 +419,7 @@ pred$y <- co[1] +
 
 mat <- reshape2::acast(pred, log_rich_std~log_bm_std, value.var = "y")
 library(plotly)
-plot_ly(
+p <- plot_ly(
   x = ~as.numeric(colnames(mat)),
   y = ~as.numeric(rownames(mat)),
   z = ~mat, ) %>%
@@ -551,7 +431,7 @@ plot_ly(
       ))
 ```
 
-```{r, eval=FALSE}
+```{r, result=FALSE}
 mod4_3d <- model_bm_rich_int_mono_stable_trends[
   names(model_bm_rich_int_mono_stable_trends) %in%
     c("ct_ff", "w_trph_lvl_avg")]
@@ -568,12 +448,12 @@ pred_list <- map(mod4_3d,
   }, p = pred)
 ```
 
-```{r,eval=FALSE}
+```{r,result=FALSE}
 mat <- reshape2::acast(
   pred_list$w_trph_lvl_avg,
   log_rich_std~log_bm_std,
   value.var = "y")
-plot_ly(
+p <- plot_ly(
   x = ~as.numeric(colnames(mat)),
   y = ~as.numeric(rownames(mat)),
   z = ~mat, ) %>%
@@ -585,7 +465,7 @@ plot_ly(
       ))
 ```
 
-```{r,eval=FALSE}
+```{r,result=FALSE, eval=FALSE}
 test <- model_bm_rich_int_mono_stable_trends[["piel_bm"]]
 car::Anova(test)
 co <- coef(test)
@@ -605,7 +485,7 @@ pred$y <- co[1] +
 # all.equal(pred$y, pred$predicted)
 
 mat <- reshape2::acast(pred, log_rich_std~log_bm_std, value.var = "y")
-plot_ly(
+p <- plot_ly(
   x = ~as.numeric(colnames(mat)),
   y = ~as.numeric(rownames(mat)),
   z = ~mat, ) %>%
@@ -617,5 +497,64 @@ plot_ly(
       ))
 ```
 
+```{r}
+p_ct_ff <- ggdraw() +
+    draw_image(get_mypath("figures", "int_rich_bm_cf_ff.png"), scale = 1)
+p_tlvl <- ggdraw() +
+    draw_image(get_mypath("figures", "int_rich_bm_tlvl.png"), scale = 1)
+p_piel_bm <- ggdraw() +
+    draw_image(get_mypath("figures", "int_rich_bm_eveness.png"), scale = 1)
+plot_grid(
+  p_ct_ff,
+  p_tlvl,
+  p_piel_bm
+)
+```
 
+- Results for interactions: 
+  - Connectance: 
+    - Always decreases when richness decreases (inverse of expectation)
+    - Increases when richness increases (inverse of expectation), but always
+      decreases if biomass decreases
+    - Increases when biomass increases
+  - Average trophic level:
+    - Always decreases when biomass decreases 
+    - Always increases when biomass increases 
+    - Whatever the richness dynamics, it is the biomass dynamics which drives
+      all
+  - Pielou of biomass:
+    - Always positive when biomass decreases
+    - Always negative when biomass increases 
 
+```{r}
+template_cross <- tibble(
+  bm_std = c("-", "0", "+"),
+  `-` = c(NA, NA, NA),
+  `0` = c(NA, NA, NA),
+  `+` = c(NA, NA, NA),
+  )
+
+ct_ff_cross_table <- tibble(
+  rich_std = c("-", "0", "+", "sign_relationship"),
+  `-` = c("-", "-", "--", "-"),
+  `0` = c("-", "-", "-", "0"),
+  `+` = c("-", "+", "++", "+"),
+  "sign_relationship" = c("0", "+", "+", "")
+  )
+
+kable(ct_ff_cross_table) %>%
+  add_header_above(c(" " = 1, "bm_std" = 3))
+```
+
+```{r}
+tlvl_cross_table <- tibble(
+  rich_std = c("-", "0", "+", "sign_relationship"),
+  `-` = c("-", "0", "+", "+"),
+  `0` = c("-", "0", "+", "+"),
+  `+` = c("-", "0", "+", "+"),
+  "sign_relationship" = c("+", "0", "-", "")
+  )
+
+kable(tlvl_cross_table) %>%
+  add_header_above(c(" " = 1, "bm_std" = 3))
+```

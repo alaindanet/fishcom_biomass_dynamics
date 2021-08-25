@@ -19,11 +19,12 @@ plan <- drake_plan(
   com_analysis_data = get_community_analysis_data( path =
     file_in(!!get_mypath("data", "community_analysis.rda")), op = op_data),
   op_data = get_op_data(path = file_in(!!get_mypath("data", "op_analysis.rda"))),
-  habitat_press = get_data(obj_name = "habitat_press", dir = get_mypath("data")),
+ habitat_press = get_data(obj_name = "habitat_press", dir = get_mypath("data")),
   habitat_pressure = get_data(obj_name = "habitat_pressure", dir = get_mypath("data")),
   region_polygon = get_data(obj_name = "region_polygon", dir = get_mypath("data")),
   station_analysis = get_data(obj_name = "station_analysis",
     dir = "~/Documents/post-these/mnhn/fishcom/data"),
+  map_st = get_station_map(st = st_mono_trends_stable_rich_bm),
   net_l_ld_IS = get_l_ld_IS(net = net_analysis_data),
   metrics_fishfish_only = get_network_metric_fish_only(net = net_analysis_data),
   net_data2 = left_join(net_data, net_l_ld_IS, by = "opcod") %>%
