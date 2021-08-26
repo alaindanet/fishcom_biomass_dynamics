@@ -26,7 +26,8 @@ bibliography: references.bib
 number_sections: true
 ---
 
-```{r}
+
+```{r, echo=FALSE}
 knitr::opts_chunk$set(
   cache = TRUE,
   collapse = TRUE,
@@ -43,7 +44,7 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r, echo = FALSE, message = FALSE, collapse = FALSE}
+```{r, echo=FALSE, message=FALSE, results="hide"}
 library(drake)
 library(tidyverse)
 library(magrittr)
@@ -72,11 +73,10 @@ var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
 ```
 
 \beginsupplement
+\newpage
 
-# Data exploration 
+# Data exploration
 
-
-## Maps 
 
 ```{r}
 loadd(p_st_mono_trends_stable_rich_bm, st_mono_trends_stable_rich_bm)
@@ -90,8 +90,6 @@ st_cap <- paste0(
 p_st_mono_trends_stable_rich_bm
 ```
 
-
-## Range of variation 
 
 ```{r}
 range_cap <- paste0(
@@ -118,7 +116,10 @@ cor_cap <- paste0("Correlation plot among variables for spatial and temporal
   relationships. ", "Median values over temporal series in each station were
   used for spatial relationships. ", "For temporal relationships, we used the
   temporal trends in each station. Futhermore, each station was weighted by the
-  average error standard on the temporal trends of the variables.")
+  average error standard on the temporal trends of the variables.",
+  " Pisc: piscivorous, Nb: number, node: node of the food-web corresponding to a
+  trophic species, prop: proportion."
+)
 ```
 
 
@@ -126,22 +127,42 @@ cor_cap <- paste0("Correlation plot among variables for spatial and temporal
 oldpar <- par()
 loadd(corr_plot_med, corr_plot_tps)
 
-set_names_corr <- function(mat = NULL) {
-  colnames(mat) <- str_replace_all(colnames(mat), var_replacement())
-  rownames(mat) <- str_replace_all(rownames(mat), var_replacement())
+rv <- var_replacement()
+rv_more <- c(
+  nbnode_std = "Nb node",
+  nb_pisc_rich_std = "Nb pisc species",
+  nb_pisc_node_std = "Nb pisc nodes",
+  prop_pisc_node = "Prop pisc node",
+  prop_pisc_rich = "Prop pisc species"
+)
+
+rv <- c(rv_more, rv[!names(rv) == "rich_std"])
+
+set_names_corr <- function(mat = NULL, replacement_vector = var_replacement()) {
+  colnames(mat) <- str_replace_all(colnames(mat), replacement_vector)
+  rownames(mat) <- str_replace_all(rownames(mat), replacement_vector)
   return(mat)
 }
 
-corr_plot_tps %<>% set_names_corr(.)
-corr_plot_med %<>% set_names_corr(.)
+corr_plot_tps %<>% set_names_corr(., replacement_vector = rv)
+corr_plot_med %<>% set_names_corr(., replacement_vector = rv)
 
-par(mfrow = c(1, 2))
-corrplot::corrplot(corr_plot_med, type = "upper", diag = FALSE, order =
-  "alphabet")
-title("Spatial")
+#par(mfrow = c(1, 2))
+corrplot::corrplot(
+  corr_plot_med,
+  type = "upper",
+  diag = FALSE,
+  order = "alphabet",
+  tl.srt = 30,
+  tl.cex = .7
+)
+title("Spatial", adj = 0, line = 3)
 corrplot::corrplot(corr_plot_tps, type = "upper", diag = FALSE, order =
-  "alphabet")
-title("Temporal trends")
+  "alphabet",
+  tl.srt = 30,
+  tl.cex = .7
+)
+title("Temporal trends", adj = 0, line = 3.2)
 ```
 
 \newpage
@@ -187,7 +208,7 @@ kable(t_colin_sp_models,
   kable_styling(latex_options = c("scale_down", "stripped"))
 ```
 
-## Temporal model with richness and biomass  
+## Sensisivity analysis for the temporal model
 
 ```{r}
 loadd(
@@ -217,14 +238,19 @@ loadd(
 )
 ```
 
-We modeled the temporal trends of food-web structure as dependant of the
-temporal trends of both species richness and community biomass as: 
-
-$dN = dB + dR + \epsilon$
-
-\newpage
-
-```{r sens, out.width="100%"}
+```{r}
+cap_sens_temp_model <- paste0("
+  Testing the robustness of the estimated coefficients to the selection of
+  sites. 'All trends' corresponds to all the sites, 'Only monotonuous trends'
+  corresponds to all the trends negative or positive monotonically, 'Monotonuous
+  + stable' includes the previous selection and the stable ones (the selection
+    used in main text), 'All significant trends' correspond to all the trends
+significantly negative or positive.", " We classified a site as
+  having a significant trend when it displays both significant trends in biomass
+and in species richness."
+)
+```
+```{r sens, out.width="100%", fig.cap=cap_sens_temp_model}
 # Merge reg_table
 merged_reg_table <- pmap_dfr(
   list(
@@ -235,10 +261,10 @@ merged_reg_table <- pmap_dfr(
       reg_table_bm_rich
       ),
     name = list(
-      "Only monotonuous trends",
-      "Monotonuous + stable trends",
+      "Only monotonuous",
+      "Monotonuous + stable (used in main text)",
       "All significant trends",
-      "All trends"
+      "All sites"
       ),
     st = list(
       st_mono_trends_rich_bm,
@@ -265,16 +291,41 @@ merged_reg_table %>%
     x = "Explicative variable",
     y = "Standardized coefficients"
   ) +
-  theme(legend.position = "bottom", axis.text.x = element_text(hjust=1, angle = 15))
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(hjust = 1, angle = 15, size = 8),
+    text = element_text(size = 8)) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE))
 ```
+
+We found that selection of data can have either low or high effects on estimated
+effects. When selecting only the sites that display significant decrease or
+increase of community biomass and species richness across time, i.e. 
+a tenth of the site, we found stronger links among the temporal dynamics of
+average trophic level, connectance, biomass and the temporal dynamics of biomass
+and species richness (Fig. \@ref(fig:sens), purple and red points). On the other
+side, we found that the data selection that we used in the main analysis
+displays roughly the same results that the selection that includes all sites
+(Fig. \@ref(fig:sens), blue and green points).
+
+The fact that we observed differences with data selection is that  "Only
+monotonuous" and "All significant trends" do not contain temporal dynamics
+around 0 because they are often non significant. We think that this data
+selection is not satisfactory because we wanted to include the temporal dynamics
+of biomass of species richness that were not significant, i.e. that can be
+considered as stable. The rational is that we wanted to know what was the
+expected temporal trends of food-web structure while the ones of biomass and
+species richness are kept stable. Without those data, the regression becomes
+constrained only by the extreme temporal trends of species richness and
+community biomass.
+
+\newpage
 
 ## Interaction between community biomass trends and species richness trends
 
 ```{r}
 loadd(model_bm_rich_int_mono_stable_trends)
 ```
-
-### ANOVA
 
 ```{r}
 model_bm_rich_int_mono_stable_trends %>%
@@ -283,6 +334,11 @@ model_bm_rich_int_mono_stable_trends %>%
   map(., tidy) %>%
   map2_dfr(., names(.), ~.x %>% mutate(response = .y) %>% select(response,
       everything())) %>%
+  mutate(
+    response = str_replace_all(response, var_replacement()),
+    term = str_replace_all(term, var_replacement())
+  ) %>%
+  rename_all(~str_to_title(.)) %>%
   kable(., booktabs = TRUE,
   row.names = FALSE,
   caption =
@@ -302,21 +358,26 @@ model_bm_rich_int_mono_stable_trends %>%
   map(., tidy) %>%
   map2_dfr(., names(.), ~.x %>% mutate(response = .y) %>% select(response,
       everything())) %>%
+  mutate(
+    response = str_replace_all(response, var_replacement()),
+    term = str_replace_all(term, var_replacement())
+  ) %>%
+  rename_all(~str_to_title(.)) %>%
   kable(., booktabs = TRUE,
   row.names = FALSE,
   caption =
     paste0(
-      "Regression results with interactions."
+      "Regression results of the model with interactions between the temporal
+      dynamics of community biomass and the one of species richness."
       ),
-    label = "aov-int"
+    label = "reg-int"
     ) %>%
 kable_styling(latex_options =c("scale_down", "stripped")) %>%
 collapse_rows(columns = 1, valign = "top")
 ```
 
-### Plots
 
-```{r}
+```{r, results="hide", echo=FALSE}
 pred_int_rich <- map(model_bm_rich_int_mono_stable_trends,
       ~ggpredict(.x,
         terms = c("log_rich_std", "log_bm_std [quart2]")) %>%
@@ -327,12 +388,15 @@ pred_int_rich <- map(model_bm_rich_int_mono_stable_trends,
 enframe(name = "response", value = "pred_int")
 
 ti <- pred_bm_rich_mono_stable_trends %>%
-  filter(term == "log_rich_std", response %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")) %>%
+  filter(
+    term == "log_rich_std",
+    response %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")
+    ) %>%
   select(response, raw_plot) %>%
   left_join(pred_int_rich) %>%
   mutate(pred_plot_color = pmap(
       list(raw_plot, response, pred_int),
-      function(p, resp, pred) {
+      function(p, resp, pred, ...) {
         p +
           geom_line(data = pred,
             aes(
@@ -341,14 +405,44 @@ ti <- pred_bm_rich_mono_stable_trends %>%
               color = as.factor(log_bm_std)
             ), size = 1
           ) +
-        scale_color_discrete()
+        scale_color_discrete() +
+        labs(x = "Log species richness",
+          y = var_replacement()[resp],
+          color = "Log community biomass"
+          ) +
+        theme(
+          text = element_text(size = 8),
+          axis.text = element_text(size = 8)
+        )
       }
-      )
+        )
   )
 rich_leg <- get_legend(ti$pred_plot_color[[1]])
-
-plot_grid(plotlist = map(ti$pred_plot_color, ~.x + theme(legend.position = "none")), rich_leg)
 ```
+
+```{r}
+int_rich_cap <- paste0(
+  "Relationships between the temporal dynamics of food-web
+  structure and the one of species richness. The interaction between
+  the temporal dynamic of species richness and community biomass is significant
+  for the three descriptors of food-web structure. The chosen values for the
+  community biomass temporal dynamic correspond respectively to the first,
+  second and third quartiles.
+  ")
+
+```
+
+
+```{r int-rich, fig.cap=int_rich_cap}
+plot_grid(plotlist = 
+  map(ti$pred_plot_color,
+    ~.x + theme(
+      legend.position = "none",
+    )
+    ),
+rich_leg)
+```
+
 
 ```{r eval = FALSE}
 test <- pred_int_rich[3, ]$pred_int[[1]] %>%
@@ -364,7 +458,7 @@ plot_ly(
   add_surface()
 ```
 
-```{r}
+```{r, results="hide", echo=FALSE}
 pred_int_bm <- map(model_bm_rich_int_mono_stable_trends,
       ~ggpredict(.x,
         terms = c("log_bm_std", "log_rich_std [quart2]")) %>%
@@ -389,16 +483,40 @@ ti_bm <- pred_bm_rich_mono_stable_trends %>%
               color = as.factor(log_rich_std)
             ), size = 1
           ) +
-        scale_color_discrete()
+        scale_color_discrete() +
+                labs(x = "Log species richness",
+          y = var_replacement()[resp],
+          color = "Log community biomass"
+          ) +
+        theme(
+          text = element_text(size = 8),
+          axis.text = element_text(size = 8)
+        )
+
       }
       )
   )
-
 bm_leg <- get_legend(ti_bm$pred_plot_color[[1]])
+```
+
+```{r}
+int_bm_cap <- paste0(
+  "Relationships between the temporal dynamics of food-web
+  structure and the one of community biomass. The interaction between
+  the temporal dynamics of species richness and community biomass is significant
+  for the three descriptors of food-web structure. The chosen values for the
+  species richness temporal dynamic correspond respectively to the first,
+  second and third quartiles.
+  "
+)
+```
+
+```{r int-bm, fig.cap=int_bm_cap}
 plot_grid(plotlist = map(ti_bm$pred_plot_color, ~.x + theme(legend.position = "none")), bm_leg)
 ```
 
-```{r, echo=FALSE, eval=FALSE}
+
+```{r, echo=FALSE, results="hide"}
 test <- model_bm_rich_int_mono_stable_trends[["ct_ff"]]
 car::Anova(test)
 co <- coef(test)
@@ -431,7 +549,7 @@ p <- plot_ly(
       ))
 ```
 
-```{r, result=FALSE}
+```{r, results=FALSE}
 mod4_3d <- model_bm_rich_int_mono_stable_trends[
   names(model_bm_rich_int_mono_stable_trends) %in%
     c("ct_ff", "w_trph_lvl_avg")]
@@ -448,7 +566,7 @@ pred_list <- map(mod4_3d,
   }, p = pred)
 ```
 
-```{r,result=FALSE}
+```{r,results=FALSE}
 mat <- reshape2::acast(
   pred_list$w_trph_lvl_avg,
   log_rich_std~log_bm_std,
@@ -465,7 +583,7 @@ p <- plot_ly(
       ))
 ```
 
-```{r,result=FALSE, eval=FALSE}
+```{r,results=FALSE, eval=FALSE}
 test <- model_bm_rich_int_mono_stable_trends[["piel_bm"]]
 car::Anova(test)
 co <- coef(test)
@@ -498,6 +616,15 @@ p <- plot_ly(
 ```
 
 ```{r}
+int_3d_cap <- paste0(
+  "Tri-dimentional plot displaying the relationships among food-web structure
+  from one side and the temporal dynamics of species richness and community
+  biomass from the other side. The surface represents the values predicted by
+  the model."
+)
+```
+
+```{r int-3d, fig.cap=int_3d_cap}
 p_ct_ff <- ggdraw() +
     draw_image(get_mypath("figures", "int_rich_bm_cf_ff.png"), scale = 1)
 p_tlvl <- ggdraw() +
@@ -507,9 +634,23 @@ p_piel_bm <- ggdraw() +
 plot_grid(
   p_ct_ff,
   p_tlvl,
-  p_piel_bm
+  p_piel_bm,
+  labels = "AUTO"
 )
 ```
+
+All together, we found that interactions between the temporal dynamics of
+community biomass and species richness have no major effects on the bivariate
+relationships (Fig. \@ref(fig:int-bm) and \@ref(fig:int-rich)), at least in
+the range of values observed in the dataset (1st to 3rd quartiles).  It is more
+complicated for connectance when exploring the full range of possible values
+(Fig. \@ref(fig:int-3d) A). We found that connectance strongly decrease with
+increasing of community biomass temporal trends when species richness temporal
+trends is strongly negative, while we found the opposite when species richness temporal
+trends is strongly positive. Furthermore we found that the temporal dynamic of
+connectance had a strong positive relationship with the one of species richness
+when community biomass increases through time while we found no relationship
+when the temporal trend of community biomass was strongly negative.
 
 - Results for interactions: 
   - Connectance: 
@@ -525,6 +666,8 @@ plot_grid(
   - Pielou of biomass:
     - Always positive when biomass decreases
     - Always negative when biomass increases 
+    - Whatever the richness dynamics, it is the biomass dynamics which drives
+      all
 
 ```{r}
 template_cross <- tibble(
