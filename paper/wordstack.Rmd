@@ -36,9 +36,16 @@ output:
 
 ### Introduction
 
-1. community structure are dynamics and affect ecosystem functions 
+
+1. Facet of biodiversity trends
     1. species interactions ?
     2. biomass or richness 
+
+3. Colonisation / Extinction sequences in natural settings
+    1. Space for time substitution
+    2. Communities are not affected randomly as environment species niche
+    3. sequence: is losing something = adding something ?
+    4. assembly / disassembly processes 
 
 2. Community structure dimension are linked 
     1. Biomass and species richness 
@@ -48,11 +55,6 @@ output:
 	1. connectance richness
 	2. persistance / connectance
 
-3. Colonisation / Extinction sequences in natural settings
-    1. Space for time substitution
-    2. Communities are not affected randomly as environment species niche
-    3. sequence: is losing something = adding something ?
-    4. assembly / disassembly processes 
  
 4. Research questions 
     1. Link between the temporal dynamics of different aspects of community structure ?

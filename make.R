@@ -11,7 +11,8 @@ source("R/plan.R")      # Create your drake plan.
 # Call make() to run your work.
 # Your targets will be stored in a hidden .drake/ cache,
 #drake::r_make(plan)
-drake::make(plan, keep_going = TRUE)
+#drake::make(plan, targets = "fig_std_coef",  keep_going = TRUE)
+drake::make(plan,  keep_going = TRUE)
 drake::make(plan)
 drake::vis_drake_graph(plan)
 

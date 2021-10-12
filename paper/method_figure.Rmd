@@ -8,6 +8,7 @@ library(tidyverse)
 mypath <- rprojroot::find_package_root_file
 
 source(mypath("R", "misc.R"))
+source(mypath("R", "variable_shortcut.R"))
 source_dir(mypath("R"))
 theme_set(theme_cowplot())
 ```
@@ -284,6 +285,16 @@ get_network_temporal_plot <- function (
 }
 ```
 
+```{r}
+myload(metaweb_analysis, dir = get_mypath("data"), envir = environment())
+
+my_species_color <- set_color_species(
+  node_list = colnames(metaweb_analysis$metaweb),
+  resource_list = metaweb_analysis$resource,
+  col_resource = NULL
+)
+```
+
 
 ```{r}
 loadd(rigal_classification, com_data, op_data)
@@ -332,7 +343,7 @@ plot_grid(plotlist = tes)
 ```{r}
 st <- first_st$station[4]
 st[2] <- last_st$station[13]
-names(st) <- c("decreasing", "increasing") 
+names(st) <- c("decreasing", "increasing")
 #11432 my choice
 ```
 
@@ -356,7 +367,8 @@ p <- get_network_temporal_plot(
 g <- plot_grid(plotlist = map(p, ggdraw), nrow = 3)
 
 save_plot(
-  "figures/decreasing_biomass_network.png", g,
+  get_mypath("figures/decreasing_biomass_network.png"),
+  g,
   nrow = 3,
   ncol = 4,
   base_height = 4,
@@ -373,7 +385,7 @@ p2 <- get_network_temporal_plot(
 g2 <- plot_grid(plotlist = map(p2, ggdraw), nrow = 4)
 
 save_plot(
-  "figures/increasing_biomass_network.png", g2,
+  get_mypath("figures/increasing_biomass_network.png"), g2,
   nrow = 4,
   ncol = 4,
   base_height = 4,
@@ -395,7 +407,7 @@ tps_bm_dec  <- tes +
   theme(legend.position = "none")
 
 save_plot(
-  "figures/decreasing_biomass.png", tps_bm_dec,
+  get_mypath("figures/decreasing_biomass.png"), tps_bm_dec,
   nrow = 1,
   ncol = 1,
   base_height = 4,
@@ -413,7 +425,7 @@ tps_bm_inc  <- tes2 +
   theme(legend.position = "none")
 
 save_plot(
-  "figures/increasing_biomass.png", tps_bm_inc,
+  get_mypath("figures/increasing_biomass.png"), tps_bm_inc,
   nrow = 1,
   ncol = 1,
   base_height = 4,
@@ -446,17 +458,23 @@ plot_temporal_variable_lm <- function(
   .df = full_data2,
   var = "ct_ff",
   st = 15818) {
-  .df %>%
+  tex <- .df %>%
     filter(station %in% st) %>%
     mutate(
-      year = ymd(year, truncated = 2L),
-      station = str_replace_all(station, setNames(names(st), st))
-      ) %>%
-    ggplot(aes_string(x = "year", y = var)) +
-    geom_point() +
-    geom_smooth(aes(group = station), method = "lm", formula = y ~ x,
-      size = 1, se = FALSE, color = "black") +
-    labs(x = "Year", y = str_replace_all(var, var_replacement()))
+      year = ymd(year, truncated = 2L)
+    ) 
+
+    if(!is.null(names(st))) {
+      tex %<>%
+        mutate(station = str_replace_all(station, setNames(names(st), st)))
+    }
+
+    tex %>%
+      ggplot(aes_string(x = "year", y = var)) +
+      geom_point() +
+      geom_smooth(aes(group = station), method = "lm", formula = y ~ x,
+        size = 1, se = FALSE, color = "black") +
+      labs(x = "Year", y = str_replace_all(var, var_replacement()))
 
 }
 
@@ -468,8 +486,120 @@ tps_dec_inc <- map(c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_bm"),
 plot_grid(plotlist = tps_dec_inc)
 ```
 
+## plot map
+
 ```{r}
 loadd(map_st)
+save_plot(map_st,
+  base_height = 11,
+  base_asp = 1.618,
+  file = get_mypath("figures", "map_st.png")
+)
+```
+
+```{r}
+test_fig_mat_met <- plot_grid(
+  map_st,
+  plot_grid( plot_grid(tps_bm_dec, tps_bm_inc)),
+  plot_grid(plotlist = tps_dec_inc),
+  nrow = 3
+)
+save_plot(
+  test_fig_mat_met,
+  base_height = 12,
+  base_asp = 1.618,
+  file = get_mypath("figures", "matmet.png")
+)
+```
+
+# New figure
+
+```{r}
+# get a station that represents the results 
+st_var_shape <- rigal_classification %>%
+  unnest(classif) %>%
+  filter(variable %in% c(get_com_str_var(), "log_bm_std")) %>%
+  select(station, variable, direction)  %>%
+  pivot_wider(names_from = variable, values_from = direction) 
+dec_representative <- st_var_shape %>%
+  filter(log_bm_std == "decrease", ct_ff == "decrease", w_trph_lvl_avg == "decrease") 
+```
+
+
+```{r}
+tes <- map(dec_representative$station, ~plot_dyn_web(
+    com = community_metrics,
+    sem_df = NULL,
+    station = .x,
+#    .log = TRUE,
+    stacked = TRUE, 
+    color_species = NULL 
+    ))
+plot_grid(plotlist = tes)
+```
+```{r}
+st_decreasing <- dec_representative$station[3]
+
+p_dec_log_bm <- tes[[3]] +
+  labs(color = "Species", fill = "Species") +
+  theme(legend.position = "bottom")
+
+save_plot(
+  get_mypath("figures/p_dec_log_bm.png"),
+  p_dec_log_bm,
+  nrow = 1,
+  ncol = 1,
+  base_asp = 1.618,
+  base_width = 7)
+```
+```{r}
+tps_dec_inc <- map(c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_bm"),
+  ~plot_temporal_variable_lm(st = st_decreasing, var = .x)
+)
+save_plot(
+  filename = get_mypath("figures/net_str_dec_bm.png"),
+  plot_grid(plotlist = tps_dec_inc),
+  nrow = 2, ncol = 2,
+  base_asp = 1.618,
+  base_width = 5
+)
+```
+```{r temporal foodwebs}
+
+p <- get_network_temporal_plot(
+  net_list = network_analysis,
+  station = st_decreasing,
+  selected_years = c(1996, 2006, 2016),
+  node_color = my_species_color, scale_node_size = 0.027,
+  par_options = par(mar = c(0,0,0,0)),
+  log_abun = TRUE
+)
+g <- plot_grid(plotlist = map(p, ggdraw), ncol = 3)
+
+save_plot(
+  get_mypath("figures/decreasing_biomass_network.pdf"),
+  g,
+  ncol = 3,
+  base_asp = 1.618,
+  base_width = 7)
+```
+
+
+
+
+## plot map
+
+```{r}
+loadd(map_st)
+save_plot(map_st,
+  base_height = 11,
+  base_asp = 1.618,
+  file = get_mypath("figures", "map_st.png")
+)
+```
+
+
+```{r}
 
 test_fig_mat_met <- plot_grid(
   map_st,
@@ -479,12 +609,25 @@ test_fig_mat_met <- plot_grid(
 )
 save_plot(
   test_fig_mat_met,
-  base_height = 7,
+  base_height = 12,
   base_asp = 1.618,
   file = get_mypath("figures", "matmet.png")
 )
 ```
 
 
+```{r}
+test_mat_met <- plot_grid(
+  plot_grid(map_st, p_dec_log_bm, ncol = 2),
+  plot_grid(plot_grid(plotlist = tps_dec_inc), g, ncol = 2),
+  nrow = 2
+)
+save_plot(
+  get_mypath("figures/test_mat_met.png"),
+  test_mat_met,
+  base_asp = .5,
+  base_width = 9
+)
+```
 
 

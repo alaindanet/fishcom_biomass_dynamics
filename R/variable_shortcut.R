@@ -79,8 +79,8 @@ var_replacement <- function (slope = FALSE) {
     log_bm_std = "Log Biomass",
     bm_std = "Biomass",
     rich_std = "Species richness",
-    piel_nind = "Pielou (individual)",
-    piel_bm = "Pielou (biomass)"
+    piel_nind = "Eveness (abundance)",
+    piel_bm = "Eveness (biomass)"
   )
 
   if (slope) {

@@ -937,7 +937,11 @@ model_vif = get_vif(model,
   fig_std_coef = std_table_bm_rich_mono_stable_trends %>%
   filter(term %in% c("log_rich_std", "log_bm_std")) %>%
   mutate_at(vars(term, response), ~str_replace_all(., var_replacement())) %>%
+  mutate(
+    type = str_to_sentence(type),
+    type = factor(type, levels = c("Temporal", "Spatial"))) %>%
   ggplot(aes(y = std_estimate, x = response, fill = type)) +
+  viridis::scale_fill_viridis(begin = 0.5, end = 1, discrete = TRUE) +
   facet_grid(cols = vars(term)) +
   geom_col(position = position_dodge(width = .9)) +
   geom_linerange(aes(ymin = std_estimate - stdse, ymax = std_estimate + stdse),
