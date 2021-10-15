@@ -935,7 +935,9 @@ model_vif = get_vif(model,
     )
     ),
   fig_std_coef = std_table_bm_rich_mono_stable_trends %>%
-  filter(term %in% c("log_rich_std", "log_bm_std")) %>%
+  filter(
+    term %in% c("log_rich_std", "log_bm_std"),
+    !response %in% "piel_nind") %>%
   mutate_at(vars(term, response), ~str_replace_all(., var_replacement())) %>%
   mutate(
     type = str_to_sentence(type),

@@ -84,8 +84,8 @@ var_replacement <- function (slope = FALSE) {
   )
 
   if (slope) {
-    tmp <- names(x) 
-    x %<>% paste0(., "\n temporal trend")
+    tmp <- names(x)
+    x %<>% paste0(., " (change per year)")
     names(x) <- tmp
   }
 
