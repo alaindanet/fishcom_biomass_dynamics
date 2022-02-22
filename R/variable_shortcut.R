@@ -67,8 +67,7 @@ get_model_terms <- function ( ) {
 
 } 
 
-var_replacement <- function (slope = FALSE) {
-
+var_replacement <- function (slope = FALSE, several_lines = FALSE) {
   x <- c(
     log_RC1 = "PCA Avg stream size",
     log_RC2 = "PCA Avg temperature",
@@ -79,9 +78,25 @@ var_replacement <- function (slope = FALSE) {
     log_bm_std = "Log Biomass",
     bm_std = "Biomass",
     rich_std = "Species richness",
-    piel_nind = "Eveness (abundance)",
-    piel_bm = "Eveness (biomass)"
+    piel_nind = "Evenness (abundance)",
+    piel_bm = "Evenness (biomass)"
   )
+
+  if (several_lines) {
+    x <- c(
+      log_RC1 = "PCA\nAvg stream size",
+      log_RC2 = "PCA\n Avg temperature",
+      ct_ff = "Connectance",
+      w_trph_lvl_avg = "Avg\ntrophic level",
+      #connectance ,weighted_connectance,
+      log_rich_std = "Log\nSpecies richness",
+      log_bm_std = "Log Biomass",
+      bm_std = "Biomass",
+      rich_std = "Species\nrichness",
+      piel_nind = "Evenness\n(abundance)",
+      piel_bm = "Evenness\n(biomass)"
+    )
+  }
 
   if (slope) {
     tmp <- names(x)
