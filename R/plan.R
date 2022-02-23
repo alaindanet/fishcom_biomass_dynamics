@@ -290,13 +290,13 @@ model_vif = get_vif(model,
     classif = rigal_classification,
     st = st_mono_trends_stable_rich_bm) %>%
     corrplot::corrplot(corr = ., type = "upper"),
-  p_range = get_range_variable_plot(
+  range_data = get_range_variable(
     full_data = full_data2,
     sp_data = summary_var_med,
     st = st_mono_trends_stable_rich_bm,
     var_to_keep = c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
-      "piel_bm", "piel_nind")
-  ),
+      "piel_bm", "rich_std", "bm_std")),
+  p_range = get_range_variable_plot( range_variable = range_data),
   p_st_mono_trends_stable_rich_bm = ggplot() +
     geom_sf(data = region_polygon) +
     geom_sf(data = filter(station_analysis,
@@ -648,26 +648,26 @@ model_vif = get_vif(model,
   pred_bm_rich_trends = get_pred_plot_from_new_model(
     model = model_bm_rich_trends,
     dataset = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
-    x_bound = slope_x_bound, std_error_bar = TRUE
+    x_bound = NULL, std_error_bar = TRUE
   ),
   pred_bm_rich_mono_trends = get_pred_plot_from_new_model(
     model = model_bm_rich_mono_trends,
     dataset = filter(
       slope_com_var_no_covar,
       station %in% st_mono_trends_rich_bm),
-    x_bound = slope_x_bound
+    x_bound = NULL 
   ),
   pred_bm_rich_mono_stable_trends = get_pred_plot_from_new_model(
     model = model_bm_rich_mono_stable_trends,
     dataset = filter(
       slope_com_var_no_covar,
       station %in% st_mono_trends_stable_rich_bm),
-    x_bound = slope_x_bound
+    x_bound = NULL 
   ),
   pred_bm_rich = get_pred_plot_from_new_model(
     model = model_bm_rich,
     dataset = slope_com_var_no_covar,
-    x_bound = slope_x_bound
+    x_bound = NULL 
   ),
   target_sp_pred_bm_rich = target(
     get_pred_plot_from_new_model(

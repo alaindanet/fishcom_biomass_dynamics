@@ -392,8 +392,11 @@ stdse.lm <- function(model) {
 #' Compute PCA
 
 get_pca_environment <- function (.data = data_for_pca) {
+
+  x <- as.data.frame(.data[, colnames(.data) != "station"])
+  row.names(x) <- .data$station
   # Perform PCA
-  pca <- compute_rotated_pca(.data)
+  pca <- compute_rotated_pca(x)
   # Inverse the second axis to have a increasing gradient of temperature 
   pca$rotated$loadings[, 2] <- pca$rotated$loadings[, 2] * (-1) 
   pca$rotated$scores[, 1] <- pca$rotated$scores[, 1] * -1

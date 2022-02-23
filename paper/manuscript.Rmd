@@ -409,12 +409,11 @@ slopes ($r_{\delta}$) and their associated standard errors as $r_{\delta} =
 $s_y$ the standard deviation of the explicative and response variables.
 
 All the statistical models displayed low multicollinearity (Variance inflation
-factor < 3, Table XX).  We visually inspected the residuals of the linear models
-(TODO).
+factor < 3, Table SXX).  We visually inspected the residuals of the linear models.
 
 ```{r}
 
-fig_mat_cap <- paste0( "Using  sites of stream fishes in French streams that
+fig_mat_cap <- paste0("Using  sites of stream fishes in French streams that
   have been monitored at least 10 years, 1) we infered the food-web at each site
 and each sampling event based on ontogenic food diet information for each
 species and predator-prey body size ratio. 2) We computed the temporal trends
@@ -424,8 +423,7 @@ relationships among a) temporal trends of food-web structure. We also assessed
 the spatial relationships among median food-web structure while controlling for
 the environmental gradient with two axis of a rotated PCA. The first axis of the
 PCA is related to the stream gradient from upstream to downstream while the
-second is related to enrichment (BOD) and site altitude (error on the PCA,
-  station is present!!!).")
+second is related to enrichment (BOD) and site altitude.")
 
 ```
 
@@ -445,6 +443,23 @@ loadd(rsq_table_bm_rich_mono_stable_trends, sp_rsq_table_bm_rich_mono_stable_tre
 
 loadd(rigal_classification)
 ```
+
+```{r}
+log_trends_percent <- rigal_classification %>%
+  unnest(classif) %>%
+  filter(variable %in% c("log_bm_std", "log_rich_std")) %>%
+  select(variable, station, linear_slope, linear_slope_strd_error) %>%
+  mutate(
+    slp_percent = round((exp(linear_slope) - 1) * 100),
+    std_err_percent = round((exp(linear_slope_strd_error) - 1) * 100)
+  )
+resume_log_trends <- log_trends_percent %>%
+  group_by(variable) %>%
+  summarise(
+    mean = mean(slp_percent, na.rm = TRUE),
+    sd = sd(slp_percent, na.rm = TRUE))
+```
+
 
 ```{r}
 class_trends_bm_rich <- rigal_classification %>%
@@ -553,9 +568,9 @@ Overall, we found high heterogeneity in the explicative power of statistical
 models linking temporal dynamics of food-web structure, evenness of biomass  and the one of community
 biomass and species richness spanning from $R_{adj}^2= `r rsq_piel_nind`$ for
 the evenness of abundances to $R_{adj}^2= `r rsq_tlvl`$ for average trophic
-level (Table \@ref(tab:rsq)). The models over the spatial gradient were more performant, with
+level (Table SXX). The models over the spatial gradient were more performant, with
 $R_{cond}^2$ varing from $`r rsq_tlvl_sp`$ to $`r rsq_piel_bm_sp`$ (Table
-\@ref(tab:rsq-sp)), $R_{cond}^2$ being the $R^2$conditional to the random effect. 
+SXX), $R_{cond}^2$ being the $R^2$conditional to the random effect. 
 
 ---
 #Overall, we found no significant effect of the temporal gain or losses of
@@ -615,13 +630,13 @@ beta_rsq <- function(
   beta = NULL,
   se = NULL) {
 
-  tmp <- "paste(
-  beta, \" (s.e) \", \" = \",
-  mybeta, \" (\", myse, \"), \",
+  if (!is.null(rsq)) {
 
-  italic(R)^2, \" = \", myrsq
-  )"
-
+    tmp <- "paste(
+    beta, \" (s.e.) \", \" = \",
+    mybeta, \" (\", myse, \"), \",
+    italic(R)^2, \" = \", myrsq
+    )"
 str_replace_all(tmp,
   c(
     "myrsq" =  as.character(rsq),
@@ -630,27 +645,64 @@ str_replace_all(tmp,
   )
 )
 
+  } else {
+
+    tmp <- "paste(
+    beta, \" (s.e) \", \" = \",
+    mybeta, \" (\", myse, \") \" )"
+str_replace_all(tmp,
+  c(
+    "mybeta" = as.character(beta),
+    "myse" = as.character(se)
+  )
+)
+
+  }
+
+
+}
+
+scale_xy_log_trends <- function(breaks = NULL, axis = "y", sep ="\n") {
+  log_to_percent <- round((exp(breaks) - 1) * 100)
+  labels <- paste0(breaks, sep, log_to_percent, " %")
+
+  if(axis == "y") {
+    fun <- scale_y_continuous
+  } else {
+    fun <- scale_x_continuous
+  }
+
+  fun(breaks = breaks, labels = labels)
+
 }
 ```
 
 ```{r bef, fig.cap=fig_bef_cap, out.width="50%"}
+lab_log_rich <- expression(atop("Log species richness ("*m^{-2}*")","trend slope (log / % per year)"))
+lab_log_bm <- expression(atop("Log community biomass ("*g.m^{-2}*")", "trend slope (log / % per year)"))
+
 p_bef <- fig1_2$rich$log_bm_std +
-  annotate("text", x = -.05, y = .3, parse = T,
-    label = beta_rsq(rsq = coeff_bef["rsq"],
-      beta = coeff_bef["estimate"], se =
-        coeff_bef["std.error"])
+  annotate("text", x = .1, y = -.5, parse = T,
+    label = beta_rsq(
+      rsq = coeff_bef["rsq"],
+      beta = coeff_bef["estimate"],
+      se = coeff_bef["std.error"]
+    )
    ) +
   labs(
-    y = "Log community biomass (g per year)",
-    x = "Log species richness (per year)"
-  )
+    y = lab_log_bm,
+    x = lab_log_rich
+  ) +
+scale_xy_log_trends(breaks = c(-.10, -.050, 0, .050, .10), axis = "x") +
+scale_xy_log_trends(breaks = c(-.4, -.2, 0, .4, .2), axis = "y", sep = " / ")
+
 
 ggMarginal(p_bef, type = "histogram")
 ```
 
 We found a strong positive relationship between the temporal trends of community
 biomass and the ones of species richness ($r_\delta = `r tps_r_sest["p_bm"]`$,
-Fig. \@ref(fig:bef), Table \@ref(tab:aov)), meaning that both temporal trends
+Fig. \@ref(fig:bef)), meaning that both temporal trends
 had the same direction in average. At the sites 
 where species richness decreased over time, community biomass also decreased
 over time. On the other hand, at the sites where species richness increased over
@@ -664,8 +716,8 @@ community biomass ($r_\delta = `r tps_bm_sest["ct"]`$), also meaning that both
 temporal trends had the same direction in average. That is, the sites where
 food-web connectance decreased over time also had community biomass that
 decreased over time and reversely. It suggests that communities that decreased
-in biomass
-over time loose generalist predators over time, as connectance measures the degree of generalism and reversely that communities
+in biomass over time loose generalist predators over time, as connectance
+measures the degree of generalism, and reversely that communities
 gaining biomass over time also gain generalist predators. Spatially, we also found
 a positive relationship between median connectance and median species
 richness ($r_\delta = `r sp_b_sest["ct"]`$). However, we did not observe
@@ -677,8 +729,7 @@ along the spatial gradient
 
 The temporal trends of average trophic level had a strong positive
 relationship with the ones of community biomass 
-($r_\delta = `r tps_bm_sest["tlvl"]`$, Fig. \@ref(fig:bmr)B, Table
-\@ref(tab:aov)), meaning
+($r_\delta = `r tps_bm_sest["tlvl"]`$, Fig. \@ref(fig:bmr)B), meaning
 that sites where community biomass decreased over time, average trophic level
 decreased over time and *vice versa*. It means that in communities loosing biomass
 over time, the average biomass of the food-web moved down to lower trophic level
@@ -689,8 +740,7 @@ trophic level was unrelated to the ones of species richness. It suggests that in
 communities either loosing or gaining species richness over time, the location of
 average biomass along trophic level did not significantly change according to
 species richnnes.  However, we found a strong negative relationship in space 
-($r_\delta = `r sp_r_sest["tlvl"]`$, Fig. \@ref(fig:std), Table
-\@ref(tab:aov-sp)).
+($r_\delta = `r sp_r_sest["tlvl"]`$, Fig. \@ref(fig:std)).
 
 Evenness of biomass was negatively linked to community
 biomass in time and in space 
@@ -699,10 +749,9 @@ biomass in time and in space
 lost biomass over time also had a more even distribution of biomass across species over
 time and *vice versa*. A similar reasoning applies in space. On the
 other hand, we found a positive relationship between the temporal trends of
-biomass evenness and the one of species richness (Fig. \@ref(fig:bmr)F, Table
-\@ref(tab:aov), $r_\delta = `r tps_r_sest["p_bm"]`$). We found the same
-relationship in space, twice as strong however 
-($r_\delta = `r sp_r_sest["p_bm"]`$).
+biomass evenness and the one of species richness (Fig. \@ref(fig:bmr)F,
+$r_\delta = `r tps_r_sest["p_bm"]`$). We found the same relationship in space,
+twice as strong however ($r_\delta = `r sp_r_sest["p_bm"]`$).
 
 
 ```{r}
@@ -736,11 +785,16 @@ fig_rich_cap <- paste0(
 ```{r}
 fig_bm_rich_cap <- paste0(
   "Relationships between the temporal trends of food-web structure
-  and the ones of community biomass (left panel) species richness (right panel).
+  and the ones of community biomass (left panel, A, C, E) species richness (right panel, B, D, F).
   The lines surrounding each point display the standard errors associated to
   the estimated temporal trends. Red and black lines represent respectively
-  significant relationships. The histograms display the distribution of
-  response and predictive variables.")
+  significant and non-significant slopes, both lines displays prediction from
+  the Ordinary Least Squares model. The histograms display the distribution of response and predictive
+  variables. Labels display the unstandardised slope coefficients and their
+  standard errors (see Fig. \\ref{fig:std} for the standardized coefficients).
+  $R^2$ are displayed only on the right panel, as it is the same model for both
+  panels.")
+
 ```
 
 ```{r}
@@ -761,9 +815,9 @@ fig2$bm <- map2(fig2$bm, names(fig2$rich),
   labs(
     y = paste0(var_replacement()[.y],
       "\ntrends (per year)"),
-    x = paste0("Log biomass",
-      "\ntrends (per year)"),
-  )
+    x = lab_log_bm
+  ) +
+  scale_xy_log_trends(breaks = c(-.40, -.20, 0, .20, .40), axis = "x")
 )
 # Delete redondant legend
 fig2$bm[1:2] <- map(fig2$bm[1:2],
@@ -780,8 +834,8 @@ fig2$rich <- map(fig2$rich,
     axis.ticks.y = element_blank(),
     axis.title.y = element_blank()
   ) +
-  labs(x = paste0("Log species richness",
-      "\ntrends (per year)"))
+  labs(x = lab_log_rich) +
+  scale_xy_log_trends(breaks = c(-.10, -.050, 0, .050, .10), axis = "x")
   )
 fig2$rich[1:2] <- map(fig2$rich[1:2],
   ~ .x + theme(
@@ -791,12 +845,61 @@ fig2$rich[1:2] <- map(fig2$rich[1:2],
   )
   )
 
+```
+
+```{r}
+# Add beta and Rsq
+for (i in seq_along(fig2$rich)) {
+
+  resp_var <- names(fig2$rich)[i]
+
+  coeff_rich <- c(
+    rsq = rsq_table_bm_rich_mono_stable_trends %>%
+      filter(Response == resp_var) %$%
+      unlist(.[, c("R.squared")]),
+    reg_table_bm_rich_mono_stable_trends %>%
+      filter(response == resp_var, term == "log_rich_std") %$%
+      unlist(.[, c("estimate", "std.error", "std_estimate", "stdse")])
+    ) %>%
+  round(., 2)
+
+  coeff_bm <- reg_table_bm_rich_mono_stable_trends %>%
+    filter(response == resp_var, term == "log_bm_std") %$%
+    unlist(.[, c("estimate", "std.error", "std_estimate", "stdse")]) %>%
+    round(., 2)
+
+  # Add coeff:
+  fig2$rich[[resp_var]] <- fig2$rich[[resp_var]] +
+  annotate("text", x = -.10, y = Inf, vjust = 1, hjust = 0,
+    size = 2,
+    parse = T,
+    label = beta_rsq(
+      rsq = coeff_rich["rsq"],
+      beta = coeff_rich["estimate"],
+      se = coeff_rich["std.error"]
+    )
+  )
+  fig2$bm[[resp_var]] <- fig2$bm[[resp_var]] +
+  annotate("text", x = -.4, y = Inf, vjust = 1, hjust = 0,
+    size = 2,
+    parse = T,
+    label = beta_rsq(
+      rsq = NULL,
+      beta = coeff_bm["estimate"],
+      se = coeff_bm["std.error"]
+    )
+  )
+}
+```
+
+```{r}
 # Add histograms
 fig2$bm[[1]] <- ggMarginal(fig2$bm[[1]], type = "histogram", margins = "x")
 fig2$rich[[1]] <- ggMarginal(fig2$rich[[1]], type = "histogram", margins = "both")
 fig2$rich[2:3] <- map(fig2$rich[2:3], ~ggMarginal(.x, type = "histogram", margins = "y"))
-
 ```
+
+
 
 ```{r bmr, out.width="80%", fig.height=7, fig.cap=fig_bm_rich_cap}
 plot_grid(
@@ -818,9 +921,8 @@ plot_grid(
 std_cap <- paste0(
   "Assessment of the space-for-time hypothesis. Effect of community biomass (top
   panel) and species richness (bottom panel) on food-web structure for the
-temporal and spatial models. Top of
-  bars display the standardized coefficients from the linear models, the lines
-  around display the standard errors.")
+temporal and spatial models. The bar tops display the standardized slope coefficients
+from the models ($r_\\delta$), the lines around bar tops display the standard errors.")
 ```
 
 ```{r std, fig.cap=std_cap, fig.width=6}
@@ -840,8 +942,11 @@ std_table_bm_rich_mono_stable_trends %>%
   geom_col(position = position_dodge(width = .9)) +
   geom_linerange(aes(ymin = std_estimate - stdse, ymax = std_estimate + stdse),
     position = position_dodge(width = .9)) +
-  labs(x = "Response variables", y = "Standardized slopes", fill = "Model") +
-  theme(legend.position = c(0.7, .1),
+  labs(
+    x = "Response variables",
+    y = expression(paste("Standardized slope coefficients ", r[delta])),
+    fill = "Model") +
+  theme(legend.position = c(0.6, .05),
     legend.direction = "horizontal",
     text = element_text(size = 8), axis.text = element_text(size = 8)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., name = "Predictive variable",
@@ -1047,119 +1152,4 @@ functioning.
 
 
 
-
-\newpage
-
-# Tables {-}
-
-## Statistical models 
-
-### Temporal
-
-```{r}
-loadd(pred_bm_rich_mono_stable_trends,
-  model_bm_rich_int_mono_stable_trends,
-  model_bm_rich_int_mono_stable_trends,
-  anova_table_bm_rich_mono_stable_trends)
-
-anova_table_bm_rich_mono_stable_trends %>%
-  mutate(
-    response = str_replace_all(response, var_replacement()),
-    term = str_replace_all(term, var_replacement())
-  ) %>%
-  kable(.,
-    booktabs = TRUE,
-    row.names = FALSE,
-    caption =
-      paste0(
-      "ANOVA results for the links between the temporal trends of
-      community biomass and the temporal trends of the network structure."
-    ),
-  label = "aov"
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
-reg_table_bm_rich_mono_stable_trends %>%
-  mutate(
-    response = str_replace_all(response, var_replacement()),
-    term = str_replace_all(term, var_replacement())
-    ) %>%
-kable(., booktabs = TRUE,
-  row.names = FALSE,
-  caption =
-    paste0(
-      "Regression coefficients for the linear models explaining the links
-      between the temporal trends of community biomass and the temporal trends
-      of the network structure."),
-      label = "reg"
-      ) %>%
-  kable_styling(latex_options = c("scale_down", "striped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-
-
-```{r}
-table_rsq_tps <- rsq_table_bm_rich_mono_stable_trends %>%
-  mutate(
-    Response = str_replace_all(Response, var_replacement())
-  )
-table_rsq_tps %>%
-  kable(., booktabs = TRUE,
-    caption =
-      paste0(
-      "Marginal and conditional squared R for temporal models."),
-  label = "rsq"
-      ) %>% #
-  kable_styling(latex_options = c("striped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-
-### Spatial
-
-```{r}
-loadd(
-  sp_anova_table_bm_rich_mono_stable_trends,
-  sp_rsq_table_bm_rich_mono_stable_trends
-)
-```
-
-
-```{r}
-sp_anova_table_bm_rich_mono_stable_trends %>%
-  mutate(
-    response = str_replace_all(response, var_replacement()),
-    term = str_replace_all(term, var_replacement()),
-  ) %>%
-  kable(.,
-    booktabs = TRUE,
-    row.names = FALSE,
-    caption =
-      paste0(
-      "ANOVA results for the links among the spatial variation of community
-      biomass and species richness and the one of network structure."),
-  label = "aov-sp"
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "striped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
-sp_rsq_table_bm_rich_mono_stable_trends %>%
-  mutate(
-    Response = str_replace_all(Response, var_replacement())
-  ) %>%
-  kable(., booktabs = TRUE,
-    caption =
-      paste0(
-      "Marginal and conditional squared R for spatial models."),
-  label = "rsq-sp"
-      ) %>% #
-  kable_styling(latex_options = c("striped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
 

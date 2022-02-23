@@ -417,19 +417,27 @@ get_sp_model_plot <- function(model = sp_models) {
 
 get_predict_from_new_model <- function(model = NULL, x_bound = slope_x_bound) {
 
-  x_bound <- tibble::enframe(x_bound, name = "term", value = "min_max")
+  if (!is.null(x_bound)) {
+    x_bound <- tibble::enframe(x_bound, name = "term", value = "min_max")
+  }
 
   # Build the df with term of the model and p.value of Anova
   ti <- tibble(
     response = names(model),
     model = model,
     aov_mod = map(model, car::Anova),
-    aov_tab = map(aov_mod, ~broom::tidy(.x) %>%
-      filter(term != "Residuals") %>%
-      select(term, p.value)
-    )) %>%
-  unnest(aov_tab) %>%
-  left_join(x_bound, by = "term")
+    aov_tab = map(aov_mod,
+      ~broom::tidy(.x) %>%
+        filter(term != "Residuals") %>%
+        select(term, p.value)
+    )
+    ) %>%
+  unnest(aov_tab)
+
+if (!is.null(x_bound)) {
+  ti <- ti %>%
+    left_join(x_bound, by = "term")
+}
 
 # get prediction terms and predictions
 ti %>%
@@ -443,13 +451,23 @@ ti %>%
       )
     )
   )
-
 }
 
 get_pred_plot_from_new_model <- function(
   model = NULL,
   dataset = NULL,
   x_bound = slope_x_bound, std_error_bar = TRUE) {
+
+
+  if (is.null(x_bound)) {
+    if (!is.null(names(model))) {
+      x_bound <- map(dataset[, names(model)],
+        ~ c(min(.x, na.rm = TRUE), max(.x, na.rm = TRUE))
+      )
+    } else {
+      x_bound <- map(dataset, ~ c(min(.x, na.rm = TRUE), max(.x, na.rm = TRUE)))
+    }
+  }
 
   # Get significativity from anova and make prediction
   aov_pred <- get_predict_from_new_model(
@@ -511,6 +529,38 @@ get_corr_plot_tps_trends <- function(
 }
 
 get_range_variable_plot <- function(
+  range_variable = NULL
+  ) {
+
+
+  p_min_max <- range_variable$range_variable_station %>%
+    pivot_longer(
+      cols = c(min, max),
+      names_to = "minmax",
+      values_to = "values") %>%
+    ggplot(aes(x = values, fill = minmax)) +
+    geom_histogram() +
+    geom_vline(data = range_variable$range_spatial_variable %>%
+      pivot_longer(
+        cols = c(min, max),
+        names_to = "minmax",
+        values_to = "values"),
+    aes(xintercept = values, color = minmax), size = 2
+    ) +
+  facet_wrap(~variable, scale = "free_x")
+
+
+  p_range <- range_variable$range_variable_station %>%
+    mutate(range = abs(max - min)) %>%
+    ggplot(aes(x = range)) +
+    geom_histogram() +
+    geom_vline(data = range_variable$range_spatial_variable, aes(xintercept = range), size = 2) +
+    facet_wrap(~variable, scale = "free")
+
+  return(list(min_max = p_min_max, range = p_range))
+}
+
+get_range_variable <- function(
   full_data = NULL,
   sp_data = NULL,
   st = NULL,
@@ -541,29 +591,9 @@ get_range_variable_plot <- function(
       .groups = "drop"
     )
 
-  p_min_max <- range_variable_station %>%
-    pivot_longer(
-      cols = c(min, max),
-      names_to = "minmax",
-      values_to = "values") %>%
-    ggplot(aes(x = values, fill = minmax)) +
-    geom_histogram() +
-    geom_vline(data = range_spatial_variable %>%
-      pivot_longer(
-        cols = c(min, max),
-        names_to = "minmax",
-        values_to = "values"),
-    aes(xintercept = values, color = minmax), size = 2
-    ) +
-  facet_wrap(~variable, scale = "free_x")
+  return(list(
+    range_spatial_variable = range_spatial_variable,
+    range_variable_station = range_variable_station
+  ))
 
-
-  p_range <- range_variable_station %>%
-    mutate(range = abs(max - min)) %>%
-    ggplot(aes(x = range)) +
-    geom_histogram() +
-    geom_vline(data = range_spatial_variable, aes(xintercept = range), size = 2) +
-    facet_wrap(~variable, scale = "free")
-
-  return(list(min_max = p_min_max, range = p_range))
 }

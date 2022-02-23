@@ -528,14 +528,17 @@ save_plot(
 # New figure
 
 ```{r}
-# get a station that represents the results 
+# get a station that represents the results
 st_var_shape <- rigal_classification %>%
   unnest(classif) %>%
   filter(variable %in% c(get_com_str_var(), "log_bm_std")) %>%
   select(station, variable, direction)  %>%
-  pivot_wider(names_from = variable, values_from = direction) 
+  pivot_wider(names_from = variable, values_from = direction)
 dec_representative <- st_var_shape %>%
-  filter(log_bm_std == "decrease", ct_ff == "decrease", w_trph_lvl_avg == "decrease") 
+  filter(
+    log_bm_std == "decrease",
+    ct_ff == "decrease",
+    w_trph_lvl_avg == "decrease")
 ```
 
 
@@ -585,7 +588,7 @@ save_plot(
 ```
 ```{r}
 v_colors =  viridis(n = 2, begin = 0.5, end = 1)
-names(v_colors) <- c("tps", "sp") 
+names(v_colors) <- c("tps", "sp")
 
 tps_dec_inc <- map(c("log_bm_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg", "piel_bm"), # 
   ~plot_temporal_variable_lm(st = st_decreasing, var = .x, col_median =
@@ -634,7 +637,17 @@ save_plot(
   g,
   ncol = 3, nrow = 1,
   base_width = 7, base_height = 7)
+```
 
+## Plot PCA 
+
+```{r}
+loadd(p_pca)
+save_plot(get_mypath("figures/rotated_pca.pdf"),
+  p_pca,
+  ncol = 1, nrow = 1,
+  base_width = 4, base_height = 4
+)
 ```
 
 
@@ -685,10 +698,7 @@ save_plot(
 )
 ```
 
-
-
 ```{r}
-
 test_fig_mat_met <- plot_grid(
   map_st,
   plot_grid( plot_grid(tps_bm_dec, tps_bm_inc)),
@@ -703,7 +713,6 @@ save_plot(
 )
 ```
 
-
 ```{r}
 test_mat_met <- plot_grid(
   plot_grid(map_st, p_dec_log_bm, ncol = 2),
@@ -717,5 +726,3 @@ save_plot(
   base_width = 9
 )
 ```
-
-

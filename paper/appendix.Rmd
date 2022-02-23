@@ -81,19 +81,12 @@ var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
 ```{r}
 loadd(p_st_mono_trends_stable_rich_bm, st_mono_trends_stable_rich_bm)
 
-st_cap <- paste0(
-  "Repartion of the", length(st_mono_trends_stable_rich_bm), " stations used in
-  the data analysis.")
-```
-
-```{r st, fig.cap = st_cap}
-p_st_mono_trends_stable_rich_bm
 ```
 
 
 ```{r}
 range_cap <- paste0(
-  "Range of variation of variables in spatial (vertical line) and temporal
+  "Range of variation of variables in spatial (vertical lines) and temporal
   dataset for the (A) minimum and maximum values and (B) the range (i.e. maximum
     - minimum)."
 )
@@ -103,18 +96,17 @@ range_cap <- paste0(
 ```{r range, fig.cap=range_cap, fig.height=10}
 loadd(p_range)
 
-
 plot_grid(plotlist = p_range, nrow = 2, labels = "AUTO")
 ```
 
+\newpage
 
 ## Correlation
 
 
 ```{r}
-cor_cap <- paste0("Correlation plot among variables for spatial and temporal
-  relationships. ", "Median values over temporal series in each station were
-  used for spatial relationships. ", "For temporal relationships, we used the
+cor_cap <- paste0("Correlation plot among variables.", "Median values over time were
+  used for spatial relationships. ", "For temporal model, we used the
   temporal trends in each station. Futhermore, each station was weighted by the
   average error standard on the temporal trends of the variables.",
   " Pisc: piscivorous, Nb: number, node: node of the food-web corresponding to a
@@ -701,3 +693,101 @@ tlvl_cross_table <- tibble(
 kable(tlvl_cross_table) %>%
   add_header_above(c(" " = 1, "bm_std" = 3))
 ```
+
+\newpage
+
+## Statistical model tables 
+
+### Temporal
+
+```{r}
+loadd(
+  pred_bm_rich_mono_stable_trends,
+  model_bm_rich_int_mono_stable_trends,
+  model_bm_rich_int_mono_stable_trends,
+  rsq_table_bm_rich_mono_stable_trends
+)
+```
+
+
+```{r}
+reg_table_bm_rich_mono_stable_trends %>%
+  mutate(
+    response = str_replace_all(response, var_replacement()),
+    term = str_replace_all(term, var_replacement())
+    ) %>%
+kable(., booktabs = TRUE,
+  row.names = FALSE,
+  caption =
+    paste0(
+      "Regression coefficients for the linear models explaining the links
+      between the temporal trends of community biomass and the temporal trends
+      of the network structure."),
+      label = "reg"
+      ) %>%
+  kable_styling(latex_options = c("scale_down", "striped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+
+
+```{r}
+table_rsq_tps <- rsq_table_bm_rich_mono_stable_trends %>%
+  mutate(
+    Response = str_replace_all(Response, var_replacement())
+  )
+table_rsq_tps %>%
+  kable(., booktabs = TRUE,
+    caption =
+      paste0(
+      "Marginal and conditional squared R for temporal models."),
+  label = "rsq"
+      ) %>% #
+  kable_styling(latex_options = c("striped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+
+### Spatial
+
+```{r}
+loadd(
+  sp_anova_table_bm_rich_mono_stable_trends,
+  sp_rsq_table_bm_rich_mono_stable_trends
+)
+```
+
+
+```{r}
+sp_anova_table_bm_rich_mono_stable_trends %>%
+  mutate(
+    response = str_replace_all(response, var_replacement()),
+    term = str_replace_all(term, var_replacement()),
+  ) %>%
+  kable(.,
+    booktabs = TRUE,
+    row.names = FALSE,
+    caption =
+      paste0(
+      "ANOVA results for the links among the spatial variation of community
+      biomass and species richness and the one of network structure."),
+  label = "aov-sp"
+  ) %>%
+  kable_styling(latex_options = c("scale_down", "striped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+```{r}
+sp_rsq_table_bm_rich_mono_stable_trends %>%
+  mutate(
+    Response = str_replace_all(Response, var_replacement())
+  ) %>%
+  kable(., booktabs = TRUE,
+    caption =
+      paste0("Marginal and conditional $R^2$ for the spatial models."),
+  label = "rsq-sp"
+      ) %>% #
+  kable_styling(latex_options = c("striped")) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
