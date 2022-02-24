@@ -83,6 +83,7 @@ net_var_rich <- c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
 
 ```{r}
 loadd(slope_com_var_no_covar, st_mono_trends_stable_rich_bm)
+loadd(range_data)
 ```
 ```{r}
 nb_st <- unique(slope_com_var_no_covar$station) %>% length

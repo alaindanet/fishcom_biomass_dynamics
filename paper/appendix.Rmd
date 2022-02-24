@@ -29,7 +29,7 @@ number_sections: true
 
 ```{r, echo=FALSE}
 knitr::opts_chunk$set(
-  cache = TRUE,
+  cache = FALSE,
   collapse = TRUE,
   comment = "#>",
   #fig.dim = c(7, 7),
@@ -95,7 +95,6 @@ range_cap <- paste0(
 
 ```{r range, fig.cap=range_cap, fig.height=10}
 loadd(p_range)
-
 plot_grid(plotlist = p_range, nrow = 2, labels = "AUTO")
 ```
 

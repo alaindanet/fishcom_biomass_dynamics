@@ -294,8 +294,8 @@ model_vif = get_vif(model,
     full_data = full_data2,
     sp_data = summary_var_med,
     st = st_mono_trends_stable_rich_bm,
-    var_to_keep = c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
-      "piel_bm", "rich_std", "bm_std")),
+    var_to_keep = c("ct_ff", "w_trph_lvl_avg", "piel_bm", "rich_std", "bm_std",
+      "richness", "biomass")),
   p_range = get_range_variable_plot( range_variable = range_data),
   p_st_mono_trends_stable_rich_bm = ggplot() +
     geom_sf(data = region_polygon) +

@@ -572,24 +572,26 @@ get_range_variable <- function(
     filter(station %in% st) %>%
     select(c("station", all_of(var_to_keep))) %>%
     pivot_longer(!station, names_to = "variable", values_to = "values") %>%
-    mutate(variable = str_replace_all(variable, var_replacement())) %>%
+    mutate(variable = var_replacement()[variable]) %>%
     group_by(variable) %>%
     summarise(
       min = min(values, na.rm = TRUE),
       max = max(values, na.rm = TRUE)) %>%
-    mutate(range = max - min)
+    mutate(range = max - min, ratio = max / min)
 
   range_variable_station <- full_data %>%
     filter(station %in% st) %>%
     select(c("station", all_of(var_to_keep))) %>%
     pivot_longer(!station, names_to = "variable", values_to = "values") %>%
-    mutate(variable = str_replace_all(variable, var_replacement())) %>%
+    mutate(variable = var_replacement()[variable]) %>%
     group_by(station, variable) %>%
     summarise(
       min = min(values, na.rm = TRUE),
       max = max(values, na.rm = TRUE),
       .groups = "drop"
-    )
+    ) %>%
+    mutate(range = max - min, ratio = max / min)
+
 
   return(list(
     range_spatial_variable = range_spatial_variable,

@@ -74,12 +74,14 @@ var_replacement <- function (slope = FALSE, several_lines = FALSE) {
     ct_ff = "Connectance",
     w_trph_lvl_avg = "Avg trophic level",
     #connectance ,weighted_connectance,
-    log_rich_std = "Log Species richness",
-    log_bm_std = "Log Biomass",
-    bm_std = "Biomass",
-    rich_std = "Species richness",
+    log_rich_std = "Log Species richness (m^-2)",
+    log_bm_std = "Log Biomass (g.m^-2)",
+    bm_std = "Biomass (g.m^-2)",
+    rich_std = "Species richness (m^-2)",
     piel_nind = "Evenness (abundance)",
-    piel_bm = "Evenness (biomass)"
+    piel_bm = "Evenness (biomass)",
+    biomass = "Biomass (g)",
+    richness = "Species richness"  
   )
 
   if (several_lines) {
