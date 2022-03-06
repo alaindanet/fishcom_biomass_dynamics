@@ -255,7 +255,7 @@ get_model_bm_rich_no_covar_no_inc <- function (.data = NULL) {
       data = {{.data}},
       weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error),
     ct_ff = lm(
-      ct_ff ~ log_rich_std  + log_bm_std ,
+      ct_ff ~ log_rich_std  + log_bm_std,
       data = {{.data}},
       weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error * ct_ff_strd_error),
     w_trph_lvl_avg = lm(

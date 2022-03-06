@@ -192,6 +192,7 @@ model_vif = get_vif(model,
     anova = map(scaled_mod, ~anova(.x))
   ),
 
+
   #temporal_dynamics_plot = get_temporal_dynamics_plot(temporal_dynamics = temporal_dynamics),
   temporal_dynamics_coef = get_lm_coeff(
     .data = temporal_dynamics,
@@ -522,9 +523,62 @@ model_vif = get_vif(model,
   model_bm_rich_int_mono_stable_trends = get_model_bm_rich_int(
     .data = filter(slope_com_var_no_covar, station %in%
     st_mono_trends_stable_rich_bm)
-  ),
+    ),
+  data_tps_sem = slope_com_var_no_covar %>%
+    filter(station %in% st_mono_trends_stable_rich_bm) %>%
+    select(
+      ct_ff, ct_ff_strd_error,
+      log_bm_std, log_bm_std_strd_error,
+      log_rich_std, log_rich_std_strd_error,
+      w_trph_lvl_avg, w_trph_lvl_avg_strd_error) %>%
+    na.omit(),
+  sem_tps = list(
+    lm(
+      ct_ff ~ log_bm_std + log_rich_std,
+      data = data_tps_sem,
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error *
+        ct_ff_strd_error
+      ),
+    lm(
+      w_trph_lvl_avg ~ log_bm_std + log_rich_std,
+      data = data_tps_sem,
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error *
+        w_trph_lvl_avg_strd_error
+      ),
+    lm(
+      log_bm_std ~ log_rich_std,
+      data = data_tps_sem,
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error
+    )
+    ),
+  semeff = semEff(sem_tps, R = 10000, seed = 13, parallel = "no"),
+
+
 
   #### Spatial
+  data_sp_sem = sp_st_data %>%
+    filter(station %in% st_mono_trends_stable_rich_bm) %>%
+    select(log_rich_std, log_RC1, log_RC2,
+      log_bm_std, ct_ff, w_trph_lvl_avg, basin),
+  sp_sem = list(
+    log_rich_std = lmer(
+      log_rich_std ~ log_RC1 + log_RC2 + (1 | basin),
+      data = data_sp_sem
+      ),
+    log_bm_std = lmer(
+      log_bm_std ~ log_rich_std + log_RC1 + log_RC2 + (1 | basin),
+      data = data_sp_sem
+      ),
+    ct_ff = lmer(
+      ct_ff ~ log_rich_std + log_bm_std + log_RC1 + log_RC2 + (1 | basin),
+      data = data_sp_sem
+      ),
+    w_trph_lvl_avg = lmer(
+      w_trph_lvl_avg ~ log_rich_std + log_bm_std + log_RC1 + log_RC2 + (1 | basin),
+      data = data_sp_sem
+    )
+    ),
+  sp_semeff = semEff(sp_sem, R = 10000, seed = 13, parallel = "no", type = "parametric"),
   target_sp_model_bm_rich = target(
     get_mod_list_lme4(.data = filter(sp_st_data, station %in% y) %>%
       na.omit %>%
