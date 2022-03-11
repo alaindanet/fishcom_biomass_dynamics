@@ -1,0 +1,185 @@
+---
+title: "SEM"
+author: AD 
+date: \today
+output:
+  bookdown::html_document2:
+    toc: true
+    theme: "readable"
+    code_folding: hide
+---
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  #fig.dim = c(7, 7),
+  fig.fullwidth = TRUE,
+  fig.show = "hold",
+  message = FALSE,
+  warning = FALSE,
+  results = TRUE
+)
+```
+
+```{r}
+loadd(slope_com_var_no_covar, st_mono_trends_rich_bm)
+library(piecewiseSEM)
+library(semEff)
+library(kableExtra)
+library(lme4)
+mypath <- rprojroot::find_package_root_file
+source(mypath("R/misc.R"))
+source(mypath("R/variable_shortcut.R")) # Define your custom code as a bunch of functions.
+source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
+
+mytheme <- theme_cowplot() +
+background_grid()
+
+theme_set(mytheme)
+```
+
+```{r}
+loadd(sp_st_data)
+loadd(slope_com_var_no_covar)
+loadd(st_mono_trends_stable_rich_bm)
+```
+
+
+```{r}
+var_analysis <- c("ct_ff", "log_bm_std", "log_rich_std", "w_trph_lvl_avg")
+
+data_sp_sem <- sp_st_data %>%
+  filter(station %in% st_mono_trends_stable_rich_bm) %>%
+  select(c("station", all_of(var_analysis), "basin", "log_RC1", "log_RC2")) %>%
+  na.omit()
+data_tps_sem <- slope_com_var_no_covar %>%
+  filter(station %in% st_mono_trends_stable_rich_bm) %>%
+  select(station, starts_with(var_analysis)) %>%
+  na.omit()
+```
+# SEM
+
+## Temporal SEM 
+
+```{r}
+sem <- list(
+  lm(ct_ff ~ log_bm_std + log_rich_std, data = data_tps_sem,
+    weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error *
+      ct_ff_strd_error),
+    lm(w_trph_lvl_avg ~ log_bm_std + log_rich_std, data = data_tps_sem,
+      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error *
+        w_trph_lvl_avg_strd_error),
+      lm(log_bm_std ~ log_rich_std, data = data_tps_sem,
+        weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error
+        )
+)
+plot(as.psem(sem),
+  node_attrs = data.frame(
+    shape = "rectangle", fixedsize = TRUE, width = 1, color = "black",
+    fillcolor = "lightgrey")
+)
+```
+
+
+## Spatial SEM
+
+```{r}
+sp_sem <- list(
+     log_rich_std = lmer(log_rich_std ~ log_RC1 + log_RC2 + (1 | basin), data = data_sp_sem),
+     log_bm_std = lmer(log_bm_std ~ log_rich_std + log_RC1 + log_RC2 + (1 | basin), data = data_sp_sem),
+     ct_ff = lmer(ct_ff ~ log_rich_std + log_bm_std + log_RC1 + log_RC2 + (1 | basin), data = data_sp_sem),
+     w_trph_lvl_avg = lmer(w_trph_lvl_avg ~ log_rich_std + log_bm_std + log_RC1 + log_RC2 +
+       (1 | basin), data = data_sp_sem)
+)
+sp_psem <- as.psem(sp_sem)
+summary_sp_sem <- summary(sp_psem)
+plot(sp_psem,
+  node_attrs = data.frame(
+    shape = "rectangle", fixedsize = TRUE, width = .8, color = "black",
+    fillcolor = "lightgrey", nodesep = 2))
+```
+
+- Bootstrap (10000) takes a very long time: 
+```{r, eval=FALSE}
+sp_semeff <- semEff(sp_sem, R = 10000, seed = 13, parallel = "no", type = "parametric")
+save(sp_semeff, file = get_mypath("data", "sp_semeff.rda"))
+
+semeff <- semEff(sem, R = 10000, seed = 13, parallel = "no")
+save(semeff, file = get_mypath("data", "semeff.rda"))
+
+semeff_perc <- semEff(sem, R = 100, seed = 13, parallel = "no",
+  ci.type = "perc"
+)
+save(semeff_perc, file = get_mypath("data", "semeff_perc.rda"))
+
+sp_semeff_perc <- semEff(sp_sem, R = 100, seed = 13, parallel = "no",
+  ci.type = "perc", ran.eff = "basin"
+)
+save(sp_semeff_perc, file = get_mypath("data", "sp_semeff_perc.rda"))
+
+sp_semeff_df <- from_semEff_to_table(x = sp_semeff_perc)
+semeff_df <- from_semEff_to_table(x = semeff_perc)
+```
+
+
+# Direct, indirect and total effects
+
+
+```{r}
+load(get_mypath("data", "semeff_perc.rda"))
+load(get_mypath("data", "sp_semeff_perc.rda"))
+```
+
+
+
+```{r}
+tps_sem_tbl <- from_semEff_to_table(semeff_perc)
+tps_sem_tbl[, c("response", "predictor")] <-
+  map(c("response", "predictor"),
+  ~ var_replacement()[tps_sem_tbl[[.x]]])
+
+sp_sem_tbl <- from_semEff_to_table(sp_semeff_perc)
+sp_sem_tbl[, c("response", "predictor")] <-
+  map(c("response", "predictor"),
+  ~ var_replacement()[sp_sem_tbl[[.x]]])
+```
+
+## Temporal SEM
+
+- Temporal sem:
+  - Main difference with previous approach: bootstrapping reveals that
+    biomass have no more significant direct effect on connectance where as
+    anova, regression, and then SEM told us that it was significant
+
+```{r}
+tps_sem_tbl$predictor = cell_spec(tps_sem_tbl$predictor,
+  color = case_when(
+    tps_sem_tbl$lower_ci > 0 & tps_sem_tbl$upper_ci > 0 ~ "red", 
+    tps_sem_tbl$lower_ci < 0 & tps_sem_tbl$upper_ci < 0 ~ "blue",
+    TRUE ~ "black"
+      ))
+kbl(tps_sem_tbl, align = "c", format = "html", escape = FALSE) %>%
+  kable_paper(full_width = F) %>%
+  collapse_rows(columns = 1:2, valign = "top")
+```
+
+## Spatial SEM
+
+
+```{r}
+sp_sem_tbl$predictor = cell_spec(
+  sp_sem_tbl$predictor,
+  color = case_when(
+    sp_sem_tbl$lower_ci > 0 & sp_sem_tbl$upper_ci > 0 ~ "red", 
+    sp_sem_tbl$lower_ci < 0 & sp_sem_tbl$upper_ci < 0 ~ "blue",
+    TRUE ~ "black"
+      ))
+kbl(sp_sem_tbl, align = "c", format = "html", escape = FALSE) %>%
+  kable_paper(full_width = F) %>%
+  collapse_rows(columns = 1:2, valign = "top")
+```
+
+
+
