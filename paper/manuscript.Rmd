@@ -589,17 +589,16 @@ fig1_2 <- get_plot_rich_bm(
   get_list = TRUE,
   rm_legend = FALSE,
   bm_x = "log_bm_std",
-  bm_y = c("ct_ff", "w_trph_lvl_avg", "piel_bm"), #, "piel_nind"
-  rich_y = c("ct_ff", "w_trph_lvl_avg", "log_bm_std", "piel_bm"), #, "piel_nind"
+  bm_y = c("ct_ff", "w_trph_lvl_avg"), #, "piel_nind"
+  rich_y = c("ct_ff", "w_trph_lvl_avg", "log_bm_std", #, "piel_nind"
   rich_x = "log_rich_std"
   )
 p_bm <- fig1_2$bm
-names(p_bm) <- c("ct_ff", "w_trph_lvl_avg", "piel_bm")
+names(p_bm) <- c("ct_ff", "w_trph_lvl_avg")
 #plot_grid(plotlist = p_bm)
 
 p_sp_bm <- sp_fig1_2_bm_rich_mono_stable_trends$bm
-names(p_sp_bm) <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg",
-  "piel_bm", "piel_nind")
+names(p_sp_bm) <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg")
 ```
 
 

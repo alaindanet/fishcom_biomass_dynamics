@@ -21,9 +21,66 @@ knitr::opts_chunk$set(
   warning = FALSE,
   results = TRUE
 )
+library(DiagrammeR)
+DiagrammeR::render_graph(graph)
+```
+```{r}
+plot.psem <- function(
+  x,
+  return=FALSE,
+  node_attrs = data.frame(shape = "rectangle", color = "black",
+    fillcolor = "white"),
+  edge_attrs = data.frame(style = "solid", color="black"),
+  ns_dashed = T, alpha=0.05,
+  show = "std", digits = 3, 
+  add_edge_label_spaces = TRUE, ...
+  ){
+
+  #get the coefficients table
+  ctab <- coefs(x)
+  ctab$Response <- as.character(ctab$Response)
+  ctab$Predictor <- as.character(ctab$Predictor)
+
+  #make a nodes DF
+  unique_nodes <- unique(c(ctab$Response, ctab$Predictor))
+  nodes <- create_node_df(n = length(unique_nodes),
+    nodes = unique_nodes,
+    type = "lower",
+    label = unique_nodes)
+  nodes <- cbind(nodes, node_attrs)
+  nodes[] <- lapply(nodes, as.character)
+  nodes$id <- as.numeric(nodes$id)
+
+  #make an edges DF
+  edges <- create_edge_df(
+    from = match(ctab$Predictor, unique_nodes),
+    to = match(ctab$Response, unique_nodes))
+
+  edges <- data.frame(edges, edge_attrs)
+  edges[] <- lapply(edges, as.character)
+  edges$id <- as.numeric(edges$id)
+  edges$from <- as.numeric(edges$from)
+  edges$to <- as.numeric(edges$to)
+  if(ns_dashed) edges$style[which(ctab$P.Value>alpha)] <- "dashed"
+  if(show == "std") edges$label = round(ctab$`Std.Estimate`, digits)
+  if(show == "unstd") edges$label = round(ctab$Estimate, digits)
+  if(add_edge_label_spaces) edges$label = paste0(" ", edges$label, " ")
+
+  #turn into a graph
+  sem_graph <- create_graph(nodes, edges, directed=TRUE)
+
+  if(return) return(sem_graph)
+
+  render_graph(sem_graph, ...)
+
+}
 ```
 
+
+
+
 ```{r}
+library(drake)
 loadd(slope_com_var_no_covar, st_mono_trends_rich_bm)
 library(piecewiseSEM)
 library(semEff)
@@ -57,11 +114,30 @@ data_sp_sem <- sp_st_data %>%
 data_tps_sem <- slope_com_var_no_covar %>%
   filter(station %in% st_mono_trends_stable_rich_bm) %>%
   select(station, starts_with(var_analysis)) %>%
-  na.omit()
+  na.omit() %>%
+  mutate(
+    error_mult_ct =
+      (log_rich_std_strd_error * log_bm_std_strd_error *
+        ct_ff_strd_error),
+      error_mult_tlvl =
+        (log_rich_std_strd_error * log_bm_std_strd_error *
+          w_trph_lvl_avg_strd_error),
+        error_mult_bm = 
+          (log_rich_std_strd_error * log_bm_std_strd_error),
+        error_additive_ct = 
+          (log_rich_std_strd_error + log_bm_std_strd_error +
+            ct_ff_strd_error),
+          error_additive_tlvl =
+            (log_rich_std_strd_error + log_bm_std_strd_error +
+              w_trph_lvl_avg_strd_error),
+            error_additive_bm = (log_rich_std_strd_error + log_bm_std_strd_error)
+  )
 ```
 # SEM
 
 ## Temporal SEM 
+
+
 
 ```{r}
 sem <- list(
@@ -78,9 +154,13 @@ sem <- list(
 plot(as.psem(sem),
   node_attrs = data.frame(
     shape = "rectangle", fixedsize = TRUE, width = 1, color = "black",
-    fillcolor = "lightgrey")
+    fillcolor = "lightgrey"),
+  layout = "tree"
 )
+render_graph
 ```
+
+
 
 
 ## Spatial SEM
@@ -181,5 +261,218 @@ kbl(sp_sem_tbl, align = "c", format = "html", escape = FALSE) %>%
   collapse_rows(columns = 1:2, valign = "top")
 ```
 
+# Weight
 
+#
+
+```{r}
+weight_df <- data_tps_sem %>%
+  select(c(station, starts_with("error"))) %>%
+  pivot_longer(-station, names_to = "variable", values_to = "value") %>%
+  mutate(variable = str_remove(variable, "error_")) %>%
+  separate(variable, c("type", "variable"), sep = "_") %>%
+  group_by(type, variable) %>%
+  mutate(weight = value / sum(value))
+weight_df %>%
+  summarise(sum_weight = sum(weight))
+weight_df %>%
+  ggplot(aes(x = weight)) +
+  geom_histogram() +
+  facet_grid(rows = vars(variable), cols = vars(type), scale = "free_x")
+```
+
+- La distribution des poids est super asymétrique avec les multiplications de
+  standard deviation, c'est pour ça que ça merde
+- Ci-dessous, j'ai refais les sem avec des poids additifs, les échantillons des
+  bootstraps sont nettement plus stables 
+
+
+```{r}
+semeff_mult_weight <- semEff(sem, R = 150, seed = 123, parallel = "no",
+  ci.type = "perc"
+)
+
+sem_no_weight <- list(
+  lm(ct_ff ~ log_bm_std + log_rich_std, data = data_tps_sem),
+  lm(w_trph_lvl_avg ~ log_bm_std + log_rich_std, data = data_tps_sem),
+  lm(log_bm_std ~ log_rich_std, data = data_tps_sem)
+)
+
+sem_additive_weight <- list(
+  lm(ct_ff ~ log_bm_std + log_rich_std, data = data_tps_sem,
+    weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
+      ct_ff_strd_error)),
+  lm(w_trph_lvl_avg ~ log_bm_std + log_rich_std, data = data_tps_sem,
+    weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
+      w_trph_lvl_avg_strd_error)),
+  lm(log_bm_std ~ log_rich_std, data = data_tps_sem,
+    weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error)
+  )
+)
+
+semeff_no_weight <- semEff(sem_no_weight, R = 100, seed = 123, parallel = "no",
+  ci.type = "perc"
+)
+semeff_additive_weight <- semEff(sem_additive_weight, R = 100, seed = 123, parallel = "no",
+  ci.type = "perc"
+)
+semeff_avg_weight <- semEff(sem_avg_weight, R = 100, seed = 123, parallel = "no",
+  ci.type = "perc"
+)
+```
+
+```{r}
+semeff_add_weight_tab <- from_semEff_to_table(semeff_avg_weight) %>%
+  mutate(
+    response = var_replacement(several_lines = TRUE)[response],
+    predictor = var_replacement(several_lines = TRUE)[predictor] 
+
+  )
+semeff_no_weight_tab <- from_semEff_to_table(semeff_no_weight) %>%
+  mutate(
+    response = var_replacement(several_lines = TRUE)[response],
+    predictor = var_replacement(several_lines = TRUE)[predictor] 
+  )
+
+semeff_mult_weight_tab <- from_semEff_to_table(semeff_mult_weight) %>%
+  mutate(
+    response = var_replacement(several_lines = TRUE)[response],
+    predictor = var_replacement(several_lines = TRUE)[predictor] 
+  )
+```
+
+
+```{r}
+plot.semeff <- function(
+  x,
+  return=FALSE,
+  node_attrs = data.frame(
+    shape = "rectangle", fixedsize = TRUE, width = 1, color = "black",
+    fillcolor = "lightgrey"),
+  edge_attrs = data.frame(style = "solid", color="black"),
+  ns_dashed = T, alpha=0.05,
+  show = "ci", digits = 2,
+  width_eff = TRUE, scale_fc = 1, 
+  attr_theme = "default",
+  add_edge_label_spaces = TRUE, ...
+  ){
+
+  #get the coefficients table
+  ctab <- x %>%
+    filter(effect_type == "direct")
+  
+  #make a nodes DF
+  unique_nodes <- unique(c(ctab$response, ctab$predictor))
+  nodes <- create_node_df(n = length(unique_nodes),
+    nodes = unique_nodes,
+    type = "lower",
+    label = unique_nodes)
+  nodes <- cbind(nodes, node_attrs)
+  nodes[] <- lapply(nodes, as.character)
+  nodes$id <- as.numeric(nodes$id)
+
+  #make an edges DF
+  edges <- create_edge_df(
+    from = match(ctab$predictor, unique_nodes),
+    to = match(ctab$response, unique_nodes))
+
+  edges <- data.frame(edges, edge_attrs)
+  edges[] <- lapply(edges, as.character)
+  edges$id <- as.numeric(edges$id)
+  edges$from <- as.numeric(edges$from)
+  edges$to <- as.numeric(edges$to)
+  if(ns_dashed) edges$style[which(sign(ctab$lower_ci) != sign(ctab$upper_ci))] <- "dashed"
+  if(width_eff) edges$penwidth <- abs(ctab$effect) * scale_fc 
+  if(show == "std") edges$label = round(ctab$effect, digits)
+  if(show == "ci") { edges$label = paste0(
+    round(ctab$effect, digits),
+    " [", round(ctab$lower_ci, digits),"; ",
+    round(ctab$upper_ci, digits), "]"
+  )
+    }
+  if(add_edge_label_spaces) edges$label = paste0(" ", edges$label, " ")
+
+  #turn into a graph
+  sem_graph <- create_graph(nodes, edges, directed=TRUE,
+    attr_theme = attr_theme)
+
+  if(return) return(sem_graph)
+
+  render_graph(sem_graph, ...)
+
+}
+```
+
+```{r}
+p_semeff_add_weight_tab <- plot.semeff(
+  x = semeff_add_weight_tab,
+  show = "ci",
+  node_attrs = data.frame(
+    shape = "rectangle", fixedsize = TRUE, width = 1.1, color = "black",
+    fillcolor = "lightgrey"),
+  edge_attrs = data.frame(style = "solid",  color="black"),
+  scale_fc = 15,
+  return = TRUE, attr_theme = "tb"
+)
+
+export_graph(
+  graph = p_semeff_add_weight_tab,
+  file_name = here::here("figures", "sem_tps_avg_weight.svg"),
+  file_type = "svg"
+)
+
+p_semeff_no_weight_tab <- plot.semeff(
+  x = semeff_no_weight_tab,
+  show = "ci",
+  node_attrs = data.frame(
+    shape = "rectangle", fixedsize = TRUE, width = 1.1, color = "black",
+    fillcolor = "lightgrey"),
+  edge_attrs = data.frame(style = "solid",  color="black"),
+  scale_fc = 15,
+  return = TRUE, attr_theme = "tb"
+)
+render_graph(p_semeff_no_weight_tab)
+
+export_graph(
+  graph = p_semeff_no_weight_tab,
+  file_name = here::here("figures", "sem_tps_no_weight.svg"),
+  file_type = "svg"
+)
+
+p_semeff_mult_weight_tab <- plot.semeff(
+  x = semeff_mult_weight_tab,
+  show = "ci",
+  node_attrs = data.frame(
+    shape = "rectangle", fixedsize = TRUE, width = 1.1, color = "black",
+    fillcolor = "lightgrey"),
+  edge_attrs = data.frame(style = "solid",  color="black"),
+  scale_fc = 15,
+  return = TRUE, attr_theme = "tb"
+)
+
+export_graph(
+  graph = p_semeff_mult_weight_tab,
+  file_name = here::here("figures", "sem_tps_mult_weight.svg"),
+  file_type = "svg"
+)
+ 
+```
+
+### Multiplicative weight
+
+```{r}
+render_graph(p_semeff_mult_weight_tab)
+```
+
+### Additive weight
+
+```{r}
+render_graph(p_semeff_add_weight_tab)
+```
+
+### No weight
+
+```{r}
+render_graph(p_semeff_no_weight_tab)
+```
 

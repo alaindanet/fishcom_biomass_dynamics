@@ -536,22 +536,22 @@ model_vif = get_vif(model,
     lm(
       ct_ff ~ log_bm_std + log_rich_std,
       data = data_tps_sem,
-      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error *
-        ct_ff_strd_error
+      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
+        ct_ff_strd_error)
       ),
     lm(
       w_trph_lvl_avg ~ log_bm_std + log_rich_std,
       data = data_tps_sem,
-      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error *
-        w_trph_lvl_avg_strd_error
+      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
+        w_trph_lvl_avg_strd_error)
       ),
     lm(
       log_bm_std ~ log_rich_std,
       data = data_tps_sem,
-      weight = 1 / log_rich_std_strd_error * log_bm_std_strd_error
+      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error)
     )
     ),
-  semeff = semEff(sem_tps, R = 10000, seed = 13, parallel = "no"),
+  semeff = semEff(sem_tps, R = 1000, seed = 13, parallel = "no"),
 
 
 
@@ -578,7 +578,7 @@ model_vif = get_vif(model,
       data = data_sp_sem
     )
     ),
-  sp_semeff = semEff(sp_sem, R = 10000, seed = 13, parallel = "no", type = "parametric"),
+  sp_semeff = semEff(sp_sem, R = 1000, seed = 13, parallel = "no", type = "parametric"),
   target_sp_model_bm_rich = target(
     get_mod_list_lme4(.data = filter(sp_st_data, station %in% y) %>%
       na.omit %>%

@@ -23,6 +23,7 @@ knitr::opts_chunk$set(
   warning = FALSE,
   results = TRUE 
 )
+
 ```
 
 ```{r}
@@ -855,6 +856,7 @@ plot_grid(plotlist = test, labels = model_bm$variable)
 loadd(slope_com_var_no_covar, st_mono_trends_rich_bm)
 library(piecewiseSEM)
 library(semEff)
+library(lme4)
 ```
 
 ```{r}
@@ -898,7 +900,6 @@ semeff <- semEff(sem, R = 1000, seed = 13, parallel = "no")
 
 ```{r}
 loadd(sp_st_data)
-library(nlme)
 
 data_sp_sem <- na.omit(sp_st_data)
 tuu <- get_mod_list(.data = data_sp_sem)
@@ -910,7 +911,6 @@ sp_sem <- list(
      w_trph_lvl_avg = lmer(w_trph_lvl_avg ~ log_rich_std + log_bm_std + log_RC1 + log_RC2 +
        (1 | basin), data = data_sp_sem)
 )
-summary(sp_sem[[4]])
 sp_psem <- as.psem(sp_sem)
 summary_sp_sem <- summary(sp_psem)
 plot(sp_psem, node_attrs = data.frame(shape = "rectangle", color = "black",
