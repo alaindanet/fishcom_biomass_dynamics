@@ -42,3 +42,25 @@ from_semEff_to_table <- function(x = NULL) {
   output[, colnames(output) != "bias"]
 
 }
+
+get_tps_semeff <- function(
+  sem = NULL,
+  data_tps_sem = data_tps_sem
+  ) {
+
+  semeff <- semEff(sem, R = 1000, seed = 13, parallel = "no",
+    ci.type = "perc")
+  return(semeff)
+
+}
+
+get_sp_semeff <- function(
+  sem = NULL,
+  data_sp_sem = data_sp_sem
+  ) {
+
+  semeff <- semEff(sem, R = 1000, seed = 13, parallel = "no",
+    type = "parametric", ci.type = "perc")
+  return(semeff)
+
+}

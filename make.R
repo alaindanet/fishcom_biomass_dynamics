@@ -27,17 +27,13 @@ gc()
 plan
 print(plan, n = 40)
 
-library(future)
-plan(multisession, workers = 3)
-
-loadd(data_tps_sem)
 loadd(sem_tps)
-
-semeff <- semEff(sem_tps, R = 10000, seed = 13, parallel = "no")
-save(semeff, file = get_mypath("data", "semeff.rda"))
+semeff <- get_tps_semeff(sem = sem_tps)
+save(semeff, file = here::here("data", "semeff.rda"))
 
 loadd(sp_sem, data_sp_sem)
-sp_semeff <- semEff(sp_sem, R = 10000, seed = 13, parallel = "no", type = "parametric")
-save(sp_semeff, file = get_mypath("data", "sp_semeff.rda"))
+sp_semeff <- get_sp_semeff(sem = sp_sem)
+save(sp_semeff, file = here::here("data", "sp_semeff.rda"))
+
 
 drake::drake_cache("/home/alain/Documents/post-these/mnhn/fishcom_biomass_dynamics/.drake")$unlock()

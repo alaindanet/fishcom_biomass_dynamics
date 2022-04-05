@@ -599,3 +599,63 @@ get_range_variable <- function(
   ))
 
 }
+
+#' Get semeffect plot
+plot.semeff <- function(
+  x,
+  return=FALSE,
+  node_attrs = data.frame(
+    shape = "rectangle", fixedsize = TRUE, width = 1, color = "black",
+    fillcolor = "lightgrey"),
+  edge_attrs = data.frame(style = "solid", color="black"),
+  ns_dashed = T, alpha=0.05,
+  show = "ci", digits = 2,
+  width_eff = TRUE, scale_fc = 1, 
+  attr_theme = "default",
+  add_edge_label_spaces = TRUE, ...
+  ){
+
+  #get the coefficients table
+  ctab <- x %>%
+    filter(effect_type == "direct")
+  
+  #make a nodes DF
+  unique_nodes <- unique(c(ctab$response, ctab$predictor))
+  nodes <- create_node_df(n = length(unique_nodes),
+    nodes = unique_nodes,
+    type = "lower",
+    label = unique_nodes)
+  nodes <- cbind(nodes, node_attrs)
+  nodes[] <- lapply(nodes, as.character)
+  nodes$id <- as.numeric(nodes$id)
+
+  #make an edges DF
+  edges <- create_edge_df(
+    from = match(ctab$predictor, unique_nodes),
+    to = match(ctab$response, unique_nodes))
+
+  edges <- data.frame(edges, edge_attrs)
+  edges[] <- lapply(edges, as.character)
+  edges$id <- as.numeric(edges$id)
+  edges$from <- as.numeric(edges$from)
+  edges$to <- as.numeric(edges$to)
+  if(ns_dashed) edges$style[which(sign(ctab$lower_ci) != sign(ctab$upper_ci))] <- "dashed"
+  if(width_eff) edges$penwidth <- abs(ctab$effect) * scale_fc 
+  if(show == "std") edges$label = round(ctab$effect, digits)
+  if(show == "ci") { edges$label = paste0(
+    round(ctab$effect, digits),
+    " [", round(ctab$lower_ci, digits),"; ",
+    round(ctab$upper_ci, digits), "]"
+  )
+    }
+  if(add_edge_label_spaces) edges$label = paste0(" ", edges$label, " ")
+
+  #turn into a graph
+  sem_graph <- create_graph(nodes, edges, directed=TRUE,
+    attr_theme = attr_theme)
+
+  if(return) return(sem_graph)
+
+  render_graph(sem_graph, ...)
+
+}

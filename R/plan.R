@@ -531,7 +531,24 @@ model_vif = get_vif(model,
       log_bm_std, log_bm_std_strd_error,
       log_rich_std, log_rich_std_strd_error,
       w_trph_lvl_avg, w_trph_lvl_avg_strd_error) %>%
-    na.omit(),
+    na.omit() %>%
+    mutate(
+      error_mult_ct =
+        (log_rich_std_strd_error * log_bm_std_strd_error *
+          ct_ff_strd_error),
+        error_mult_tlvl =
+          (log_rich_std_strd_error * log_bm_std_strd_error *
+            w_trph_lvl_avg_strd_error),
+          error_mult_bm = 
+            (log_rich_std_strd_error * log_bm_std_strd_error),
+          error_additive_ct = 
+            (log_rich_std_strd_error + log_bm_std_strd_error +
+              ct_ff_strd_error),
+            error_additive_tlvl =
+              (log_rich_std_strd_error + log_bm_std_strd_error +
+                w_trph_lvl_avg_strd_error),
+              error_additive_bm = (log_rich_std_strd_error + log_bm_std_strd_error)
+    ),
   sem_tps = list(
     lm(
       ct_ff ~ log_bm_std + log_rich_std,
@@ -551,9 +568,28 @@ model_vif = get_vif(model,
       weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error)
     )
     ),
-  semeff = semEff(sem_tps, R = 1000, seed = 13, parallel = "no"),
+  semeff = get_tps_semeff(sem = sem_tps, data_tps_sem = data_tps_sem),
+  sem_tps_no_weight = list(
+    lm(ct_ff ~ log_bm_std + log_rich_std,
+      data = data_tps_sem),
+    lm(w_trph_lvl_avg ~ log_bm_std + log_rich_std,
+      data = data_tps_sem),
+    lm(log_bm_std ~ log_rich_std,
+      data = data_tps_sem)
+    ),
+  semeff_no_weight = get_tps_semeff(sem = sem_tps_no_weight),
 
-
+  weight_df = data_tps_sem %>%
+    select(c(station, starts_with("error"))) %>%
+    pivot_longer(-station, names_to = "variable", values_to = "value") %>%
+    mutate(variable = str_remove(variable, "error_")) %>%
+    separate(variable, c("type", "variable"), sep = "_") %>%
+    group_by(type, variable) %>%
+    mutate(weight = value / sum(value)),
+  p_weight_df = weight_df %>%
+    ggplot(aes(x = weight)) +
+    geom_histogram() +
+    facet_grid(rows = vars(variable), cols = vars(type), scale = "free_x"),
 
   #### Spatial
   data_sp_sem = sp_st_data %>%
@@ -578,7 +614,7 @@ model_vif = get_vif(model,
       data = data_sp_sem
     )
     ),
-  sp_semeff = semEff(sp_sem, R = 1000, seed = 13, parallel = "no", type = "parametric"),
+  sp_semeff = get_sp_semeff(sem = sp_sem),
   target_sp_model_bm_rich = target(
     get_mod_list_lme4(.data = filter(sp_st_data, station %in% y) %>%
       na.omit %>%
@@ -699,6 +735,7 @@ model_vif = get_vif(model,
     car::Anova),
 
   ### Plot
+
   pred_bm_rich_trends = get_pred_plot_from_new_model(
     model = model_bm_rich_trends,
     dataset = filter(slope_com_var_no_covar, station %in% st_trends_rich_bm),
@@ -709,19 +746,19 @@ model_vif = get_vif(model,
     dataset = filter(
       slope_com_var_no_covar,
       station %in% st_mono_trends_rich_bm),
-    x_bound = NULL 
+    x_bound = NULL
   ),
   pred_bm_rich_mono_stable_trends = get_pred_plot_from_new_model(
     model = model_bm_rich_mono_stable_trends,
     dataset = filter(
       slope_com_var_no_covar,
       station %in% st_mono_trends_stable_rich_bm),
-    x_bound = NULL 
+    x_bound = NULL
   ),
   pred_bm_rich = get_pred_plot_from_new_model(
     model = model_bm_rich,
     dataset = slope_com_var_no_covar,
-    x_bound = NULL 
+    x_bound = NULL
   ),
   target_sp_pred_bm_rich = target(
     get_pred_plot_from_new_model(
@@ -771,6 +808,27 @@ model_vif = get_vif(model,
       )
     )
     ),
+  p_semeff_tab = plot.semeff(
+    x = semeff,
+    show = "ci",
+    node_attrs = data.frame(
+      shape = "rectangle", fixedsize = TRUE, width = 1.1, color = "black",
+      fillcolor = "lightgrey"),
+    edge_attrs = data.frame(style = "solid",  color = "black"),
+    scale_fc = 15,
+    return = TRUE, attr_theme = "tb"
+  ),
+  p_semeff_no_weight_tab = plot.semeff(
+    x = semeff_no_weight,
+    show = "ci",
+    node_attrs = data.frame(
+      shape = "rectangle", fixedsize = TRUE, width = 1.1, color = "black",
+      fillcolor = "lightgrey"),
+    edge_attrs = data.frame(style = "solid",  color="black"),
+    scale_fc = 15,
+    return = TRUE, attr_theme = "tb"
+  ),
+
   ### Table
   reg_table_bm_rich_mono_trends = map2_dfr(
     model_bm_rich_mono_trends,
@@ -814,7 +872,9 @@ model_vif = get_vif(model,
         select(response, everything())
     }) %>%
   left_join(std_coef_bm_rich_trends, by = c("response", "term")) %>%
-  select(response, term, estimate, std.error, std_estimate, stdse, everything()),
+  select(response, term, estimate, std.error,
+    std_estimate, stdse, everything()
+    ),
   target_sp_reg_table_bm_rich = target(
     map2_dfr(
       y,
@@ -826,7 +886,10 @@ model_vif = get_vif(model,
       }) %>%
     left_join(std, by = c("response", "term")) %>%
     select(-group) %>%
-    select(response, effect, term, estimate, std.error, std_estimate, stdse, everything()),
+    select(
+      response, effect, term, estimate,
+      std.error, std_estimate, stdse, everything()
+      ),
   transform = map(
       y = list(
         sp_model_bm_rich_mono_trends,
@@ -989,9 +1052,10 @@ model_vif = get_vif(model,
     )
     ),
   fig_std_coef = std_table_bm_rich_mono_stable_trends %>%
-  filter(
-    term %in% c("log_rich_std", "log_bm_std"),
-    !response %in% "piel_nind") %>%
+    filter(
+      term %in% c("log_rich_std", "log_bm_std"),
+      !response %in% "piel_nind"
+      ) %>%
   mutate_at(vars(term, response), ~str_replace_all(., var_replacement())) %>%
   mutate(
     type = str_to_sentence(type),

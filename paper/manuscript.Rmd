@@ -12,7 +12,6 @@ fontsize: 12pt
 header-includes:
    - \usepackage{natbib}
    - \usepackage{float}
-   - \usepackage[table]{xcolor}
    - \usepackage{multirow}
    - \usepackage{booktabs}
    - \usepackage{makecell}
@@ -36,7 +35,8 @@ knitr::opts_chunk$set(
   echo = FALSE,
   message = FALSE,
   warning = FALSE,
-  results = TRUE
+  results = TRUE,
+  fig.path="figures/"
 )
 ```
 
@@ -432,9 +432,6 @@ second is related to enrichment (BOD) and site altitude.")
 knitr::include_graphics(get_mypath("figures", "mat_met_inkscape.pdf"))
 ```
 
-
-
-
 # Results
 
 ```{r}
@@ -590,15 +587,12 @@ fig1_2 <- get_plot_rich_bm(
   rm_legend = FALSE,
   bm_x = "log_bm_std",
   bm_y = c("ct_ff", "w_trph_lvl_avg"), #, "piel_nind"
-  rich_y = c("ct_ff", "w_trph_lvl_avg", "log_bm_std", #, "piel_nind"
+  rich_y = c("ct_ff", "w_trph_lvl_avg", "log_bm_std"), #, "piel_nind"
   rich_x = "log_rich_std"
   )
 p_bm <- fig1_2$bm
-names(p_bm) <- c("ct_ff", "w_trph_lvl_avg")
-#plot_grid(plotlist = p_bm)
 
-p_sp_bm <- sp_fig1_2_bm_rich_mono_stable_trends$bm
-names(p_sp_bm) <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg")
+p_sp_bm <- sp_fig1_2_bm_rich_mono_stable_trends$bm[c("log_rich_std", "ct_ff", "w_trph_lvl_avg")]
 ```
 
 
@@ -696,8 +690,6 @@ p_bef <- fig1_2$rich$log_bm_std +
 scale_xy_log_trends(breaks = c(-.10, -.050, 0, .050, .10), axis = "x") +
 scale_xy_log_trends(breaks = c(-.4, -.2, 0, .4, .2), axis = "y", sep = " / ")
 
-
-ggMarginal(p_bef, type = "histogram")
 ```
 
 We found a strong positive relationship between the temporal trends of community
@@ -820,13 +812,12 @@ fig2$bm <- map2(fig2$bm, names(fig2$rich),
   scale_xy_log_trends(breaks = c(-.40, -.20, 0, .20, .40), axis = "x")
 )
 # Delete redondant legend
-fig2$bm[1:2] <- map(fig2$bm[1:2],
-  ~ .x + theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank()
-  )
-  )
+fig2$bm[[1]] <- fig2$bm[[1]] + theme(
+  axis.text.x = element_blank(),
+  axis.ticks.x = element_blank(),
+  axis.title.x = element_blank()
+  ) 
+  
 
 fig2$rich <- map(fig2$rich,
   ~ .x + theme(
@@ -837,13 +828,12 @@ fig2$rich <- map(fig2$rich,
   labs(x = lab_log_rich) +
   scale_xy_log_trends(breaks = c(-.10, -.050, 0, .050, .10), axis = "x")
   )
-fig2$rich[1:2] <- map(fig2$rich[1:2],
-  ~ .x + theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank()
-  )
-  )
+fig2$rich[[1]] <- fig2$rich[[1]] + theme(
+  axis.text.x = element_blank(),
+  axis.ticks.x = element_blank(),
+  axis.title.x = element_blank()
+  ) 
+  
 
 ```
 
@@ -894,38 +884,79 @@ for (i in seq_along(fig2$rich)) {
 
 ```{r}
 # Add histograms
-fig2$bm[[1]] <- ggMarginal(fig2$bm[[1]], type = "histogram", margins = "x")
-fig2$rich[[1]] <- ggMarginal(fig2$rich[[1]], type = "histogram", margins = "both")
-fig2$rich[2:3] <- map(fig2$rich[2:3], ~ggMarginal(.x, type = "histogram", margins = "y"))
+p_bef2 <- p_bef +
+  theme(
+  axis.text.x = element_blank(),
+  axis.ticks.x = element_blank(),
+  axis.title.x = element_blank()
+  ) 
+p_bef_hist <- ggMarginal(p_bef2, type = "histogram")
+#fig2$bm[[1]] <- ggMarginal(fig2$bm[[1]], type = "histogram", margins = "x")
+fig2$rich[[1]] <- ggMarginal(fig2$rich[[1]], type = "histogram", margins = "y")
+fig2$rich[[2]] <- ggMarginal(fig2$rich[[2]], type = "histogram", margins = "y")
+```
+
+```{r}
+sem_cap <- "Structural equation models on the temporal trends of the food-web
+structure. The path display the standardized slopes and their associated 95%
+  confidence intervals."
+```
+
+
+```{r sem, fig.cap = sem_cap}
+ti <- magick::image_read(here::here("figures", "sem_tps_avg_weight_ok.svg"),  density = 300)
+ggdraw() +
+  draw_image(ti,
+    x = 0, y = 0, hjust = 0, vjust = 0, width = .9, height = 1)
 ```
 
 
 
-```{r bmr, out.width="80%", fig.height=7, fig.cap=fig_bm_rich_cap}
-plot_grid(
+```{r bmr, out.width="100%", fig.height=7, fig.cap=fig_bm_rich_cap}
+p <- draw_image(here::here("figures", "sem_tps_avg_weight_ok.pdf"),
+  x = 1, y = 1, hjust = 1, vjust = 1, width = 0.13, height = 0.2)
+biplot_model <- plot_grid(
+  plot_grid(, p_bef_hist,
+    labels = c("", "A"), ncol = 2,
+    rel_widths = c(.62, 1)
+    ),
+  plot_grid(
   plot_grid(plotlist = fig2$bm,
-    ncol = 1, labels = c("A", "B", "C"),
+    ncol = 1, labels = c("B", "D"),
     hjust = -5.5, vjust = 1.75
     ),
   plot_grid(plotlist = fig2$rich,
-    ncol = 1, labels = c("D", "E", "F"),
+    ncol = 1, labels = c("C", "E"),
     hjust = -2, vjust = 1.75
     ),
   ncol = 2,
-  rel_widths = c(1, 1)
+  rel_widths = c(.85, 1)
+  ),
+  nrow = 2,
+  rel_heights = c(.6, 1)
 )
+save_plot(
+  filename = here::here("figures", "biplot_model.png"),
+  biplot_model)
+
+
+biplot_model
 ```
 
 
 ```{r}
 std_cap <- paste0(
-  "Assessment of the space-for-time hypothesis. Effect of community biomass (top
-  panel) and species richness (bottom panel) on food-web structure for the
-temporal and spatial models. The bar tops display the standardized slope coefficients
-from the models ($r_\\delta$), the lines around bar tops display the standard errors.")
+  "Assessment of the space-for-time hypothesis. Standardized coefficients
+  ($r_\\delta$) derived from the spatial and temporal Structural Equation
+  Models. The left, middle and right panels display respectively the direct,
+  indirect and total effects of community biomass and species richness on the
+  Average trophic level (top panel), the connectance (middle panel) and the
+  community biomass (bottom panel) The lines display the confidence intervals at
+  95%.")
+
 ```
 
-```{r std, fig.cap=std_cap, fig.width=6}
+```{r std-old, eval = FALSE, fig.cap=std_cap, fig.width=6}
 #loadd(fig_std_coef)
 std_table_bm_rich_mono_stable_trends %>%
   filter(
@@ -952,6 +983,39 @@ std_table_bm_rich_mono_stable_trends %>%
   scale_y_continuous(sec.axis = sec_axis(~ ., name = "Predictive variable",
       breaks = NULL, labels = NULL))
 ```
+
+```{r std, fig.cap=std_cap, fig.width=6, fig.height = 9}
+load(here::here("data", "semeff.rda"))
+load(here::here("data", "sp_semeff.rda"))
+sp_semeff_tab <- from_semEff_to_table(sp_semeff)
+semeff_tab <- from_semEff_to_table(semeff)
+
+
+semeff_tot <- rbind(
+  tibble(semeff_tab, model = "temporal"),
+  tibble(sp_semeff_tab, model = "spatial")
+  ) %>%
+filter(
+  !predictor %in% c("log_RC1", "log_RC2"),
+  effect_type != "mediators"
+)
+
+semeff_tot %>%
+  mutate(
+    response = var_replacement()[response],
+    predictor = var_replacement()[predictor]
+    ) %>%
+  ggplot(aes(x = predictor, y = effect, color = model)) +
+  geom_hline(yintercept = 0) +
+  geom_pointrange(aes(ymin = lower_ci, ymax = upper_ci), position = position_dodge(width = 0.4)) +
+  facet_grid(rows = vars(response), cols = vars(effect_type)) +
+  labs(
+    x = "Predictor",
+    y = expression(paste("Standardized slope coefficients ", r[delta])),
+    color = "Model") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+```
+
 
 # Discussion
 
