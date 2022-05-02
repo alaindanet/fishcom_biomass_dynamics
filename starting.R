@@ -17,3 +17,7 @@ use_mit_license()
 #To build metropolis talk
 install.packages("binb")
 
+upload_file(
+  file = here::here("paper/manuscript.Rmd"),
+  hide_code = TRUE
+)

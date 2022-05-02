@@ -78,11 +78,16 @@ get_piscivory_stat_from_network <- function (net) {
 
   tibble(
     nb_pisc_node = length(fish_fish[fish_fish > 0]),
+    nb_non_pisc_node = length(fish_fish) - nb_pisc_node,
     prop_pisc_node = nb_pisc_node / length(fish_fish),
+    prop_non_pisc_node = 1 - prop_pisc_node,
     nb_pisc_rich =  str_extract(names(fish_fish[fish_fish > 0]), "[A-Z]+") %>%
       unique() %>% length(),
+    nb_non_pisc_rich =  str_extract(names(fish_fish), "[A-Z]+") %>%
+      unique() %>% length() - nb_pisc_rich,
     prop_pisc_rich = nb_pisc_rich / str_extract(names(fish_fish), "[A-Z]+") %>%
-      unique() %>% length()
+      unique() %>% length(),
+    prop_non_pisc_rich = 1 - prop_pisc_rich
   )
 
 }

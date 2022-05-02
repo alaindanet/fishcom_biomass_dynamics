@@ -37,7 +37,7 @@ add_relative_biomass_to_start <- function (.data = NULL) {
 add_to_full_data <- function (.data = NULL) {
 
   output <- add_nb_year_station(.data)
-  output <- output %>% 
+  output <- output %>%
     mutate(
       log_bm = log(biomass),
       log_rich = log(richness),
@@ -48,11 +48,13 @@ add_to_full_data <- function (.data = NULL) {
       nbnode_std = nbnode / surface,
       log_nbnode_std = log(nbnode_std),
       nb_pisc_node_std = nb_pisc_node / surface,
+      nb_non_pisc_node_std = nb_non_pisc_node / surface,
       log_nb_pisc_node_std = log(nb_pisc_node_std),
       nb_pisc_rich_std = nb_pisc_rich / surface,
+      nb_non_pisc_rich_std = nb_non_pisc_rich / surface,
       log_nb_pisc_rich_std = log(nb_pisc_rich_std)
     )
-  output <- add_relative_biomass_to_start(output) 
+  output <- add_relative_biomass_to_start(output)
 
   return(output)
 }

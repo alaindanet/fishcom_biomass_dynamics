@@ -54,10 +54,14 @@ get_com_str_var <- function (all = FALSE) {
     "rich_std", "log_rich_std", "piel_nind", "piel_bm")
 
   if (all) {
-    x <- c(x, "connectance", "weighted_connectance", "richness", "log_rich_std", "nbnode_std" ,"nb_pisc_rich_std", "nb_pisc_node_std", "prop_pisc_node", "prop_pisc_rich", "l", "ld", "m", "A", "avg_IS", "gini", "ct_ff", "l_ff", "ld_ff", "piel_nind", "piel_bm", "nind_std")
-  }
+    x <- c(x, "connectance", "weighted_connectance", "richness", "log_rich_std",
+      "nbnode_std", "nb_pisc_rich_std", "nb_non_pisc_rich_std",
+      "nb_pisc_node_std", "nb_non_pisc_node_std", "prop_pisc_node",
+      "prop_non_pisc_node", "prop_pisc_rich", "prop_non_pisc_rich", "l", "ld",
+      "m", "A", "avg_IS", "gini", "ct_ff", "l_ff", "ld_ff", "piel_nind",
+      "piel_bm", "nind_std") }
 
-  x <- unique(x) 
+  x <- unique(x)
 
   return(x)
 }

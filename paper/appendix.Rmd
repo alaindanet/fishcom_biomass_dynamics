@@ -160,6 +160,81 @@ title("Temporal trends", adj = 0, line = 3.2)
 
 # Statistical analysis
 
+## Proportion and number of piscivorous species 
+
+```{r}
+loadd(rigal_classification, st_mono_trends_stable_rich_bm, full_data2)
+full_data2 %>%
+  select(richness, nb_pisc_rich, nb_non_pisc_rich)
+unique(rigal_classification$variable)
+var_pisc_mod <- c("nb_pisc_rich_std", "prop_pisc_rich", "nb_non_pisc_rich_std",
+    "prop_non_pisc_rich",
+      "log_rich_std", "log_bm_std")
+pisc_data <- map(var_pisc_mod,
+    function(x, var_to_keep, classif_var) {
+
+      x_data <- classif_var[classif_var$variable == x, ] %>%
+	unnest(classif)
+      x_data <- x_data[, colnames(x_data) %in% var_to_keep]
+
+      # Rename according to the variable
+      colnames(x_data)[colnames(x_data) %in% var_to_keep[2:3]] <-
+	paste0(x, c("", "_strd_error"))
+      return(x_data)
+
+    },
+    var_to_keep = c("station", "linear_slope", "linear_slope_strd_error"),
+  classif_var = rigal_classification) %>%
+  Reduce(merge.all, .) %>%
+  filter(station %in% st_mono_trends_stable_rich_bm) %>%
+  na.omit()
+
+# for standardized coefficients 
+pisc_data_scaled <- pisc_data %>%
+  mutate(across(all_of(var_pisc_mod), ~ scale(., center = FALSE)[,1]))
+
+pisc_mod_std <- tibble(
+  response = c("nb_pisc_rich_std", "nb_non_pisc_rich_std", "prop_pisc_rich", "prop_non_pisc_rich"),
+  mod = list(
+    lm(
+      nb_pisc_rich_std ~ log_bm_std + log_rich_std,
+      data = pisc_data_scaled,
+      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
+        nb_pisc_rich_std_strd_error)
+      ),
+    lm(
+      nb_non_pisc_rich_std ~ log_bm_std + log_rich_std,
+      data = pisc_data_scaled,
+      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
+        nb_non_pisc_rich_std_strd_error)
+      ),
+    lm(
+      prop_pisc_rich ~ log_bm_std + log_rich_std,
+      data = pisc_data_scaled,
+      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
+        prop_pisc_rich_strd_error)
+      ),
+    lm(
+      prop_non_pisc_rich ~ log_bm_std + log_rich_std,
+      data = pisc_data_scaled,
+      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
+        prop_non_pisc_rich_strd_error)
+      )
+  )
+  )
+
+pisc_mod_std <- pisc_mod_std %>%
+  mutate(
+    coefs = map(mod, broom::tidy),
+    perf = map(mod, broom::glance) 
+  )
+
+pisc_mod_std %>%
+  select(response, coefs) %>%
+  unnest(coefs)
+```
+
+
 ## Spatial model
 
 ```{r}
