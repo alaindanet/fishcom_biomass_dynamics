@@ -76,6 +76,8 @@ var_replacement <- function (slope = FALSE, several_lines = FALSE) {
     log_RC1 = "PCA Avg stream size",
     log_RC2 = "PCA Avg temperature",
     ct_ff = "Connectance",
+    avg_tl_ff = "Avg trophic level",
+    max_tl_ff = "Max trophic level",
     w_trph_lvl_avg = "Avg trophic level",
     #connectance ,weighted_connectance,
     log_rich_std = "Log Species richness (m^-2)",
@@ -85,7 +87,7 @@ var_replacement <- function (slope = FALSE, several_lines = FALSE) {
     piel_nind = "Evenness (abundance)",
     piel_bm = "Evenness (biomass)",
     biomass = "Biomass (g)",
-    richness = "Species richness"  
+    richness = "Species richness"
   )
 
   if (several_lines) {
