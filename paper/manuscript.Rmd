@@ -682,7 +682,6 @@ However, we found a strong negative relationship in space
 ```{r}
 sp_semeff_tab <- from_semEff_to_table(sp_semeff)
 semeff_tab <- from_semEff_to_table(semeff)
-semeff
 semeff_tot <- rbind(
   tibble(semeff_tab, model = "temporal"),
   tibble(sp_semeff_tab, model = "spatial")
@@ -980,54 +979,29 @@ std_cap <- paste0(
 
 ```
 
-```{r std-old, eval = FALSE, fig.cap=std_cap, fig.width=6}
-#loadd(fig_std_coef)
-std_table_bm_rich_mono_stable_trends %>%
-  filter(
-    term %in% c("log_rich_std", "log_bm_std"),
-    !response %in% "piel_nind") %>%
-  mutate_at(vars(term, response), ~str_replace_all(., var_replacement(
-        several_lines = TRUE))) %>%
-  mutate(
-    type = str_to_sentence(type),
-    type = factor(type, levels = c("Temporal", "Spatial"))) %>%
-  ggplot(aes(y = std_estimate, x = response, fill = type)) +
-  viridis::scale_fill_viridis(begin = 0.5, end = 1, discrete = TRUE) +
-  facet_grid(rows = vars(term)) +
-  geom_col(position = position_dodge(width = .9)) +
-  geom_linerange(aes(ymin = std_estimate - stdse, ymax = std_estimate + stdse),
-    position = position_dodge(width = .9)) +
-  labs(
-    x = "Response variables",
-    y = expression(paste("Standardized slope coefficients ", r[delta])),
-    fill = "Model") +
-  theme(legend.position = c(0.6, .05),
-    legend.direction = "horizontal",
-    text = element_text(size = 8), axis.text = element_text(size = 8)) +
-  scale_y_continuous(sec.axis = sec_axis(~ ., name = "Predictive variable",
-      breaks = NULL, labels = NULL))
-```
-
-```{r std, fig.cap=std_cap, fig.width=6, fig.height = 9}
-semeff_tot %>%
+```{r std, fig.cap=std_cap, fig.width=7, fig.asp = .7}
+p_sem_eff <- semeff_tot %>%
   mutate(
     response = var_replacement()[response],
-    predictor = var_replacement()[predictor]
+    predictor = var_replacement()[predictor],
+    effect_type = str_to_sentence(effect_type),
+    model = str_to_sentence(model)
     ) %>%
-  ggplot(aes(x = predictor, y = effect, fill = effect_type)) +
-  geom_col(
+  ggplot(aes(y = predictor, x = effect, colour = effect_type, shape = model)) +
+  geom_point(
     position = position_dodge(width = 0.4), width = .4) +
-  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
   geom_linerange(
-    aes(ymin = lower_ci, ymax = upper_ci),
+    aes(xmin = lower_ci, xmax = upper_ci),
     position = position_dodge(width = 0.4)
     ) +
-  facet_grid(rows = vars(response), cols = vars(model)) +
+  facet_grid(rows = vars(response)) +
   labs(
-    x = "Predictor",
-    y = expression(paste("Standardized slope coefficients ", r[delta])),
-    fill = "Effect type") +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+    y = "Predictor",
+    x = expression(paste("Standardized slope coefficients ", r[delta])),
+    color = "Effect type", shape = "Model") +
+  theme(legend.position = "bottom")
+p_sem_eff
 ```
 
 # Discussion

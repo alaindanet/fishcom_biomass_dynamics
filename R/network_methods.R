@@ -42,7 +42,7 @@ calc_weighted_connectance <- function (
 }
 
 get_network_metric_fish_only <- function (net = NULL) {
-  out <- 
+  out <-
     net %>%
     select(opcod, network) %>%
     mutate(

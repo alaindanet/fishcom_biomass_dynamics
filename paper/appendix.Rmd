@@ -68,8 +68,7 @@ theme_set(mytheme)
 options(knitr.table.format = "latex")
 ```
 ```{r}
-var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std",
-  "piel_bm", "piel_nind")
+var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std")
 ```
 
 \beginsupplement
@@ -775,93 +774,47 @@ kable(tlvl_cross_table) %>%
 ### Temporal
 
 ```{r}
-loadd(
-  pred_bm_rich_mono_stable_trends,
-  model_bm_rich_int_mono_stable_trends,
-  model_bm_rich_int_mono_stable_trends,
-  rsq_table_bm_rich_mono_stable_trends
-)
+loadd(sem_tps)
 ```
 
-
 ```{r}
-reg_table_bm_rich_mono_stable_trends %>%
-  mutate(
-    response = str_replace_all(response, var_replacement()),
-    term = str_replace_all(term, var_replacement())
-    ) %>%
-kable(., booktabs = TRUE,
-  row.names = FALSE,
-  caption =
-    paste0(
-      "Regression coefficients for the linear models explaining the links
-      between the temporal trends of community biomass and the temporal trends
-      of the network structure."),
-      label = "reg"
-      ) %>%
-  kable_styling(latex_options = c("scale_down", "striped")) %>%
-  collapse_rows(columns = 1, valign = "top")
-```
-
-
-
-```{r}
-table_rsq_tps <- rsq_table_bm_rich_mono_stable_trends %>%
+map_dfr(sem_tps, piecewiseSEM::rsquared) %>%
   mutate(
     Response = str_replace_all(Response, var_replacement())
-  )
-table_rsq_tps %>%
+  ) %>%
+  select(Response, R.squared) %>%
   kable(., booktabs = TRUE,
     caption =
       paste0(
-      "Marginal and conditional squared R for temporal models."),
+      "Marginal R-squared for temporal models."),
   label = "rsq"
       ) %>% #
-  kable_styling(latex_options = c("striped")) %>%
-  collapse_rows(columns = 1, valign = "top")
+  kable_styling(latex_options = c("striped"))
 ```
 
 
 ### Spatial
 
 ```{r}
-loadd(
-  sp_anova_table_bm_rich_mono_stable_trends,
-  sp_rsq_table_bm_rich_mono_stable_trends
-)
-```
-
-
-```{r}
-sp_anova_table_bm_rich_mono_stable_trends %>%
-  mutate(
-    response = str_replace_all(response, var_replacement()),
-    term = str_replace_all(term, var_replacement()),
-  ) %>%
-  kable(.,
-    booktabs = TRUE,
-    row.names = FALSE,
-    caption =
-      paste0(
-      "ANOVA results for the links among the spatial variation of community
-      biomass and species richness and the one of network structure."),
-  label = "aov-sp"
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "striped")) %>%
-  collapse_rows(columns = 1, valign = "top")
+loadd(sp_sem)
 ```
 
 ```{r}
-sp_rsq_table_bm_rich_mono_stable_trends %>%
+map_dfr(sp_sem, piecewiseSEM::rsquared) %>%
   mutate(
     Response = str_replace_all(Response, var_replacement())
+  ) %>%
+  select(Response, Marginal, Conditional) %>%
+  mutate(
+    Response = str_replace_all(Response, var_replacement()),
+    Marginal = round(Marginal, 2),
+    Conditional = round(Conditional, 2)
   ) %>%
   kable(., booktabs = TRUE,
     caption =
       paste0("Marginal and conditional $R^2$ for the spatial models."),
   label = "rsq-sp"
       ) %>% #
-  kable_styling(latex_options = c("striped")) %>%
-  collapse_rows(columns = 1, valign = "top")
+  kable_styling(latex_options = c("striped"))
 ```
 
