@@ -465,7 +465,7 @@ rand_sp_met <- random_species_result %>%
 ```
 
 ```{r}
-sim_sp_dec_inc %>%
+p_ext_sp <- sim_sp_dec_inc %>%
   filter(str_detect(metric, "_ff")) %>%
   mutate(
     metric = var_replacement()[metric],
@@ -491,6 +491,19 @@ sim_sp_dec_inc %>%
     color = "Trophic level scenario") +
   theme(legend.position = "bottom")
 p_ext_node
+```
+
+```{r}
+model_res <- rand_sp_met %>%
+  select(metric, value, nb_ext) %>%
+  filter(str_detect(metric, "_ff")) %>%
+  nest_by(metric) %>%
+  mutate(
+    mod = list(lm(value ~ nb_ext, data)),
+    coefs = list(broom::tidy(mod))
+  ) %>%
+  unnest(coefs) %>%
+  filter(term == "nb_ext")
 ```
 
 
