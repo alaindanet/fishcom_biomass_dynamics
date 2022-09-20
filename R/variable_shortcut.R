@@ -1,17 +1,17 @@
 get_biomass_var <- function (all = FALSE) {
 
-  x <- c("bm_std", "log_bm_std")
+  x <- c("log_bm_std")
   if (all) {
-  x <- c(x, "biomass", "rel_bm", "log_bm", "rel_log_bm")
+  x <- c(x, "bm_std", "biomass", "rel_bm", "log_bm", "rel_log_bm")
   }
   return(x)
 }
 
 get_richness_var <- function (all = FALSE) {
 
-  x <- c("rich_std", "log_rich_std")
+  x <- c("log_rich_std")
   if (all) {
-    x <- c(x, "richness", "log_rich") 
+    x <- c(x, "rich_std", "richness", "log_rich") 
   }
   return(x)
 }
@@ -48,16 +48,18 @@ model_type_var <- function(
   return(x)
 }
 
-get_com_str_var <- function (all = FALSE) { 
+get_com_str_var <- function (all = FALSE) {
 
-  x <- c("ct_ff", "w_trph_lvl_avg", #"connectance" ,"weighted_connectance",
-    "rich_std", "log_rich_std", "piel_nind", "piel_bm")
+  x <- c(
+    "ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_nind", "piel_bm",
+    "prop_pisc_node", "prop_pisc_rich"
+  )
 
   if (all) {
-    x <- c(x, "connectance", "weighted_connectance", "richness", "log_rich_std",
+    x <- c(x, "rich_std", "connectance", "weighted_connectance", "richness",
       "nbnode_std", "nb_pisc_rich_std", "nb_non_pisc_rich_std",
-      "nb_pisc_node_std", "nb_non_pisc_node_std", "prop_pisc_node",
-      "prop_non_pisc_node", "prop_pisc_rich", "prop_non_pisc_rich", "l", "ld",
+      "nb_pisc_node_std", "nb_non_pisc_node_std",
+      "prop_non_pisc_node",  "prop_non_pisc_rich", "l", "ld",
       "m", "A", "avg_IS", "gini", "ct_ff", "l_ff", "ld_ff", "piel_nind",
       "piel_bm", "nind_std") }
 
