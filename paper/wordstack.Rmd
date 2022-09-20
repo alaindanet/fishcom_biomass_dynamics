@@ -37,9 +37,26 @@ output:
 ### Introduction
 
 
-1. Facet of biodiversity trends
-    1. species interactions ?
-    2. biomass or richness 
+1. Global trends of biodiversity
+   1. Global declines and threats 
+   2. Reported richness and biomass trends
+   3. Continue to explore trends in community structure and its consequences
+
+2. Ecological communities are ecological networks
+   1. Species interactions matter for ecosystem functioning
+   2.  
+3. Trends in richness and biomass should result in alteration of ecological
+   networks 
+   1. Spatial prediction
+   2. But space-for-time...
+
+4. Limitations before this study
+   1. Low availability of long temporal series 
+   1. No reconstruction method
+   1.
+
+5. Study objectives
+
 
 3. Colonisation / Extinction sequences in natural settings
     1. Space for time substitution

@@ -94,123 +94,76 @@ rm(slope_com_var_no_covar)
 nb_st_rich_bm <- st_mono_trends_stable_rich_bm %>% length
 ```
 
-# Introduction
+# Introduction (564 words)
 
-## Trends of biodiversity need to be assessed at multiple facets 
+Global diversity is reported to decline at alarming rates [@]. At local scale,
+recent meta-analysis reported a huge variation in species richness temporal
+trends across various taxa and ecosystem types[@vellend_global_2013;
+@dornelas_assemblage_2014; @blowes_geography_2019], with no net variations in
+species richness[@dornelas_assemblage_2014; @blowes_geography_2019].
+Futhermore, recent studies founs that temporal changes in species richness are
+unrelated to changes in species composition[@dornelas_assemblage_2014;
+@blowes_geography_2019], rising the recognition of the multidimensional nature
+of biodiversity changes[@hillebrand_biodiversity_2018; @blowes_local_no_date]
+and the need for further investigations on how biodiversity changes over time. 
 
-Multiple studies reported dramatic declines of population and community biomass
-[@ceballos_biological_2017; @hallmann_more_2017; @albano_native_2021], as well
-as decrease in species richness [@barnosky_has_2011; @newbold_global_2015] but
-also recent studies reported non significant temporal trends in species richness
-[@vellend_global_2013; @dornelas_assemblage_2014; @blowes_geography_2019], total
-abundance [@klink_meta-analysis_2020], high turnover in species composition
-[@dornelas_assemblage_2014; @blowes_geography_2019]. Unfortunately, studies
-often focus on the temporal trend of one dimension of biodiversity
-[@hallmann_more_2017; @klink_meta-analysis_2020, but see 2 in
-@dornelas_assemblage_2014; @blowes_geography_2019]. However biodiversity is a
-multidimensional concept and the functioning of ecosystem depends ultimately on
-several dimensions of biodiversity, such as species richness, evenness and
-functional composition^[1]  [@cardinale_biodiversity_2012; @duffy_why_2009], the
-documentation of the trend of one biodiversity facet is likely insufficient to
-understand changes in community structure and ultimately predict their
-consequences on ecosystem functioning.
+Species interactions among species, described as ecological networks, drive for
+a large part community composition, species coexistence, and ecosystem
+functioning [@chesson_mechanisms_2000; @thebault_food-web_2003;
+@oconnor_general_2017]. The structure of ecological networks can trigger or
+impede perturbation propagations, i.e secondary extinctions[@paine_note_1969;
+@dunne_network_2002; @srinivasan_response_2007;
+@stouffer_comparmentalization_2011]. Higher connectance, which measures the
+degree of generalism in a network, is predicted to increase robustness to
+secondary extinctions [@dunne_network_2002; @sole_complexity_2001] and studies
+found that higher trophic level was associated to a lower temporal variability
+of community biomass in theoretical models and empirical
+data[@shanafelt_stability_2018; @danet_species_nodate]. Then, accounting for how
+the structure of ecological networks changes over time according to other
+biodiversity facets is crucial.
 
-[^1]: Commentaire de Colin: *je pense qu'il faut lister les facet de biodiv qu'on
-va etudier. sans forcement s'y limiter?* Ici je pense que la composition en role
-trophique rentre dans "functional composition" sans rentrer dans le détail.
+Th availability of ecological networks timeseries is
+scarce[@kortsch_disentangling_2021], such as predictions about how the strucure
+of ecological networks change according to changes in species richness come from
+spatial comparison. Spatially, connectance has been shown to be negatively
+related to species richness in small (i.e. below 20 species) empirical food-webs
+[reviewed in @dunne_network_2006], which reflects constraints on the number of
+realizable species interactions or an increasing proportion of specialists in
+more rich foodwebs. Connectance has been shown to scale positively or negatively
+with community biomass in theoretical food-webs [@thebault_food-web_2003;
+@poisot_trophic_2013] while the average trophic level was previously shown to
+scale negatively with species richness [@danet_species_2021]. 
 
-## Current knowledge mainly comes from space-for-time substitution 
-
-Current knowledge on the links among the different facets of biodiversity mainly
-comes from spatial comparison [@dunne_network_2006;
-@soininen_relationship_2012; @grace_integrative_2016; @danet_species_nodate],
-which is used to predict how community structure will change in time, under the
-assumption of the space-for-time substitution. It supposes a homology between
-variations in space and in time, i.e. that spatial sequences correspond
-to temporal sequences. This method have raised criticisms
-[@damgaard_critique_2019], with studies showing analogous patterns in space and
-time [@blois_space_2013] or not [@johnson_testing_2008;
-@adler_contrasting_2007]. Spatial turnover of species composition, dispersal
-limitation, disturbance and stochastic processes have been hypothesised to be
-responsible for the non-compliance of space-for-time substitution
-[@adler_contrasting_2007; @blois_space_2013]. The recent increase in the availability
-of temporal monitoring of ecological communities makes possible to address
-biodiversity trends for multiple facets. 
-
-## Temporal variation of food-webs is largely unknown
-
-More dramatic is that the temporal trends of biodiversity generally neglect
-species interactions. Although species interactions determine for a large part
-community composition, species coexistence and ecosystem functioning
-[@chesson_mechanisms_2000; @thebault_food-web_2003; @oconnor_general_2017].
-Furthermore, species interactions can imply tremendous secondary extinctions
-[@paine_note_1969; @dunne_network_2002]. In food-webs, spatial comparisons in
-empirical and theoretical studies generally reported that trophic level
-positively scales to community biomass [@wang_biodiversity_2018;
-@danet_species_nodate]. Trophic level has also been shown to stabilise the
-temporal variation of community biomass [@shanafelt_stability_2018;
-@danet_species_nodate]. Connectance, which measures the degree of generalism in
-a network, was shown to increase robustness to extinction [@dunne_network_2002].
-However, the temporal variation of food-web structure is largely unknown
-[@kortsch_disentangling_2021]. Food-web temporal variation are often reported
-across small time-steps [@warren_spatial_1989; @pecuchet_novel_2020;
-@kaartinen_high_2012]. Our knowledge on the variability of food-web structure in
-time are even more scarce and particularly how those temporal variations are
-linked to the temporal variations of other aspects of biodiversity such as
-species richness and community biomass. Spatially, connectance has been shown to
-be negatively related to species richness in empirical food-webs [reviewed in
-@dunne_network_2006]. Connectance has been shown to scale positively or
-negatively with community biomass in theoretical models
-[@thebault_food-web_2003; @poisot_trophic_2013]. Average trophic level was
-previously shown to scale negatively with species richness
-[@danet_species_2021].  In order to improve our knowledge on the consequences of
-biodiversity trends such as community biomass and species richness, it is thus
-crucial to assess how biomass and species richness temporal trends are
-associated to temporal trends of food-web structure. 
-
-Even how the temporal trends of community biomass are related to temporal
-trends of species richness is still questionned in natural settings, especially
-in food-webs. Our knowledge on the relationships between food-web structure and
-other facets of biodiversity often comes from the comparison of food-web
-snapshots along spatial gradient, raising the question of the validity of
-space-for-time substitution to infer consequences of species richness and
-community biomass variations on food-web structure.
+However, predicting how ecological networks will change in time according to
+other biodiversity facets based on spatial comparison of ecological communities
+is valid as long as assumption of the space-for-time substitution is valid as
+well. Space-for-time substitution supposes a homology between variations in
+space and in time, i.e. that spatial sequences correspond to temporal sequences.
+This method have raised criticisms [@damgaard_critique_2019], with studies
+showing analogous patterns in space and time [@blois_space_2013] or not
+[@johnson_testing_2008; @adler_contrasting_2007]. Spatial turnover of species
+composition, dispersal limitation, disturbance and stochastic processes have
+been hypothesised to be responsible for the non-compliance of space-for-time
+substitution [@adler_contrasting_2007; @blois_space_2013].
 
 The increasing availability ecological temporal series and the development of
 methods to reconstruct food-webs [@bonnaffe_comparison_2021;
-@gravel_inferring_2013; @danet_species_nodate] makes possible to assess the
-relationships among several biodiversity facets, including food-web structure.
-We used the standardized monitoring of fish freshwater communities on the period
-1995-2018 over France, documenting the individual size of fishes in
-400 sites during ten years or more. We then reconstruct around 4000 food-webs
-based on allometric relationships and food diet data. We questionned i) how
-temporal trends of food-web structure are  linked to trends of community biomass
-and trends in species richness? ii) Are the relationships observed in time the
-same as those observed in space, i.e. is the space-for-time substitution valid? 
+@gravel_inferring_2013; @danet_species_2021] makes possible to overcome
+those research gaps. We used a standardized monitoring of fish riverine 
+communities on the period 1995-2018 over France, documenting the individual size
+of fishes in 400 sites during ten years or more. We restructed around 4000
+food-webs based on allometric relationships and food diet data, and then
+computed connectance, and average trophic level as well as community biomass and
+species richness.
 
----
-## Variations of community biomass and species richness are predicted to affect
-community structure #Changes of species richness and community biomass are
-indeed
-#predicted to affect community structure. The positive link between biodiversity
-#and ecosystem functioning in experimental studies predict that loss and
-#gain of species richness should respectively result in loss and gain of
-#community biomass [@tilman_biodiversity_2014; @pennekamp_biodiversity_2018]. But
-#this relation is not always found in natural settings [@grace_integrative_2016;
-#@li_relationship_2018; @maureaud_biodiversityecosystem_2019].
-#
-#Variations of species richness can also result in variation of evenness, i.e.
-#equitability of species abundances or biomasses. Meta-analysis reported that
-#higher evenness of abundances is linked to higher plant biomass in grasslands
-#and primary productivity in marine ecosystems [@soininen_relationship_2012].
-#Furthermore, studies reported that higher evenness plays a role of insurance in
-#face of perturbations [@wittebolle_initial_2009]. Indeed, most studies reported
-#positive relationship between species richness and evenness, but also neutral
-#and negative ones [@soininen_relationship_2012; @ma_species_2005;
-#@maureaud_biodiversityecosystem_2019].
-## Variations of community biomass and species richness are predicted to affect food-web structure
-
----
+Our primary objective was to assess how the local structure of foodwebs changes
+over time according to simultaneous changes in community biomass and species
+richness over time. Our second objective was to assess if the relationships
+between changes in food-web structure, community biomass and species richness,
+are the same over space and over time, i.e. is the space-for-time substitution
+valid?  To do so, we first assessed the temporal trends in food-web structure.
+We then built structural equation model to assess the relationships among the
+temporal trends of the different facets of food-web structure.
 
 
 # Methods
