@@ -279,3 +279,7 @@ r2_mvp <- function(
   }
 
 }
+
+log_beta_to_perc_rate <- function (x) {
+  (exp(x) - 1) * 100
+}

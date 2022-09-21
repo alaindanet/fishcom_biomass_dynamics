@@ -45,22 +45,23 @@ from_semEff_to_table <- function(x = NULL) {
 
 get_tps_semeff <- function(
   sem = NULL,
-  data_tps_sem = data_tps_sem
+  sem_data = tps_for_sem,
+  ci_type = "perc"
   ) {
-
-  semeff <- semEff(sem, R = 1000, seed = 13, parallel = "no",
-    ci.type = "perc")
+  booteff <- bootEff(sem, R = 1000, seed = 13, parallel = "no", data = sem_data)
+  semeff <- semEff(booteff, ci.type = ci_type)
   return(semeff)
 
 }
 
 get_sp_semeff <- function(
   sem = NULL,
-  data_sp_sem = data_sp_sem
+  sem_data = sp_for_sem,
+  ci_type = "perc"
   ) {
-
-  semeff <- semEff(sem, R = 1000, seed = 13, parallel = "no",
-    type = "parametric", ci.type = "perc")
+  #semeff <- semEff(sem, R = 1000, seed = 13, parallel = "no",
+    #type = "parametric", ci.type = ci_type)
+  booteff <- bootEff(sem, R = 1000, seed = 13 ,ran.eff = "basin", parallel = "no", data = sem_data)
+  semeff <- semEff(booteff, ci.type = ci_type)
   return(semeff)
-
 }
