@@ -82,14 +82,14 @@ var_replacement <- function (slope = FALSE, several_lines = FALSE) {
     max_tl_ff = "Max trophic level",
     w_trph_lvl_avg = "Avg trophic level",
     #connectance ,weighted_connectance,
-    log_rich_std = "Log Species richness (m^-2)",
-    log_bm_std = "Log Biomass (g.m^-2)",
+    log_rich_std = "Species richness",
+    log_bm_std = "Biomass",
     bm_std = "Biomass (g.m^-2)",
     rich_std = "Species richness (m^-2)",
     piel_nind = "Evenness (abundance)",
     piel_bm = "Evenness (biomass)",
-    biomass = "Biomass (g)",
-    richness = "Species richness"
+    biomass = "Biomass (g)"#,
+    #richness = "Species richness"
   )
 
   if (several_lines) {
@@ -127,4 +127,8 @@ get_var_for_pca <- function() {
 
 get_all_var_analysis <- function () {
   c(get_com_str_var(), get_biomass_var(), get_richness_var()) %>% unique
+}
+
+net_ext_met_to_keep <- function() {
+    c("ct", "ct_ff", "avg_tl", "avg_tl_ff", "max_tl", "max_tl_ff")
 }

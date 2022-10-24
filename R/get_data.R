@@ -34,6 +34,7 @@ get_community_analysis_data <- function (
   return(com_std)
 }
 
+
 #' Get network metrics
 #'
 #' @param dir path to the data

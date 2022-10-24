@@ -7,9 +7,3 @@ library(targets)
 library(tarchetypes)
 
 tar_make()
-
-library(tidyverse)
-library(magrittr)
-tar_meta(fields = warnings) %>%
-  filter(!is.na(warnings))
-tar_make(names = sp_semeff_perc)

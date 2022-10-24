@@ -63,7 +63,6 @@ fish_species_tlvl <- node_tlvl %>%
   summarise(tlvl_med = median(tlvl)) %>%
   arrange(desc(tlvl_med)) %>%
   deframe()
-
 ```
 
 ```{r, eval = FALSE}
@@ -100,151 +99,6 @@ node_extinction_inc_dec_tlvl_metrics <-
 
 
 ```{r}
-get_fw_metrics <- function(x) {
-
-  ff_metaweb <- get_fish_fish_matrix(x)
-
-  if (ncol(ff_metaweb) == 0) {
-    l_in_ff <- NA
-    l_out_ff <- NA
-    ff_ind <- NA
-    ct_ff <- NA
-    tl_ff <- NA
-    avg_tl_ff <- NA
-    max_tl_ff <- NA
-  } else {
-    l_in_ff <- colSums(ff_metaweb)
-    l_out_ff <- rowSums(ff_metaweb)
-    ff_ind <- NetIndices::GenInd(ff_metaweb)
-    ct_ff <- ff_ind["C"]
-    tl_ff <- NetIndices::TrophInd(ff_metaweb)$TL
-    avg_tl_ff <- mean(tl_ff)
-    max_tl_ff <- max(tl_ff)
-  }
-
-  ind <- NetIndices::GenInd(x)
-  ct <- ind["C"]
-  tl <- NetIndices::TrophInd(x)$TL
-  avg_tl <- mean(tl)
-  max_tl <- max(tl)
-
-  list(
-    ff_metaweb = ff_metaweb,
-    ind = ind,
-    ff_ind = ff_ind,
-    l_in_ff = l_in_ff,
-    l_out_ff = l_out_ff,
-    ct = ct,
-    ct_ff = ct_ff,
-    tl = tl,
-    tl_ff = tl_ff,
-    avg_tl = avg_tl,
-    avg_tl_ff = avg_tl_ff,
-    max_tl = max_tl,
-    max_tl_ff = max_tl_ff
-  )
-}
-
-get_fw_metrics2 <- function(x, keep_metaweb = TRUE) {
-
-  ff_metaweb <- get_fish_fish_matrix(x)
-
-  if (ncol(ff_metaweb) == 0) {
-    l_in_ff <- NA
-    l_out_ff <- NA
-    ff_ind <- NA
-    ct_ff <- NA
-    tl_ff <- NA
-    avg_tl_ff <- NA
-    max_tl_ff <- NA
-  } else {
-    l_in_ff <- colSums(ff_metaweb)
-    l_out_ff <- rowSums(ff_metaweb)
-    ff_ind <- NA
-    ct_ff <- sum(ff_metaweb) / (ncol(ff_metaweb) - 1)^2
-    tl_ff <- NetIndices::TrophInd(ff_metaweb)$TL
-    avg_tl_ff <- mean(tl_ff)
-    max_tl_ff <- max(tl_ff)
-  }
-
-  if (ncol(x) == 0) {
-    l_in <- NA
-    l_out <- NA
-    ind <- NA
-    ct <- NA
-    tl <- NA
-    avg_tl <- NA
-    max_tl <- NA
-  } else {
-    l_in <- colSums(x)
-    l_out <- rowSums(x)
-    ind <- NA
-    ct <- sum(x) / (ncol(x) - 1)^2
-    tl <- NetIndices::TrophInd(x)$TL
-    avg_tl <- mean(tl)
-    max_tl <- max(tl)
-  }
-
-  if (!keep_metaweb) {
-    ff_metaweb <- NA
-  }
-
-  list(
-    ff_metaweb = ff_metaweb,
-    ind = ind,
-    ff_ind = ff_ind,
-    l_in = l_in,
-    l_in_ff = l_in_ff,
-    l_out = l_out,
-    l_out_ff = l_out_ff,
-    ct = ct,
-    ct_ff = ct_ff,
-    tl = tl,
-    tl_ff = tl_ff,
-    avg_tl = avg_tl,
-    avg_tl_ff = avg_tl_ff,
-    max_tl = max_tl,
-    max_tl_ff = max_tl_ff
-  )
-
-
-}
-
-get_sim_net <- function(net = NULL, ext_seq = NULL, keep_metaweb = TRUE) {
-
-  node_extinction <- tibble(
-    node_rm_single = names(ext_seq),
-    node_tlvl = ext_seq,
-    node_rm_tot = map(seq_along(ext_seq),
-      ~ext_seq[1:.x]),
-    metaweb = furrr::future_map(seq_along(ext_seq),
-      function(x) {
-      tmp <- metaweb[
-        !rownames(net) %in% names(ext_seq)[1:x],
-        !colnames(net) %in% names(ext_seq)[1:x]
-        ]
-
-      mask_link <- colSums(tmp) != 0
-      return(tmp[mask_link, mask_link])
-      }
-    )
-  )
-
-  meta_keep <- keep_metaweb
-  out <- node_extinction %>%
-    mutate(
-      metrics = furrr::future_map(
-        metaweb, ~try(get_fw_metrics2(.x, keep_metaweb = meta_keep))
-      )
-    )
-
-  if (!keep_metaweb) {
-    out$metaweb <- NULL
-  }
-
-  return(out)
-}
-
 ```
 
 ```{r}
@@ -297,102 +151,12 @@ save(file = mypath("data", "sim_random_tlvl.rda"), sim_random_tlvl)
 ```
 
 ```{r random-richness, eval = FALSE}
-sim_dec_tlvl_species <- vector(mode ="list", length = length(fish_species_tlvl)) 
-sim_inc_tlvl_species <- vector(mode = "list", length = length(fish_species_tlvl))
-inc_species_tlvl <- sort(fish_species_tlvl, decreasing = FALSE)
-
-for (i in seq_along(fish_species_tlvl)) {
-  decreasing_tlvl_metaweb <- metaweb[
-    !str_detect(
-      rownames(metaweb),
-      paste0(names(fish_species_tlvl)[1:i], collapse = "|")
-      ),
-    !str_detect(
-      colnames(metaweb),
-      paste0(names(fish_species_tlvl)[1:i], collapse = "|")
-    )
-    ]
-
-  # Remove without feeding links
-  mask_link <- colSums(decreasing_tlvl_metaweb) != 0
-  decreasing_tlvl_metaweb <- tmp_metaweb[mask_link, mask_link]
-  sim_dec_tlvl_species[[i]] <- get_fw_metrics2(decreasing_tlvl_metaweb,
-    keep_metaweb = FALSE)
-
-  increasing_tlvl_metaweb <- metaweb[
-    !str_detect(
-      rownames(metaweb),
-      paste0(names(inc_species_tlvl)[1:i], collapse = "|")
-      ),
-    !str_detect(
-      colnames(metaweb),
-      paste0(names(inc_species_tlvl)[1:i], collapse = "|")
-      )
-    ]
-
-  # Remove without feeding links
-  mask_link <- colSums(increasing_tlvl_metaweb) != 0
-  increasing_tlvl_metaweb <- tmp_metaweb[mask_link, mask_link]
-  sim_inc_tlvl_species[[i]] <- get_fw_metrics2(increasing_tlvl_metaweb,
-    keep_metaweb = FALSE)
-}
-
-dec_species_result <- tibble(
-  one_sp_rm = names(fish_species_tlvl),
-  species_removed = map(seq_along(fish_species_tlvl),
-    ~names(fish_species_tlvl)[1:.x]),
-  metrics = sim_dec_tlvl_species
-  )
-
-inc_species_result <- tibble(
-  one_sp_rm = names(inc_species_tlvl),
-  species_removed = map(seq_along(inc_species_tlvl),
-    ~names(inc_species_tlvl)[1:.x]),
-  metrics = sim_inc_tlvl_species
-  )
 save(file = mypath("data", "sim_dec_sp_tlvl.rda"), dec_species_result)
 save(file = mypath("data", "sim_inc_sp_tlvl.rda"), inc_species_result)
 ```
 
 ```{r, eval = FALSE}
 # random simulation
-nsim <- 10
-set.seed(123)
-
-sim_random_tlvl_species <- vector(mode = "list", length = length(fish_species_tlvl))
-sim_random_tlvl_species <- map(sim_random_tlvl_species, ~vector(mode = "list", length = nsim))
-sp_to_rm <- vector(mode = "list", length = length(fish_species_tlvl))
-sp_to_rm <- map(sp_to_rm, ~vector(mode = "list", length = nsim))
-
-for (i in seq_along(fish_species_tlvl)) {
-
-  for (j in seq_len(nsim)) {
-    sp_to_rm[[i]][[j]] <- sample(names(fish_species_tlvl), size = i, replace = FALSE)
-
-    tmp_metaweb <- metaweb[
-      !str_detect(
-        rownames(metaweb),
-        paste0(sp_to_rm[[i]][[j]], collapse = "|")
-        ),
-      !str_detect(
-        colnames(metaweb),
-        paste0(sp_to_rm[[i]][[j]], collapse = "|")
-      )
-      ]
-    # Remove without feeding links
-    mask_link <- colSums(tmp_metaweb) != 0
-    tmp_metaweb <- tmp_metaweb[mask_link, mask_link]
-    sim_random_tlvl_species[[i]][[j]] <- get_fw_metrics2(
-      tmp_metaweb,
-    keep_metaweb = FALSE)
-  }
-}
-
-random_species_result <- tibble(
-  nsp_rm = seq_along(fish_species_tlvl),
-  species_removed = sp_to_rm,
-  metrics = sim_random_tlvl_species
-  )
 save(file = mypath("data", "sim_random_sp_tlvl.rda"), random_species_result)
 ```
 

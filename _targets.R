@@ -9,9 +9,30 @@ tar_option_set(packages = c(
 library(future.callr)
 plan(callr)
 source("./packages.R")
+theme_set(
+  theme_half_open() +
+    background_grid()
+)
 
 list(
   # Get fishcom data:
+  tar_target(metaweb_analysis,
+    get_data(obj_name = "metaweb_analysis", dir = here("data"))
+    ),
+  tar_target(basin_dce, {
+    basin <- read_sf(here::here("data-raw", "basin_dce", "BassinDCE.shp"))
+    basin %<>% st_transform(crs = 2154)
+    basin %<>% filter(CdBassinDC %in%
+      c("B1", "B2", "A", "D", "F", "C", "G", "H")
+    )
+    basin <- rmapshaper::ms_simplify(input = basin) %>%
+      st_as_sf()
+    basin_inner <- basin %>%
+      rmapshaper::ms_innerlines() %>%
+      as_tibble() %>%
+      st_as_sf()
+    list(basin_inner = basin_inner, basin_tot = basin)
+    }),
   tar_target(net_analysis_data,
     get_network_analysis_data(
       path = file_in(!!get_mypath("data", "classes", "network_analysis.rda"))
@@ -74,7 +95,7 @@ list(
     by = "station") %>%
     left_join(mutate(basin_station, station = as.character(station)), by =
       "station")),
-  # Analysis 
+  # Analysis
   ## Temporal trends
   tar_target(gaussian_inla_no_drivers, tibble(
       response = facet_var,
@@ -146,9 +167,13 @@ list(
         (1 | basin), data = sp_for_sem)
       )),
   tar_target(sp_semeff_perc, get_sp_semeff(sem = sp_sem, sem_data = sp_for_sem, ci_type = "perc")),
+  tar_target(sp_semeff_tab, from_semEff_to_table(sp_semeff_perc)),
+  tar_target(semeff_tab, from_semEff_to_table(semeff_perc_inla)),
+  tar_target(semeff_tot, rbind(tibble(semeff_tab, model = "temporal"),
+      tibble(sp_semeff_tab, model = "spatial")
+      )),
 
   # Model performance:
-
   tar_target(gaussian_inla_rand,
     gaussian_inla_no_drivers %>%
       mutate(
@@ -219,31 +244,583 @@ list(
       rsquared(as.psem(sem)) %>%
         mutate(Marginal = R.squared, Conditional = NA, type = "temporal") %>%
         select(Response, Marginal, Conditional, type)
-      ))
+      )),
+  tar_target(r2_sem_tab,
+    r2_sem %>%
+      select(
+        Type = type,
+        Response,
+        `Marg. R2` = Marginal,
+        `Cond. R2` = Conditional
+        ) %>%
+    arrange(Type, Response) %>%
+    mutate(
+      Response = str_remove_all(Response, "mean_"),
+      Response = var_replacement()[Response],
+      Type = str_to_sentence(Type)
+      ) %>%
+    mutate(across(c(`Marg. R2`, `Cond. R2`), ~round(., 2)))
+  ),
 
+  # Figure
+  ## Direct effect SEM temporal
+  tar_target(p_list_sem_tps,
+    list(
 
-  #tar_target(map_st, get_station_map(st = st_mono_trends_stable_rich_bm))
+      p_bm_rich = tps_for_sem %>%
+        ggplot(aes(
+            x = mean_log_rich_std,
+            y = mean_log_bm_std
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(intercept = coef(sem[[3]])[1], slope = coef(sem[[3]])[2], size = 1) +
+        labs(x = "Species richness", y = "Biomass trend\n(% by decade)"),
+
+      p_ct_rich = tps_for_sem %>%
+        ggplot(aes(
+            x = mean_log_rich_std,
+            y = mean_ct_ff,
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(intercept = coef(sem[[1]])["(Intercept)"], slope = coef(sem[[1]])["mean_log_rich_std"], size = 1) +
+        labs(x = "Species richness", y = "Connectance trend\n(by decade)"),
+      p_ct_bm = tps_for_sem %>%
+        ggplot(aes(
+            x = mean_log_bm_std,
+            y = mean_ct_ff,
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(intercept = coef(sem[[1]])["(Intercept)"], slope = coef(sem[[1]])["mean_log_bm_std"], size = 1) +
+        labs(x = "Biomass", y = "Connectance trend\n(by decade)"),
+
+      p_tlvl_rich = tps_for_sem %>%
+        ggplot(aes(
+            x = mean_log_rich_std,
+            y = mean_w_trph_lvl_avg,
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(intercept = coef(sem[[2]])["(Intercept)"], slope = coef(sem[[2]])["mean_log_rich_std"], size = 1) +
+        labs(x = "Species richness trend (% by decade)", y = "Average trophic level trend\n(by decade)"),
+
+      p_tlvl_bm = tps_for_sem %>%
+        ggplot(aes(
+            x = mean_log_bm_std,
+            y = mean_w_trph_lvl_avg,
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = coef(sem[[2]])["(Intercept)"],
+          slope = coef(sem[[2]])["mean_log_bm_std"], size = 1) +
+        labs(
+          x = "Biomass trend (% by decade)",
+          y = "Average trophic level trend\n(by decade)")
+    )
+    ),
+  tar_target(p_sem_tps_right, {
+
+    theme_set(theme_half_open() + background_grid())
+
+    del_x <- function(x) {
+      theme(axis.title.x = element_blank(), axis.text.x = element_blank())
+    }
+
+    plot_grid(
+      NULL, p_list_sem_tps$p_bm_rich + del_x(),
+      p_list_sem_tps$p_ct_bm + del_x(), p_list_sem_tps$p_ct_rich + del_x(),
+      p_list_sem_tps$p_tlvl_bm, p_list_sem_tps$p_tlvl_rich,
+      ncol = 2,
+      labels = c("", letters[2:6]),
+      align = "v"
+    )
+
+    }),
+  ## SEM spatial temporal
+  tar_target(p_sem_tps_sp,
+    semeff_tot %>%
+      filter(effect_type != "mediators",
+        !predictor %in% c("log_RC1", "log_RC2")) %>%
+      mutate(
+        response = str_remove(response, "mean_"),
+        response = var_replacement()[response],
+        predictor = str_remove(predictor, "mean_"),
+        predictor = var_replacement()[predictor],
+        effect_type = str_to_sentence(effect_type),
+        model = str_to_sentence(model)
+        ) %>%
+      ggplot(aes(y = predictor, x = effect, colour = response, shape = model)) +
+      geom_point(
+        position = position_dodge(width = 0.4), size = 4) +
+      geom_vline(xintercept = 0, linetype = "dashed") +
+      geom_linerange(
+        aes(xmin = lower_ci, xmax = upper_ci),
+        size = 1,
+        position = position_dodge(width = 0.4)
+        ) +
+      facet_grid(cols = vars(effect_type)) +
+      labs(
+        y = "Predictor",
+        x = expression(paste("Standardized slope coefficients ", r[delta])),
+        color = "Foodweb metric", shape = "Model") +
+      theme_cowplot() +
+      background_grid() +
+      theme(legend.position = "bottom", strip.background = element_blank())
+  ),
+
+  # Supplementary material
+  tar_target(obs_fit,
+      map2_dfr(gaussian_inla_no_drivers$mod, gaussian_inla_no_drivers$response,
+        ~plot_obs_fitted_inla(
+          mod_inla = .x,
+          dataset = data_inla,
+          resp = .y,
+          pred_nrows = NULL,
+          return_df = TRUE
+        )
+      )
+    ),
+  tar_target(p_obs_fit,
+    obs_fit %>%
+      filter(
+        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")
+        ) %>%
+      mutate(response = var_replacement()[response]) %>%
+      ggplot(aes(x = obs, y = fit)) +
+      geom_point(alpha = .3, color = "gray70") +
+      geom_abline(slope = 1, intercept = 0, size = 1) +
+      geom_text(data = r2_obs_fit,
+        aes(label = lab), parse = TRUE,
+        vjust = 1, hjust = 0
+        ) +
+      facet_wrap(vars(response), scales = "free", ncol = 2) +
+      labs(x = "Observed values", y = "Fitted values") +
+      geom_rug(alpha = .05) +
+      theme_half_open() +
+      theme(strip.background = element_blank())
+    ),
+  tar_target(r2_obs_fit,
+    obs_fit %>%
+      filter(
+        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")
+        ) %>%
+      mutate(response = var_replacement()[response]) %>%
+      group_by(response) %>%
+      summarise(
+        cor = round(cor(y = fit, x = obs, use = "complete.obs"), 2),
+        lab = paste0("~~~~rho == ", cor),
+        obs = -Inf,#(max(obs) - min(obs)) * .10,
+        fit = Inf#(max(fit) - min(fit)) * .90
+        )
+      ),
+  tar_target(p_hist_site_tps10, {
+    sum_tps_10 <- gaussian_pred_station_tps10 %>%
+      filter(response %in% c("log_bm_std", "ct_ff",
+          "w_trph_lvl_avg", "log_rich_std")) %>%
+      mutate(response = var_replacement()[response]) %>%
+      group_by(response) %>%
+      summarise(avg = mean(mean), med = median(mean)) %>%
+      pivot_longer(-response, names_to = "metric", values_to = "values")
+
+    gaussian_pred_station_tps10 %>%
+      filter(response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")) %>%
+      mutate(response = var_replacement()[response]) %>%
+      ggplot(aes(x = mean)) +
+      geom_histogram(fill = "lightblue", bins = 60) +
+      geom_vline(xintercept = 0, linetype = "dashed", colour = "red") +
+      geom_vline(data = filter(sum_tps_10, metric == "med"), aes(xintercept = values)) + #, color = metric
+      labs(x = "Temporal trends by decade", y = "Number of sites") +
+        scale_x_continuous(n.breaks = 10) +
+        facet_wrap(vars(response), scales = "free",
+          ncol = 2, strip.position = "top") +
+        theme_half_open() +
+        theme(strip.background = element_blank())
+    }),
+  tar_target(r2_inla_tab,
+    r2_inla %>%
+      filter(
+        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")
+        ) %>%
+    mutate(response = var_replacement()[response]) %>%
+    select(
+      Response = response,
+      `Marg. Rsq (95% CI)` = r2_mvp_marg95hpdci,
+      `Cond. Rsq (95% CI)` = r2_mvp_cond95hpdci
+    )
+    ),
+
+  ## Random network extinction
+  tar_target(node_tlvl,
+    setNames(NetIndices::TrophInd(metaweb_analysis$metaweb)$TL,
+    colnames(metaweb_analysis$metaweb))
+    ),
+  tar_target(node_seq, {
+    node_dec_tlvl <- sort(node_tlvl, decreasing = TRUE)
+    node_inc_tlvl <- sort(node_tlvl, decreasing = FALSE)
+    list(
+      node_dec_tlvl = node_dec_tlvl,
+      node_inc_tlvl = node_inc_tlvl,
+      node_fish_dec_tlvl = node_dec_tlvl[fish(names(node_dec_tlvl))],
+      node_fish_inc_tlvl = node_inc_tlvl[fish(names(node_inc_tlvl))]
+    )
+    }),
+  tar_target(sim_dec_tlvl,
+    get_sim_net(net = metaweb_analysis$metaweb, ext_seq = node_seq$node_fish_dec_tlvl,
+      keep_metaweb = FALSE)
+    ),
+  tar_target(sim_inc_tlvl,
+    get_sim_net(net = metaweb_analysis$metaweb, ext_seq = node_seq$node_fish_inc_tlvl,
+      keep_metaweb = FALSE)
+    ),
+  tar_target(sim_random_tlvl, {
+    nsim <- 10
+    tibble(
+      repl = seq_len(nsim),
+      sim = furrr::future_map(repl,
+        ~get_sim_net(net = metaweb_analysis$metaweb, ext_seq = sample(node_seq$node_fish_inc_tlvl),
+          keep_metaweb = FALSE)
+      )
+    )
+    }),
+  tar_target(node_sim_metrics,
+    list(
+      dec = sim_dec_tlvl %>%
+        mutate(met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()])))) %>%
+        select(-metrics) %>%
+        unnest(met) %>%
+        pivot_wider(names_from = "name", values_from = "value"),
+      inc = sim_inc_tlvl %>%
+        mutate(met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()])))) %>%
+        select(-metrics) %>%
+        unnest(met) %>%
+        pivot_wider(names_from = "name", values_from = "value"),
+      random = sim_random_tlvl %>%
+        mutate(res = map(sim, function(x) {
+            x %>%
+              mutate(met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()])))) %>%
+              unnest(met) %>%
+              pivot_wider(names_from = "name", values_from = "value")
+          })) %>%
+      select(-sim) %>%
+      unnest(res)
+    )
+    ),
+  tar_target(rand_node_tmp,
+    sim_random_tlvl %>%
+      unnest(sim) %>%
+      mutate(
+        met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()]))),
+        nb_ext = map_int(node_rm_tot, length),
+        type = "random",
+        extinct = "node"
+        ) %>%
+      select(-metrics, - node_rm_tot) %>%
+      unnest(met) %>%
+      rename(metric = name)
+    ),
+  tar_target(sim_node_dec_inc,
+
+    rbind(
+      node_sim_metrics$dec %>%
+        pivot_longer(!!net_ext_met_to_keep(), names_to = "metric", values_to = "value") %>%
+        mutate(
+          type = "decreasing",
+          extinct = "node"
+          ),
+      node_sim_metrics$inc %>%
+          pivot_longer(!!net_ext_met_to_keep(), names_to = "metric", values_to = "value") %>%
+          mutate(
+            type = "increasing",
+            extinct = "node"
+          )
+    )
+    ),
+  tar_target(p_ext_node,
+    sim_node_dec_inc %>%
+      filter(str_detect(metric, "_ff")) %>%
+      mutate(
+        nb_ext = map_int(node_rm_tot, length),
+        metric = var_replacement()[metric],
+        type = str_to_sentence(type)
+        ) %>%
+      ggplot(aes(x = nb_ext, y = value, color = type)) +
+      geom_line() +
+      geom_point(data = rand_node_tmp %>%
+        filter(str_detect(metric, "_ff")) %>%
+        mutate(
+          metric = var_replacement()[metric],
+          type = str_to_sentence(type)
+          )) +
+      geom_smooth(data = rand_node_tmp %>%
+        filter(str_detect(metric, "_ff")) %>%
+        mutate(
+          metric = var_replacement()[metric],
+          type = str_to_sentence(type)
+          ), color = "black") +
+      facet_wrap(~metric, scale = "free_y") +
+      labs(y = "Network metric values",
+        x = "Number of node removed",
+        color = "Trophic level scenario") +
+      theme(legend.position = "bottom")
+    ),
+  tar_target(fish_species_tlvl,
+    fish_species_tlvl <- node_tlvl %>%
+      enframe(name = "node", value = "tlvl") %>%
+      mutate(species = get_species(node)[, 1]) %>%
+      filter(str_detect(species, "[A-Z]+")) %>%
+      group_by(species) %>%
+      summarise(tlvl_med = median(tlvl)) %>%
+      arrange(desc(tlvl_med)) %>%
+      deframe()
+    ),
+  tar_target(fish_sim_species, {
+    sim_dec_tlvl_species <- vector(mode ="list", length = length(fish_species_tlvl)) 
+    sim_inc_tlvl_species <- vector(mode = "list", length = length(fish_species_tlvl))
+    inc_species_tlvl <- sort(fish_species_tlvl, decreasing = FALSE)
+
+    for (i in seq_along(fish_species_tlvl)) {
+      decreasing_tlvl_metaweb <- metaweb_analysis$metaweb[
+        !str_detect(
+          rownames(metaweb_analysis$metaweb),
+          paste0(names(fish_species_tlvl)[1:i], collapse = "|")
+          ),
+        !str_detect(
+          colnames(metaweb_analysis$metaweb),
+          paste0(names(fish_species_tlvl)[1:i], collapse = "|")
+        )
+        ]
+
+      # Remove without feeding links
+      mask_link <- colSums(decreasing_tlvl_metaweb) != 0
+      decreasing_tlvl_metaweb <- decreasing_tlvl_metaweb[mask_link, mask_link]
+      sim_dec_tlvl_species[[i]] <- get_fw_metrics2(decreasing_tlvl_metaweb,
+        keep_metaweb = FALSE)
+
+      increasing_tlvl_metaweb <- metaweb_analysis$metaweb[
+        !str_detect(
+          rownames(metaweb_analysis$metaweb),
+          paste0(names(inc_species_tlvl)[1:i], collapse = "|")
+          ),
+        !str_detect(
+          colnames(metaweb_analysis$metaweb),
+          paste0(names(inc_species_tlvl)[1:i], collapse = "|")
+        )
+        ]
+
+      # Remove without feeding links
+      mask_link <- colSums(increasing_tlvl_metaweb) != 0
+      increasing_tlvl_metaweb <- increasing_tlvl_metaweb[mask_link, mask_link]
+      sim_inc_tlvl_species[[i]] <- get_fw_metrics2(increasing_tlvl_metaweb,
+        keep_metaweb = FALSE)
+    }
+    list(
+      dec =  tibble(
+        one_sp_rm = names(fish_species_tlvl),
+        species_removed = map(seq_along(fish_species_tlvl),
+          ~names(fish_species_tlvl)[1:.x]),
+        metrics = sim_dec_tlvl_species
+        ),
+      inc = tibble(
+        one_sp_rm = names(inc_species_tlvl),
+        species_removed = map(seq_along(inc_species_tlvl),
+          ~names(inc_species_tlvl)[1:.x]),
+        metrics = sim_inc_tlvl_species
+      )
+    )
+    }
+    ),
+  tar_target(sim_rand_species, {
+    nsim <- 10
+    set.seed(123)
+
+    sim_random_tlvl_species <- vector(mode = "list", length = length(fish_species_tlvl))
+    sim_random_tlvl_species <- map(sim_random_tlvl_species, ~vector(mode = "list", length = nsim))
+    sp_to_rm <- vector(mode = "list", length = length(fish_species_tlvl))
+    sp_to_rm <- map(sp_to_rm, ~vector(mode = "list", length = nsim))
+
+    for (i in seq_along(fish_species_tlvl)) {
+      for (j in seq_len(nsim)) {
+        sp_to_rm[[i]][[j]] <- sample(names(fish_species_tlvl), size = i, replace = FALSE)
+
+        tmp_metaweb <- metaweb_analysis$metaweb[
+          !str_detect(
+            rownames(metaweb_analysis$metaweb),
+            paste0(sp_to_rm[[i]][[j]], collapse = "|")
+            ),
+          !str_detect(
+            colnames(metaweb_analysis$metaweb),
+            paste0(sp_to_rm[[i]][[j]], collapse = "|")
+          )
+          ]
+        # Remove without feeding links
+        mask_link <- colSums(tmp_metaweb) != 0
+        tmp_metaweb <- tmp_metaweb[mask_link, mask_link]
+        sim_random_tlvl_species[[i]][[j]] <- get_fw_metrics2(
+          tmp_metaweb,
+          keep_metaweb = FALSE)
+      }
+    }
+    tibble(
+      nsp_rm = seq_along(fish_species_tlvl),
+      species_removed = sp_to_rm,
+      metrics = sim_random_tlvl_species
+    )
+    }
+    ),
+  tar_target(sim_sp_dec_inc,
+    rbind(
+      fish_sim_species$inc %>%
+        mutate(
+          met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()]))),
+          nb_ext = map_int(species_removed, length),
+          type = "increasing",
+          extinct = "species"
+          ) %>%
+      unnest(met) %>%
+      rename(metric = name),
+    fish_sim_species$dec %>%
+      mutate(
+        met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()]))),
+        nb_ext = map_int(species_removed, length),
+        type = "decreasing",
+        extinct = "species"
+        ) %>%
+    unnest(met) %>%
+    rename(metric = name)
+    )
+    ),
+  tar_target(rand_sp_met,
+    sim_rand_species %>%
+      unnest(metrics) %>%
+      mutate(
+        met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()]))),
+        nb_ext = nsp_rm,
+        type = "random",
+        extinct = "species"
+        ) %>%
+      unnest(met) %>%
+      rename(metric = name)
+    ),
+  tar_target(p_ext_sp,
+    sim_sp_dec_inc %>%
+      filter(str_detect(metric, "_ff")) %>%
+      mutate(
+        metric = var_replacement()[metric],
+        type = str_to_sentence(type)
+        ) %>%
+      ggplot(aes(x = nb_ext, y = value, color = type)) +
+      geom_line() +
+      geom_point(
+        data = rand_sp_met %>%
+          filter(str_detect(metric, "_ff")) %>%
+          mutate(
+            metric = var_replacement()[metric],
+            type = str_to_sentence(type)
+            )) +
+        geom_smooth(data = rand_sp_met %>%
+          filter(str_detect(metric, "_ff")) %>%
+          mutate(
+            metric = var_replacement()[metric],
+            type = str_to_sentence(type)
+            ), color = "black") +
+        facet_wrap(~metric, scale = "free_y") +
+        labs(y = "Network metric values", x = "Number of species removed",
+          color = "Trophic level scenario") +
+        theme(legend.position = "bottom")
+    ),
+  tar_target(p_tot_ext_sim,
+    plot_grid(
+      p_ext_sp +
+        theme_half_open() +
+        background_grid() +
+        theme(
+          strip.background = element_blank(),
+          legend.position = "none"
+          ),
+        p_ext_node +
+          theme_half_open() +
+          background_grid() +
+          theme(
+            strip.background = element_blank(),
+            legend.position = "none"
+            ),
+          get_legend(p_ext_node + theme(legend.position = "bottom")),
+          nrow = 3,
+          rel_heights = c(1, 1, .1)
+    )
+    ),
+  tar_target(figSext,
+    save_plot(
+      filename = here::here("figures", "tot_ext_sim.pdf"),
+      plot = p_tot_ext_sim,
+      nrow = 2,
+      ncol = 3
+    ),
+    format = "file"
+    ),
+
+  # Main figure parts:
+  tar_target(fig2_right,
+    save_plot(
+      filename = here("figures", "fig2_right.png"),
+      p_sem_tps_right,
+      ncol = 2, nrow = 3),
+    format = "file"
+    ),
+  tar_target(p_station,
+    ggplot() +
+      geom_sf(data = st_geometry(basin_dce$basin_tot), fill = "grey90") +
+      geom_sf(
+        data = st_geometry(station_analysis),
+        shape = 21,
+        color = "white", fill = "black", size = 1, stroke = 1) +
+      geom_sf(data = st_geometry(
+          station_analysis %>%
+            filter(id == 9561)
+          ),
+        shape = 21,
+        color = "white", fill = "red", size = 1, stroke = 1) +
+      theme(
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank()
+      )
+      ),
+    tar_target(map_plot,
+      save_plot(filename = here::here("figures", "map_fr.pdf"), p_station,
+        base_height = 5.71,
+        base_asp = 1
+        ),
+      format = "file"
+      ),
+    tar_target(figSobsfit,
+      save_plot(
+        filename = here::here("figures", "p_obs_fit.pdf"),
+        plot = p_obs_fit,
+        nrow = 2,
+        ncol = 2
+        ),
+      format = "file"
+      ),
+    tar_target(figStps10,
+      save_plot(
+        filename = here::here("figures", "p_hist_site_tps10.pdf"),
+        plot = p_hist_site_tps10,
+        nrow = 2,
+        ncol = 2
+      ),
+    format = "file"
+  ),
+tar_target(figstd,
+      save_plot(
+        filename = here::here("figures", "p_sem_tps_sp.pdf"),
+        plot = p_sem_tps_sp,
+        nrow = 1,
+        ncol = 2,
+        base_height = 5,
+        base_asp = 1.618
+      )
+      ,
+    format = "file"
   )
-  #betadiv = map_dfr(
-    #c("biomass", "bm_std", "nind_std", "nind"),
-    #~compute_temporal_betadiv(
-      #.op = op_data,
-      #com = filter(com_analysis_data, !is.na(surface)),
-      #variable = .x) %>%
-    #select(-data, -com) %>%
-    #mutate(variable = .x)
-  #) %>%
-  #pivot_longer(cols = c(betadiv:betadiv_bin_diag)) %>%
-  #mutate(name = str_c(name, variable, sep = "_")) %>%
-  #select(-variable) %>%
-  #pivot_wider(names_from = "name", values_from = "value"),
-  #betapart_bin =
-    #get_com_mat_station(
-      #com = com_analysis_data,
-      #.op = op_data,
-      #variable = "biomass",
-      #presence_absence = TRUE) %>%
-  #get_temporal_betapart_from_com_mat_station(com = .) %>%
-  #select(-betapart) %>%
-  #ungroup() %>%
-  #unnest(be),
+
+)

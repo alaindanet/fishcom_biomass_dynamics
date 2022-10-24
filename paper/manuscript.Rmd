@@ -71,28 +71,15 @@ options(knitr.table.format = "latex")
 ```
 
 ```{r}
-loadd(rsq_table_bm_rich_mono_stable_trends)
-loadd(reg_table_bm_rich_mono_stable_trends)
-load(here::here("data", "semeff.rda"))
-load(here::here("data", "sp_semeff.rda"))
+tar_load(full_data2)
+nb_st <- unique(full_data2$station) %>% length
+rm(full_data2)
 ```
 
-```{r}
-net_var_bm <- c("log_rich_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
-      "piel_nind")
-net_var_rich <- c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "piel_bm",
-      "piel_nind")
-```
+# Abstract (250 words max)
 
-```{r}
-loadd(slope_com_var_no_covar, st_mono_trends_stable_rich_bm)
-loadd(range_data)
-```
-```{r}
-nb_st <- unique(slope_com_var_no_covar$station) %>% length
-rm(slope_com_var_no_covar)
-nb_st_rich_bm <- st_mono_trends_stable_rich_bm %>% length
-```
+# Signifiance (120 words)
+
 
 # Introduction (564 words)
 
@@ -166,442 +153,91 @@ We then built structural equation model to assess the relationships among the
 temporal trends of the different facets of food-web structure.
 
 
-# Methods
-
-## Data
-
-We used a monitoring of freshwater fishes conducted all over France and
-conducted by the Office Français de la Biodiversité (OFB, previously known as
-ONEMA and AFB). The sampling protocols were standardized since 1995 and a
-complete description of the sampling process can be found in
-@danet_species_nodate (main text and appendixS2). The fishes are sampled using
-electrofishing all across the streams in shallow streams and over the bank by
-boat in deeper streams. All the fishes are counted and the bodysize of fishes are
-recorded for a sample of them, enabling the estimate the distribution of
-individual bodysize by species for each sampling [@bonnaffe_comparison_2021;
-@danet_species_nodate].
-
-## Data selection
-
-We selected the sites that have been monitored at least 10 years on the
-1995-2018 period, with the same sampling protocol over time. We selected
-one sampling a year by site. In each site, we ensured low temporal heterogeneity
-in sampling period by selecting sampling that were performed in the same period,
-leading to a mean standard deviation of sampled month in each site of three
-weeks [@danet_species_nodate]. Those steps leads to the selection of 
-`r nb_st` sites (Figure \@ref(fig:matmet)A).
-
-## Biomass 
-
-We first inferred the body mass of each fish individual considering an allometric
-law, $B_i = 0.01 \times l_i^{3.03}$, $B_i$ being the biomass expressed in gram and $l_i$ the
-body length of the individual $i$ expressed in millimetres  [@froese_cube_2006]. Then the
-biomass of each species and community biomass were obtained by summing the body
-mass of individuals. Finally, the biomass was reported to the sampled surface
-(in $m^2$) to account for sampling effort.
- 
-## Food-web inference 
-
-We inferred food-web structure in two steps [@bonnaffe_comparison_2021;
-@danet_species_2021]: (1) we first computed the metaweb, describing the
-potential trophic interactions among all size classes species, (2) then we
-extracted each yearly snapshot of food-webs by extracting species size classes
-and their interactions according to their presence in a given sampling event.
- 
-We inferred the metaweb according to ontogenic diet data and body size
-[@gravel_inferring_2013; @poisot_structure_2016; @brose_predator_2019;
-@bonnaffe_comparison_2021; @danet_species_2021]. The method is extensively
-described in @bonnaffe_comparison_2021 and @danet_species_2021. The food diet of
-stream fishes changes along their life cycle or stage, therefore according to
-their body size. Each fish species was divided in nine size classes, named
-"trophic species", equally distributed in their observed body size range. Thus,
-a trophic species is a group of individuals of the same species and size class
-that are expected to share the same preys and predators because trophic
-interactions are largely determined by predator-prey size ratio
-[@brose_allometric_2006]. We also added seven nodes present in the ontogenic
-food diet database: detritus, biofilm, phytoplankton, zooplankton, macrophages,
-phytobenthos and zoobenthos.  The resulting metaweb contained 45 fish species
-divided into nine size classes plus 7 resource nodes, summing up to 412 nodes.
-Consideration of size classes, i.e.  trophic species instead of species,
-improves inference of trophic interactions [@jennings_weak_2001].
-
-We determined the feeding interactions of trophic species according to their
-species identity and their body size. The diet database described two or three
-life stages by fish species, each one being delimited by body size
-[@bonnaffe_comparison_2021; @danet_species_nodate]. The ontogenic fish diet
-database was filled according to fishbase (Froese et al. 2021) and literature
-[@bonnaffe_comparison_2021; @danet_species_nodate].
-
-The feeding interactions among fishes were based on the body size ratio
-between predators and preys. We defined the predation window of a
-piscivorous trophic species as 3% to 45% of its midpoint
-[@mittelbach_ontogeny_1998; @claessen_impact_2002; @hart_handbook_2008].  A
-trophic link was defined between the piscivorous trophic species and all the
-trophic species whose midpoint in body size range was included in the predation
-window.  The fish-resource trophic links were set between the trophic species
-and the resources nodes according to the food items of their size class.
-Finally, the feeding interactions between resources were defined according to the
-literature [@allan_stream_2007; @hart_handbook_2008].
-
-## Community and food-web structure
-
-At each site, yearly food-webs were described by their community biomass,
-species richness and the evenness of biomass across species. The evenness was
-quantified with the Pielou index, computed as the Shannon diversity index
-divided by the number of species ($P = \frac{H'}{N}$, with $H'$ being the
-Shannon diversity index and $N$ the number of species). Yearly food-web
-structure was described by their connectance, describing the degree of
-generalism in a network [@dunne_network_2006; @delmas_analysing_2019]. It was
-computed as the ratio between the number of actual links and the number of
-potential links ($C = \frac{L}{S(S-1)}$, with $L$ being the number of links and
-$S$ the number of trophic species). We also computed the average trophic level,
-weighted by the biomass of the trophic species. The trophic level of a trophic
-species was computed recursively as 1 added to the mean trophic level of the
-preys that it consumes [@herendeen_ecological_2008].
-
-
-## Temporal trends of food-web 
-
-To characterize the links among the temporal trends of network and community
-structure and the temporal trends of community biomass and species richness, we
-characterized the temporal trajectories of food-web structure at each site. We
-modeled a linear relationship between food-web structure and
-time with a second order polynome, which allows to assess both the direction and the monotony of temporal
-trends [@rigal_method_2020]. We selected the sites that displayed monotonic
-trends for these variables, i.e. the ones for which the second order polynomial
-term was non significant according to t-tests, to avoid the inclusion of many
-types of biomass and species richness trends (i.e. accelerating, decelerating,
-etc...), . Over the `r nb_st` monitored sites, the selection procedure resulted in 
-`r nb_st_rich_bm` sites for community biomass and species richness analysis.
-However, the results were robust to the inclusion of non monotonic trends (Fig.
-SXX).
-
-There was a clear relationship between the size of the communities and their
-temporal dynamics. Communities that displayed low community biomass at the
-beginning of their monitoring tend to display a biomass increase through time
-and reversely, we observed the same pattern for species richness. We
-log-transformed (natural logarithm) community biomass and species richness to model their trends,
-which decreased the former effect (Fig. SXX). Temporal
-trends of community biomass and species richness were thus expressed in rate of
-change by year.
-
-
-## Spatial
-
-To assess the validity of the space-for-time substitution hypothesis, we
-compared the relationships among food-web structure in time to the ones observed
-in space. To do so, we selected the same sites that were used
-for the temporal analysis. We summarised temporal series of each station by the
-median value over time of each facet of food-web structure described above.
- 
-# Statistical analysis
-
-We modelled the relationships among food-web structure, that is
-connectance and average trophic level, and community biomass ($dB$) and species
-richness ($dR$) with Structural Equation Models. We modelled a it such as species
-richness is related to community biomass and food-web structure. In
-turn community biomass was related to food-web structure. We computed one
-structural equation model to assess the relationships among the temporal trends
-and one for the relationships over the spatial gradient. As spatial variation of
-food-web structure are partly driven by environmental gradients, so we
-controlled relationships among variables by adding two PCA axis
-synthesizing respectively (1) stream gradient from upstream to downstream and
-(2) enrichment (Fig. \@ref(fig:matmet)). Enrichment was characterized by the
-average Biological Oxygen Demand [BOD, @mallin_factors_2006][^2]. We further
-added a random effect of the hydrographic basin on the intercept.
-
-In order to control for the uncertainties of the estimated temporal trends, each
-temporal trend was weighted by the inverse of the sum of the standard errors
-of the estimated trends, i.e. estimated slopes for the response and the
-explicative variables ($w_j = \dfrac{1}{\sum{e_j}}$, $w_j$ being the
-weight, and $s_{e_j}$ the standard error on the
-temporal trends of the variables).
-
-The coefficients of the Structural Equation Models were computed with
-PiecewiseSEM R package [@lefcheck_piecewisesem_2016]. The coefficients were
-standardizated and the confidence intervals were computed with semEff R package
-[@murphy_semEff_2021]. Confidence intervals were obtained by bootstrapping the
-linear models 1000 times and computing adjusted bootstrap percentile interval
-(BCa), which are adjusted for asymetric distribution of resampling.
-
-All the statistical models displayed low multicollinearity (Variance inflation
-factor < 3, Table SXX).  We visually inspected the residuals of the linear
-models.
-
-```{r}
-
-fig_mat_cap <- paste0("Using  sites of stream fishes in French streams that
-  have been monitored at least 10 years, 1) we infered the food-web at each site
-and each sampling event based on ontogenic food diet information for each
-species and predator-prey body size ratio. 2) We computed the temporal trends
-and the median of community biomass, species richness, connectance, average
-trophic level and evenness of biomass at each site. 3) We then assessed the
-relationships among a) temporal trends of food-web structure. We also assessed
-the spatial relationships among median food-web structure while controlling for
-the environmental gradient with two axis of a rotated PCA. The first axis of the
-PCA is related to the stream gradient from upstream to downstream while the
-second is related to enrichment (BOD) and site altitude.")
-
-```
-
-```{r matmet, fig.cap=fig_mat_cap, out.width="80%"}
-knitr::include_graphics(get_mypath("figures", "mat_met_inkscape.pdf"))
-```
 
 # Results
 
 ```{r}
-loadd(rsq_sp_mod, summary_table, sp_models, model_summary)
-
-loadd(rsq_table_bm_rich_mono_stable_trends, sp_rsq_table_bm_rich_mono_stable_trends)
-
-loadd(rigal_classification)
+tar_load(glob_tps_trends_decade_no_drivers)
+gbm <- get_effect_ci(resp = "log_bm_std", ci_lvl = "level:0.80", p = TRUE)
+gr <- get_effect_ci(resp = "log_rich_std", ci_lvl = "level:0.80", p = TRUE)
+gt <- get_effect_ci(resp = "w_trph_lvl_avg", ci_lvl = "level:0.80", p = FALSE)
+gct <- get_effect_ci(resp = "ct_ff", ci_lvl = "level:0.80", p = FALSE)
 ```
 
 ```{r}
-log_trends_percent <- rigal_classification %>%
-  unnest(classif) %>%
-  filter(variable %in% c("log_bm_std", "log_rich_std")) %>%
-  select(variable, station, linear_slope, linear_slope_strd_error) %>%
-  mutate(
-    slp_percent = round((exp(linear_slope) - 1) * 100),
-    std_err_percent = round((exp(linear_slope_strd_error) - 1) * 100)
-  )
-resume_log_trends <- log_trends_percent %>%
-  group_by(variable) %>%
-  summarise(
-    mean = mean(slp_percent, na.rm = TRUE),
-    sd = sd(slp_percent, na.rm = TRUE))
-```
-
-
-```{r}
-class_trends_bm_rich <- rigal_classification %>%
-  filter(variable %in% c("log_bm_std", "log_rich_std")) %>%
-  unnest(classif) %>%
-  select(variable, station, direction, acceleration, shape_class)
-
-res_trends <- class_trends_bm_rich %>%
-  filter(acceleration == "constant") %>%
-  group_by(variable, direction) %>%
-  summarise(n = n()) %>%
-  group_by(variable) %>%
-  mutate(total = sum(n), percent = round(n / sum(n) * 100))
-
-x_var <- c("log_bm_std", "log_rich_std")
-stable_st_var <- map(x_var,
-  ~class_trends_bm_rich[
-    class_trends_bm_rich$variable == .x &
-    class_trends_bm_rich$direction == "stable",
-      ]$station
-)
-names(stable_st_var) <- x_var
-
-#sum(stable_st_var[["log_bm_std"]] %in% stable_st_var[["log_rich_std"]] == TRUE) / length(stable_st_var[["log_bm_std"]])
-
-#sum(stable_st_var[["log_rich_std"]] %in% stable_st_var[["log_bm_std"]] == TRUE) / length(stable_st_var[["log_rich_std"]])
-```
-
-```{r}
-loadd(std_table_bm_rich_mono_stable_trends)
-std <-
-  std_table_bm_rich_mono_stable_trends %>%
-  mutate(
-    type = recode(type, spatial = "sp", temporal = "tps"),
-    response = recode(response, log_bm_std = "bm", log_rich_std = "rich", ct_ff
-      = "ct", piel_bm = "p_bm", piel_nind = "p_n", w_trph_lvl_avg = "tlvl"),
-    term = recode(term, log_bm_std = "bm", log_rich_std = "rich")
-    ) %>%
-  rename(t = type, rep = response, sest = std_estimate) %>%
-  mutate_at(vars(sest, stdse), ~round(.x, 2))
-tps_bm <- std %>%
-  filter(t == "tps", term == "bm")
-
-tps_bm_sest <- tps_bm$sest
-names(tps_bm_sest) <- tps_bm$rep
-```
-
-```{r}
-tps_r <- std %>%
-  filter(t == "tps", term == "rich")
-
-tps_r_sest <- tps_r$sest
-names(tps_r_sest) <- tps_r$rep
-```
-
-```{r}
-sp_b <- std %>%
-  filter(t == "sp", term == "bm")
-sp_b_sest <- sp_b$sest
-names(sp_b_sest) <- sp_b$rep
-
-sp_r <- std %>%
-  filter(t == "sp", term == "rich")
-sp_r_sest <- sp_r$sest
-names(sp_r_sest) <- sp_r$rep
-```
-
-
-```{r}
-rsq_ct <- rsq_table_bm_rich_mono_stable_trends %>%
-  filter(Response == "ct_ff") %>%
-  .$R.squared %>%
-  round(., 2)
-
-rsq_bm <- rsq_table_bm_rich_mono_stable_trends %>%
-  filter(Response == "log_bm_std") %>%
-  .$R.squared %>%
-  round(., 2)
-
-rsq_tlvl_sp <- sp_rsq_table_bm_rich_mono_stable_trends %>%
-  filter(Response == "w_trph_lvl_avg") %>%
-  .$Conditional %>%
-  round(., 2)
-
-rsq_ct_sp <- sp_rsq_table_bm_rich_mono_stable_trends %>%
-  filter(Response == "ct_ff") %>%
-  .$Conditional %>%
-  round(., 2)
-```
-Over the sampling sites in the dataset, we found that
-`r res_trends[res_trends$variable == "log_bm_std", ]$total[1]` stations displayed monotonic trends for biomass. Among them, 
-`r res_trends[res_trends$variable == "log_bm_std" & res_trends$direction == "stable", ]$percent`%
-were classified as stable,
-`r res_trends[res_trends$variable == "log_bm_std" & res_trends$direction == "decrease", ]$percent`%
-as decreasing,
-`r res_trends[res_trends$variable == "log_bm_std" & res_trends$direction == "increase", ]$percent`%
-as increasing. Regarding the species richness, we found that
-`r res_trends[res_trends$variable == "log_rich_std", ]$total[1]` stations displayed monotonic trends.
-`r res_trends[res_trends$variable == "log_rich_std" & res_trends$direction == "stable", ]$percent`%
-were classified as stable,  
-`r res_trends[res_trends$variable == "log_rich_std" & res_trends$direction == "decrease", ]$percent`%
-as decreasing, and 
-`r res_trends[res_trends$variable == "log_rich_std" & res_trends$direction == "increase", ]$percent`% as increasing.
-
-Overall, we found relatively low in the explicative power of statistical
-models linking temporal dynamics of food-web structure and the one of community
-biomass and species richness spanning from $R_{adj}^2= `r rsq_ct`$ for
-connectance to $R_{adj}^2= `r rsq_bm`$ for community biomass (Table SXX).
-The models over the spatial gradient were more performant, with
-$R_{cond}^2$ varing from $`r rsq_tlvl_sp`$ for the average trophic level to
-$`r rsq_ct_sp`$ for connectance (Table SXX), $R_{cond}^2$ being the
-$R^2$conditional to the random effect. 
-
----
-#Overall, we found no significant effect of the temporal gain or losses of
-#communinity biomass biomass and species richness on the relationship between the
-#temporal trends of community structure and that of biomass and species richness
-#(Table \@ref(tab:aov)).
----
-
-```{r}
-loadd(sp_fig1_2_bm_rich_mono_stable_trends,
-  pred_bm_rich_mono_stable_trends)
-
-fig1_2 <- get_plot_rich_bm(
-  predict_plot = pred_bm_rich_mono_stable_trends,
-  get_list = TRUE,
-  rm_legend = FALSE,
-  bm_x = "log_bm_std",
-  bm_y = c("ct_ff", "w_trph_lvl_avg"), #, "piel_nind"
-  rich_y = c("ct_ff", "w_trph_lvl_avg", "log_bm_std"), #, "piel_nind"
-  rich_x = "log_rich_std"
-  )
-p_bm <- fig1_2$bm
-
-p_sp_bm <- sp_fig1_2_bm_rich_mono_stable_trends$bm[c("log_rich_std", "ct_ff", "w_trph_lvl_avg")]
-```
-
-
-
-```{r}
-fig_bef_cap <- paste0(
-  "Relationship between the temporal trends of community biomass 
-  and the one of species richness. Red line correspond to the predictions of the
-  linear models. The lines surrounding points display the standard error
-  associated to the temporal trends. The histograms display the distribution of
-  response and predictive variables."
-)
-```
-
-```{r}
-library(ggExtra)
-coeff_bef <- c(
-  rsq = rsq_table_bm_rich_mono_stable_trends %>%
-    filter(Response == "log_bm_std") %$%
-    unlist(.[, c("R.squared")]),
-  reg_table_bm_rich_mono_stable_trends %>%
-    filter(response == "log_bm_std", term == "log_rich_std") %$%
-    unlist(.[, c("estimate", "std.error", "std_estimate", "stdse")])
-  ) %>%
-round(., 2)
-
-beta_rsq <- function(
-  rsq = NULL,
-  beta = NULL,
-  se = NULL) {
-
-  if (!is.null(rsq)) {
-
-    tmp <- "paste(
-    beta, \" (s.e.) \", \" = \",
-    mybeta, \" (\", myse, \"), \",
-    italic(R)^2, \" = \", myrsq
-    )"
-str_replace_all(tmp,
-  c(
-    "myrsq" =  as.character(rsq),
-    "mybeta" = as.character(beta),
-    "myse" = as.character(se)
-  )
+tar_load(r2_inla_tab)
+r2_inla_report <- r2_inla %>%
+  select(response, r2_mvp_marg95hpdci, r2_mvp_cond95hpdci)
+r2ic <- map(
+  setNames(r2_inla_report$response, r2_inla_report$response),
+  ~r2_inla_report[r2_inla_report$response == .x, ]$r2_mvp_cond95hpdci
 )
 
-  } else {
-
-    tmp <- "paste(
-    beta, \" (s.e) \", \" = \",
-    mybeta, \" (\", myse, \") \" )"
-str_replace_all(tmp,
-  c(
-    "mybeta" = as.character(beta),
-    "myse" = as.character(se)
-  )
-)
-
-  }
+tar_load(r2_sem)
+```
+Using a hierarchical model to estimate conjointly the temporal trends of  
+foodweb strucure at each site, we found weak evidence of a global decrease in
+community biomass (CI80%:`r gbm` by decade; median [Credible Interval]) but of a
+global increase in species richness (CI80%: `r gr` by decade) across the `r nb_st` sites. 
+We did not find evidence of a global trends in connectance and average trophic
+level (CI80%: `r gct` and `r gt` respectively). The hierarchical model captured
+well the variance associated to the spatial structure of the data with
+conditional $R^2$ going from  `r r2ic$log_bm_std` (mean [CI95%]) for community
+biomass to `r r2ic$log_rich_std` for species richness (Table SXX).
 
 
-}
-
-scale_xy_log_trends <- function(breaks = NULL, axis = "y", sep ="\n") {
-  log_to_percent <- round((exp(breaks) - 1) * 100)
-  labels <- paste0(breaks, sep, log_to_percent, " %")
-
-  if(axis == "y") {
-    fun <- scale_y_continuous
-  } else {
-    fun <- scale_x_continuous
-  }
-
-  fun(breaks = breaks, labels = labels)
-
-}
+```{r}
+sem_cap <- "(a) Structural equation models linking the temporal trends of the food-web
+structure. The path widths are proportional to the standardized slope coefficients. The standardized slope coefficients and their associated 95%
+  confidence intervals are displayed along the path. (b to f) Direct bivariate
+relationships derived from the structural equation model. The distribution of the
+site temporal trends are displayed in Fig. SXX."
 ```
 
+```{r sem, fig.cap = sem_cap}
+knitr::include_graphics(here::here("figures", "fig2.png"))
+```
+
+```{r}
+tar_load(semeff_tot)
+semeff_tot <- semeff_tot %>%
+  mutate(across(c(response, predictor), ~str_remove(.x, "mean_")))
+
+rdtps <- map(
+  setNames(
+    c("ct_ff", "w_trph_lvl_avg", "log_bm_std"),
+    c("ct", "tlvl", "bm")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std")
+    )
+)
+rdsp <- map(
+  setNames(
+    c("ct_ff", "w_trph_lvl_avg", "log_bm_std"),
+    c("ct", "tlvl", "bm")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std", model = "spatial"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std", model = "spatial")
+    )
+)
+```
 
 We found a strong positive relationship between the temporal trends of community
-biomass and the ones of species richness ($r_\delta = `r tps_r_sest["p_bm"]`$,
-Fig. \@ref(fig:bmr) B), meaning that both temporal trends
+biomass and the ones of species richness ($r_\delta = `r rdtps$bm$r`$,
+Fig. \@ref(fig:sem) b), meaning that both temporal trends
 had the same direction in average. At the sites 
 where species richness decreased over time, community biomass also decreased
 over time. On the other hand, at the sites where species richness increased over
 time, community biomass also increased over time. Along the spatial gradient, we also
 found a positive relationship between median community biomass and median
 species richness, but half the strength as the temporal one
-($r_\delta = `r sp_b_sest["rich"]`$).
+($r_\delta = `r rdsp$bm$r`$).
 
 The temporal trends of connectance were positively linked with the ones of
-community biomass ($r_\delta = `r tps_bm_sest["ct"]`$), also meaning that both
+community biomass ($r_\delta = `r rdtps$ct$bm`$), also meaning that both
 temporal trends had the same direction in average. That is, the sites where
 food-web connectance decreased over time also had community biomass that
 decreased over time and reversely. It suggests that communities that decreased
@@ -609,316 +245,91 @@ in biomass over time loose generalist predators over time, as connectance
 measures the degree of generalism, and reversely that communities
 gaining biomass over time also gain generalist predators. Spatially, we also found
 a positive relationship between median connectance and median species
-richness ($r_\delta = `r sp_b_sest["ct"]`$). We found a negative 
+richness ($r_\delta = `r rdsp$ct$bm`$). We found a negative 
 relationship between the temporal trends of connectance and the
-ones of species richness ($r_\delta = `r tps_r_sest["ct"]`$, Fig. \@ref(fig:bmr)D)
+ones of species richness ($r_\delta = `r rdtps$ct$r`$, Fig. \@ref(fig:sem)d)
 while we found negative relationship three times stronger between median connectance and
 median species richness along the spatial gradient 
-($r_\delta = `r sp_r_sest["ct"]`$, Fig. \@ref(fig:std)).
+($r_\delta = `r rdsp$ct$r`$, Fig. \@ref(fig:std)).
 
 The temporal trends of average trophic level had a strong positive
 relationship with the ones of community biomass 
-($r_\delta = `r tps_bm_sest["tlvl"]`$, Fig. \@ref(fig:bmr)B), meaning
+($r_\delta = `r rdtps$tlvl$bm`$, Fig. \@ref(fig:sem)B), meaning
 that sites where community biomass decreased over time, average trophic level
 decreased over time and *vice versa*. It means that in communities loosing biomass
 over time, the average biomass of the food-web moved down to lower trophic level
 and *vice versa*. We also found a positive relationship between
 median average trophic level and median community biomass in space, but half the
-strength as the temporal one ($r_\delta = `r sp_b_sest["tlvl"]`$, Fig.
+strength as the temporal one ($r_\delta = `r rdsp$tlvl$bm`$, Fig.
 \@ref(fig:std)). The temporal trends of average trophic level was unrelated to
 the ones of species richness. It suggests that in communities either loosing or
 gaining species richness over time, the location of average biomass along
 trophic level did not significantly change according to species richnnes.
 However, we found a strong negative relationship in space 
-($r_\delta = `r sp_r_sest["tlvl"]`$, Fig. \@ref(fig:std)).
+($r_\delta = `r rdsp$tlvl$r`$, Fig. \@ref(fig:std)).
 
 ```{r}
-sp_semeff_tab <- from_semEff_to_table(sp_semeff)
-semeff_tab <- from_semEff_to_table(semeff)
-semeff_tot <- rbind(
-  tibble(semeff_tab, model = "temporal"),
-  tibble(sp_semeff_tab, model = "spatial")
-  ) %>%
-filter(
-  !predictor %in% c("log_RC1", "log_RC2"),
-  effect_type != "mediators"
+ridtps <- map(
+  setNames(
+    c("ct_ff", "w_trph_lvl_avg", "log_bm_std"),
+    c("ct", "tlvl", "bm")
+    ),
+  ~ list(
+    r = get_semeff_ci(resp = .x, term = "log_rich_std", type = "indirect")
+    )
 )
-```
-
-```{r}
-semeff_tab_coeff <- semeff_tab %>%
-  mutate(across(where(is.numeric), ~round(., 2))) %>%
-  mutate(eci = paste0(effect, " [", lower_ci, ";", upper_ci, "]"))
-
-sp_semeff_tab_coeff <- sp_semeff_tab %>%
-  mutate(across(where(is.numeric), ~round(., 2))) %>%
-  mutate(eci = paste0(effect, " [", lower_ci, ";", upper_ci, "]")) %>%
-  filter(! predictor %in% c("log_RC1", "log_RC2"))
-
-ctsi <- semeff_tab_coeff %>%
-  filter(response == "ct_ff", effect_type == "indirect")
-ctstr <- semeff_tab_coeff %>%
-  filter(response == "ct_ff", effect_type == "total",
-    predictor == "log_rich_std")
-
-ctspi <- sp_semeff_tab_coeff %>%
-  filter(response == "ct_ff", effect_type == "indirect")
-ctsptr <- sp_semeff_tab_coeff %>%
-  filter(response == "ct_ff", effect_type == "total",
-    predictor == "log_rich_std")
-
-wtsi <- semeff_tab_coeff %>%
-  filter(response == "w_trph_lvl_avg", effect_type == "indirect")
-wtstr <- semeff_tab_coeff %>%
-  filter(response == "w_trph_lvl_avg", effect_type == "total",
-    predictor == "log_rich_std")
-
-wtspi <- sp_semeff_tab_coeff %>%
-  filter(response == "w_trph_lvl_avg", effect_type == "indirect")
-wtsptr <- sp_semeff_tab_coeff %>%
-  filter(response == "w_trph_lvl_avg", effect_type == "total",
-    predictor == "log_rich_std")
+ridsp <- map(
+  setNames(
+    c("ct_ff", "w_trph_lvl_avg", "log_bm_std"),
+    c("ct", "tlvl", "bm")
+    ),
+  ~ list(
+    r = get_semeff_ci(resp = .x, term = "log_rich_std",
+      model = "spatial", type = "indirect")
+    )
+)
+rttps <- map(
+  setNames(
+    c("ct_ff", "w_trph_lvl_avg", "log_bm_std"),
+    c("ct", "tlvl", "bm")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std", type = "total"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std", type = "total")
+    )
+)
+rtsp <- map(
+  setNames(
+    c("ct_ff", "w_trph_lvl_avg", "log_bm_std"),
+    c("ct", "tlvl", "bm")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std",
+      model = "spatial", type = "total"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std",
+      model = "spatial", type = "total")
+    )
+)
 ```
 
 
 The structural model on the temporal trends of food-web structure reveals that
 the species richness has a direct negative effect on connectance but also a
-negative one, twice lower than the former, through community biomass
-($r_\delta$ = `r ctsi[["eci"]]`). It resulted a relatively weak total negative
-effect of species richness on connectance (`r ctstr[["eci"]]`). Spatially,
+positive one through community biomass
+($r_\delta$ = `r ridtps$ct$r`). It resulted a relatively weak total negative
+effect of species richness on connectance (`r rttps$ct$r`). Spatially,
 we also found a positive indirect effect of richness on connectance through
-community biomass but a weak one (`r ctspi[["eci"]]`), resulting in a strong negative total
-effect of richness on connectance (`r ctsptr[["eci"]]`).
+community biomass but a weak one (`r ridsp$ct$r`), resulting in a strong negative total
+effect of richness on connectance (`r rtsp$ct$r`).
 
 The relationships among temporal trends showed a indirect positive effect of
-species richness on average trophic level (`r wtsi[["eci"]]`), resulting in a total positive
-effect of species richness on average trophic level (`r wtstr[["eci"]]`). Over the spatial
+species richness on average trophic level (`r ridtps$tlvl$r`), resulting in a total positive
+effect of species richness on average trophic level (`r rttps$tlvl$r`). Over the spatial
 gradient, we found the same positive indirect effect of richness through
-community biomass (`r wtspi[["eci"]]`). But as the direct effect of richness on connectance
-was strongly negative, it resulted in a total strong negative effect of species
-richness on connectance over the spatial gradient (`r wtsptr[["eci"]]`).
-
-
-```{r}
-fig_bm_cap <- paste0(
-  "Relationship between community structure and community biomass. Left panel
-  displays the relationships between the temporal trends of community structure
-  and the one of community biomass. Lines correspond to the predictions of the
-  linear models while the points are colored according the median community
-  biomass of the three first years of the given temporal series. The lines
-  surrounding each point represent the standard error associated to the temporal
-  trends. Right panel displays the
-  spatial relationship between median community structure over time and the
-  median community biomass over time."
-)
-
-fig_rich_cap <- paste0(
-  "Relationship between community structure and species richness. Left panel
-  displays the relationships between the temporal trends of community structure
-  and the one of species richness. Lines correspond to the predictions of the
-  linear models while the points are colored according the median species
-  richness of the three first years of the given temporal series. The lines
-  surrounding each point represent the standard error associated to the temporal
-  trends. Right panel displays the spatial relationship between median community
-  structure over time and the median species richness over time."
-
-)
-```
-
-
-
-```{r}
-fig_bm_rich_cap <- paste0(
-  "Relationships between the temporal trends of food-web structure
-  and the ones of community biomass (left panel, A, C, E) species richness (right panel, B, D, F).
-  The lines surrounding each point display the standard errors associated to
-  the estimated temporal trends. Red and black lines represent respectively
-  significant and non-significant slopes, both lines displays prediction from
-  the Ordinary Least Squares model. The histograms display the distribution of response and predictive
-  variables. Labels display the unstandardised slope coefficients and their
-  standard errors (see Fig. \\ref{fig:std} for the standardized coefficients).
-  $R^2$ are displayed only on the right panel, as it is the same model for both
-  panels.")
-
-```
-
-```{r bef, fig.cap=fig_bef_cap, out.width="50%"}
-lab_log_rich <- expression(atop("Log species richness ("*m^{-2}*")","trend slope (log / % per year)"))
-lab_log_bm <- expression(atop("Log community biomass ("*g.m^{-2}*")", "trend slope (log / % per year)"))
-
-p_bef <- fig1_2$rich$log_bm_std +
-  labs(
-    y = lab_log_bm,
-    x = lab_log_rich
-  ) +
-scale_xy_log_trends(breaks = c(-.10, -.050, 0, .050, .10), axis = "x") +
-scale_xy_log_trends(breaks = c(-.4, -.2, 0, .4, .2), axis = "y", sep = " / ") +
-    theme(
-      axis.text = element_text(size = 8),
-      axis.title = element_text(size = 10)
-      )
-
-```
-
-```{r}
-fig2 <- fig1_2
-fig2$rich$log_bm_std <- NULL
-fig2$rich <- map(fig2$rich,
-  ~.x +
-    theme(
-      axis.text = element_text(size = 8),
-      axis.title = element_text(size = 10)
-      )
-  )
-fig2$bm <- map2(fig2$bm, names(fig2$rich),
-  ~ .x + theme(
-    axis.text = element_text(size = 8),
-    axis.title = element_text(size = 10)
-    ) +
-  labs(
-    y = paste0(var_replacement()[.y],
-      "\ntrends (per year)"),
-    x = lab_log_bm
-  ) +
-  scale_xy_log_trends(breaks = c(-.40, -.20, 0, .20, .40), axis = "x")
-)
-# Delete redondant legend
-fig2$bm[[1]] <- fig2$bm[[1]] + theme(
-  axis.text.x = element_blank(),
-  axis.ticks.x = element_blank(),
-  axis.title.x = element_blank()
-  )
-  
-
-fig2$rich <- map(fig2$rich,
-  ~ .x + theme(
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.title.y = element_blank()
-  ) +
-  labs(x = lab_log_rich) +
-  scale_xy_log_trends(breaks = c(-.10, -.050, 0, .050, .10), axis = "x")
-  )
-fig2$rich[[1]] <- fig2$rich[[1]] + theme(
-  axis.text.x = element_blank(),
-  axis.ticks.x = element_blank(),
-  axis.title.x = element_blank()
-  )
-  
-
-```
-
-```{r, eval = FALSE}
-# Add beta and Rsq
-for (i in seq_along(fig2$rich)) {
-
-  resp_var <- names(fig2$rich)[i]
-
-  coeff_rich <- c(
-    rsq = rsq_table_bm_rich_mono_stable_trends %>%
-      filter(Response == resp_var) %$%
-      unlist(.[, c("R.squared")]),
-    reg_table_bm_rich_mono_stable_trends %>%
-      filter(response == resp_var, term == "log_rich_std") %$%
-      unlist(.[, c("estimate", "std.error", "std_estimate", "stdse")])
-    ) %>%
-  round(., 2)
-
-  coeff_bm <- reg_table_bm_rich_mono_stable_trends %>%
-    filter(response == resp_var, term == "log_bm_std") %$%
-    unlist(.[, c("estimate", "std.error", "std_estimate", "stdse")]) %>%
-    round(., 2)
-
-  # Add coeff:
-  fig2$rich[[resp_var]] <- fig2$rich[[resp_var]] +
-  annotate("text", x = -.10, y = Inf, vjust = 1, hjust = 0,
-    size = 2,
-    parse = T,
-    label = beta_rsq(
-      rsq = coeff_rich["rsq"],
-      beta = coeff_rich["estimate"],
-      se = coeff_rich["std.error"]
-    )
-  )
-  fig2$bm[[resp_var]] <- fig2$bm[[resp_var]] +
-  annotate("text", x = -.4, y = Inf, vjust = 1, hjust = 0,
-    size = 2,
-    parse = T,
-    label = beta_rsq(
-      rsq = NULL,
-      beta = coeff_bm["estimate"],
-      se = coeff_bm["std.error"]
-    )
-  )
-}
-```
-
-```{r}
-# Add histograms
-p_bef2 <- p_bef +
-  theme(
-  axis.text.x = element_blank(),
-  axis.ticks.x = element_blank(),
-  axis.title.x = element_blank()
-  ) 
-p_bef_hist <- ggMarginal(p_bef2, type = "histogram")
-#fig2$bm[[1]] <- ggMarginal(fig2$bm[[1]], type = "histogram", margins = "x")
-fig2$rich[[1]] <- ggMarginal(fig2$rich[[1]], type = "histogram", margins = "y")
-fig2$rich[[2]] <- ggMarginal(fig2$rich[[2]], type = "histogram", margins = "y")
-```
-
-```{r}
-sem_cap <- "Structural equation models on the temporal trends of the food-web
-structure. The path display the standardized slopes and their associated 95%
-  confidence intervals."
-```
-
-
-```{r sem, fig.cap = sem_cap}
-ti <- magick::image_read(here::here("figures", "sem_tps_avg_weight_ok.svg"),  density = 300)
-p <- ggdraw() +
-  draw_image(ti,
-    x = 0, y = 0, hjust = 0, vjust = 0, width = .9, height = 1)
-```
-
-
-
-```{r bmr, out.width="100%", fig.height=7, fig.cap=fig_bm_rich_cap}
-#p <- draw_image(here::here("figures", "sem_tps_avg_weight_ok.pdf"),
-#  x = 1, y = 1, hjust = 1, vjust = 1, width = 0.13, height = 0.2)
-biplot_model <- plot_grid(
-  plot_grid(NULL, p_bef_hist,
-    labels = c("", "A"), ncol = 2,
-    rel_widths = c(.54, 1)
-    ),
-  plot_grid(
-  plot_grid(plotlist = fig2$bm,
-    ncol = 1, labels = c("B", "D"),
-    hjust = -5.5, vjust = 1.75,
-    rel_heights = c(.85, 1)
-    ),
-  plot_grid(plotlist = fig2$rich,
-    ncol = 1, labels = c("C", "E"),
-    hjust = -2, vjust = 1.75,
-    rel_heights = c(.85, 1)
-    ),
-  ncol = 2,
-  rel_widths = c(.9, 1)
-  ),
-  nrow = 2,
-  rel_heights = c(.55, 1)
-)
-sem_p <- plot_grid(p, biplot_model, ncol = 2, rel_widths = c(.4, .6))
-
-save_plot(
-  filename = here::here("paper", "figures", "biplot_tps.png"),
-  biplot_model, nrow = 3, ncol = 2, base_asp = 1)
-save_plot(
-  filename = here::here("paper", "figures", "sem_p.png"),
-  sem_p, nrow = 3, ncol =3)
-sem_p
-```
-
+community biomass (`r ridsp$tlvl$r`). WHATTTT? But as the direct effect of
+richness on average trophic level was strongly negative, it resulted in a total
+strong negative effect of species richness on average trophic level over the
+spatial gradient (`r rtsp$tlvl$r`).
 
 ```{r}
 std_cap <- paste0(
@@ -929,32 +340,10 @@ std_cap <- paste0(
   Average trophic level (top panel), the connectance (middle panel) and the
   community biomass (bottom panel) The lines display the confidence intervals at
   95%.")
-
 ```
 
 ```{r std, fig.cap=std_cap, fig.width=7, fig.asp = .7}
-p_sem_eff <- semeff_tot %>%
-  mutate(
-    response = var_replacement()[response],
-    predictor = var_replacement()[predictor],
-    effect_type = str_to_sentence(effect_type),
-    model = str_to_sentence(model)
-    ) %>%
-  ggplot(aes(y = predictor, x = effect, colour = effect_type, shape = model)) +
-  geom_point(
-    position = position_dodge(width = 0.4), width = .4) +
-  geom_vline(xintercept = 0) +
-  geom_linerange(
-    aes(xmin = lower_ci, xmax = upper_ci),
-    position = position_dodge(width = 0.4)
-    ) +
-  facet_grid(rows = vars(response)) +
-  labs(
-    y = "Predictor",
-    x = expression(paste("Standardized slope coefficients ", r[delta])),
-    color = "Effect type", shape = "Model") +
-  theme(legend.position = "bottom")
-p_sem_eff
+knitr::include_graphics(here::here("figures", "p_sem_tps_sp.pdf"))
 ```
 
 # Discussion
@@ -1151,6 +540,219 @@ space-for-time substitution might not work for species richness. Our study calls
 for further investigations to support the generality of assembly rules in
 food-webs. They are crucial to better understand the assembly and disassembly of
 food-web and then predict its impact on ecosystem functioning.
+
+# Material & Methods
+
+We used a monitoring of freshwater fishes conducted all over France and
+conducted by the Office Français de la Biodiversité (OFB, previously known as
+ONEMA and AFB). The sampling protocols were standardized since 1995 and a
+complete description of the sampling process can be found in
+@danet_species_nodate (main text and appendixS2). The fishes are sampled using
+electrofishing all across the streams in shallow streams and over the bank by
+boat in deeper streams. All the fishes are counted and the bodysize of fishes are
+recorded for a sample of them, enabling the estimate the distribution of
+individual bodysize by species for each sampling [@bonnaffe_comparison_2021;
+@danet_species_nodate].
+
+We selected the sites that have been monitored at least 10 years on the
+1995-2018 period, with the same sampling protocol over time. We selected
+one sampling a year by site. In each site, we ensured low temporal heterogeneity
+in sampling period by selecting sampling that were performed in the same period,
+leading to a mean standard deviation of sampled month in each site of three
+weeks [@danet_species_nodate]. Those steps leads to the selection of 
+`r nb_st` sites (Figure \@ref(fig:matmet)A).
+
+## Biomass 
+
+We first inferred the body mass of each fish individual considering an allometric
+law, $B_i = 0.01 \times l_i^{3.03}$, $B_i$ being the biomass expressed in gram and $l_i$ the
+body length of the individual $i$ expressed in millimetres [@froese_cube_2006]. Then the
+biomass of each species and community biomass were obtained by summing the body
+mass of individuals. Finally, the biomass was reported to the sampled surface
+(in $m^2$) to account for sampling effort.
+ 
+## Food-web inference 
+
+We inferred food-web structure in two steps [@bonnaffe_comparison_2021;
+@danet_species_2021]: (1) we first computed the metaweb, describing the
+potential trophic interactions among all size classes species, (2) then we
+extracted each yearly snapshot of food-webs by extracting species size classes
+and their interactions according to their presence in a given sampling event.
+ 
+We inferred the metaweb according to ontogenic diet data and body size
+[@gravel_inferring_2013; @poisot_structure_2016; @brose_predator_2019;
+@bonnaffe_comparison_2021; @danet_species_2021]. The method is extensively
+described in @bonnaffe_comparison_2021 and @danet_species_2021. The food diet of
+stream fishes changes along their life cycle or stage, therefore according to
+their body size. Each fish species was divided in nine size classes, named
+"trophic species", equally distributed in their observed body size range. Thus,
+a trophic species is a group of individuals of the same species and size class
+that are expected to share the same preys and predators because trophic
+interactions are largely determined by predator-prey size ratio
+[@brose_allometric_2006]. We also added seven nodes present in the ontogenic
+food diet database: detritus, biofilm, phytoplankton, zooplankton, macrophages,
+phytobenthos and zoobenthos.  The resulting metaweb contained 45 fish species
+divided into nine size classes plus 7 resource nodes, summing up to 412 nodes.
+Consideration of size classes, i.e.  trophic species instead of species,
+improves inference of trophic interactions [@jennings_weak_2001].
+
+We determined the feeding interactions of trophic species according to their
+species identity and their body size. The diet database described two or three
+life stages by fish species, each one being delimited by body size
+[@bonnaffe_comparison_2021; @danet_species_nodate]. The ontogenic fish diet
+database was filled according to fishbase (Froese et al. 2021) and literature
+[@bonnaffe_comparison_2021; @danet_species_nodate].
+
+The feeding interactions among fishes were based on the body size ratio
+between predators and preys. We defined the predation window of a
+piscivorous trophic species as 3% to 45% of its midpoint
+[@mittelbach_ontogeny_1998; @claessen_impact_2002; @hart_handbook_2008].  A
+trophic link was defined between the piscivorous trophic species and all the
+trophic species whose midpoint in body size range was included in the predation
+window.  The fish-resource trophic links were set between the trophic species
+and the resources nodes according to the food items of their size class.
+Finally, the feeding interactions between resources were defined according to the
+literature [@allan_stream_2007; @hart_handbook_2008].
+
+## Community and food-web structure
+
+At each site, yearly food-webs were described by their community biomass,
+species richness and the evenness of biomass across species. The evenness was
+quantified with the Pielou index, computed as the Shannon diversity index
+divided by the number of species ($P = \frac{H'}{N}$, with $H'$ being the
+Shannon diversity index and $N$ the number of species). Yearly food-web
+structure was described by their connectance, describing the degree of
+generalism in a network [@dunne_network_2006; @delmas_analysing_2019]. It was
+computed as the ratio between the number of actual links and the number of
+potential links ($C = \frac{L}{S(S-1)}$, with $L$ being the number of links and
+$S$ the number of trophic species). We also computed the average trophic level,
+weighted by the biomass of the trophic species. The trophic level of a trophic
+species was computed recursively as 1 added to the mean trophic level of the
+preys that it consumes [@herendeen_ecological_2008].
+
+
+## Temporal trends of food-web
+
+We modeled the temporal trends of food-web structure at each site ($Y_i$) using 
+linear hierarchical model. Time was considered as the number of year since the
+first sampling ($t = 0$) at each site. We accounted for the spatial structure of
+the data by adding random intercepts ($a$) and slopes ($b$) for the
+basin ($a_n$, $b_n$) and site ($a_{i|n}$, $b_{i|n}$) identity, site effects
+being nested in the basin one. 
+
+$$
+\begin{aligned}
+    Y_{i|n, t} &= \alpha + \betaTime_t + \epsilon_{i|n, t}
+  (\#eq:gen)
+\end{aligned}
+$$ 
+
+- $\alpha = \alpha_0 + a_n + a_{i|n}$
+- $\beta = \mu + b_n + b_{i|n}$
+- $a_n, a_{i|n}, b_n, b_{i|n}, \epsilon_{i|n, t} \sim \mathcal{N}(0,\,\sigma^{2})$
+- $n$: basin, $i$: site $i$, $t$: time $t$
+
+The model parameters were estimated using INLA (Integrated Nested Laplacian
+Approximation) bayesian inference with default uninformative priors
+[@rue_bayesian_2017]. The prior distributions for the fixed intercept and slope were
+modelled as a flat normal distribution with a mean of zero ($\mathcal{N}(0,\, 1000)$).
+Prior distributions for the gaussian error $\epsilon_{i|n, t}$ and the random
+effects were modelled as a log gamma distribution with
+shape and inverse scale parameters ($\mathcal{G}(s, \, \tau) = \mathcal{G}(1, \,
+5.10^-5)$), then their respective standard deviation were obtained by
+backtransforming the inverse scale parameter ($\sigma = 1 / \sqrt{\tau}$).
+Community biomass and species richness were logged transformed.  
+
+The performance of the model was assessed visually by plotting the fitted versus
+the observed values (Fig. SXX). We also visually inspected the Posterior
+Integral Transform (PIT) and Conditional Predictive Ordinate (CPO) to assess
+the quality of the model fit. We also computed the marginal ($R^2_m$)and
+conditional ($R^2_c$) R-squared of the models following previous formulations
+[@nakagawa_general_2013; @lahuis_explained_2014]. In order to account for the
+variability associated with the priors [@gelman_r-squared_2019], we computed the variance of the
+posterior distribution  of each predicted
+values ($Var_{fit} = \sigma^2(\hat{Y_i})$). We computed $R^2$ values for each predicted
+values, then obtaining a $R^2$ distribution [@gelman_r-squared_2019]. We reported mean marginal and
+conditional $R^2$ associated the 95% credible interval computed using the
+Highest Posterior Density method.
+
+$$
+R^2_m = \dfrac{Var_{fit}}{Var_{fit} + Var_{res}} = \dfrac{\sigma^2(\hat{Y_i})}{\sigma^2(\hat{Y_i}) + \sigma^2(Y_i - \hat{Y_i})}
+$$
+
+$$
+R^2_c = \dfrac{Var_{fit} + (a_n)^2 + (a_{i|n})^2}{Var_{fit}  + (a_n)^2 + (a_{i|n})^2 + Var_{res}}
+$$
+
+$y_i$ and $\hat{y_i}$ being respectively the observations and the
+predicted values, $Var_{fit}$ and $Var_{res}$ being respectively the variance of
+predictive means and the variance of the residuals. $a_n$ and $a_{i|n}$ are
+respectively the standard deviation on the random intercept associated to the
+basin and the site.
+
+The temporal trends at each site have been extracted from the hierarchical model
+using mean BLUP values (Best Linear Unbiaised Predictor), then multiplied
+by 10 to get temporal trends by decade. For logged transformed biomass and
+species richness, we derived percentage change by decade by transforming the
+slopes ($\beta\prime = (e^{\beta } - 1) \times 100 \times 10$).
+
+## Spatial
+
+To assess the validity of the space-for-time substitution hypothesis, we
+compared the relationships among food-web structure in time to the ones observed
+in space. To do so, we selected the same sites that were used
+for the temporal analysis. We summarised temporal series of each station by the
+median value over time of each facet of food-web structure described above.
+ 
+# Statistical analysis
+
+We modelled the relationships among food-web structure, that is
+connectance and average trophic level, and community biomass ($dB$) and species
+richness ($dR$) with Structural Equation Models. We modelled a it such as species
+richness is related to community biomass and food-web structure. In
+turn community biomass was related to food-web structure. We computed one
+structural equation model to assess the relationships among the temporal trends
+and one for the relationships over the spatial gradient. As spatial variation of
+food-web structure are partly driven by environmental gradients, so we
+controlled relationships among variables by adding two PCA axis
+synthesizing respectively (1) stream gradient from upstream to downstream and
+(2) enrichment (Fig. \@ref(fig:matmet)). Enrichment was characterized by the
+average Biological Oxygen Demand [BOD, @mallin_factors_2006][^2]. We further
+added a random effect of the hydrographic basin on the intercept.
+
+In order to control for the uncertainties of the estimated temporal trends, each
+temporal trend was weighted by the inverse of the sum of the standard deviation 
+of the estimated trends, i.e. estimated slopes for the response and the
+explicative variables ($w_j = \dfrac{1}{\sum{e_j}}$, $w_j$ being the
+weight, and $s_{e_j}$ the standard deviation on the temporal trends of the
+variables).
+
+The coefficients of the Structural Equation Models were computed with
+PiecewiseSEM R package [@lefcheck_piecewisesem_2016]. The coefficients were
+standardizated and the confidence intervals were computed with semEff R package
+[@murphy_semEff_2021]. Confidence intervals were obtained by bootstrapping the
+linear models 1000 times and computing adjusted bootstrap percentile interval
+(BCa), which are adjusted for asymetric distribution of resampling. The marginal
+and conditional $R^2$ associated to the linear model of the SEMs were computed
+the Nagelkerke method [@lefcheck_piecewisesem_2016].
+
+All the statistical models displayed low multicollinearity (Variance inflation
+factor < 3, Table SXX).  We visually inspected the residuals of the linear
+models.
+
+```{r}
+fig_mat_cap <- paste0("Using sites of stream fishes in French streams that
+  have been monitored at least 10 years, 1) we infered the food-web at each site
+and each sampling event based on ontogenic food diet information for each
+species and predator-prey body size ratio. 2) We computed the temporal trends
+and the median of community biomass, species richness, connectance, average
+trophic level and evenness of biomass at each site. 3) We then assessed the
+relationships among food-web structure descriptors, (a) in time and (b) across space.")
+```
+
+```{r matmet, fig.cap=fig_mat_cap, out.width="80%"}
+knitr::include_graphics(get_mypath("figures", "mat_met.pdf"))
+```
 
 # References  {-}
 
