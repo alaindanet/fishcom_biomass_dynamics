@@ -88,6 +88,8 @@ var_replacement <- function (slope = FALSE, several_lines = FALSE) {
     rich_std = "Species richness (m^-2)",
     piel_nind = "Evenness (abundance)",
     piel_bm = "Evenness (biomass)",
+    prop_pisc_node = "Piscivorous node prop.",
+    prop_pisc_rich = "Piscivorous rich prop.",
     biomass = "Biomass (g)"#,
     #richness = "Species richness"
   )

@@ -261,6 +261,23 @@ list(
       ) %>%
     mutate(across(c(`Marg. R2`, `Cond. R2`), ~round(., 2)))
   ),
+  tar_target(tabvif,{
+    vif_tps_sem <- car::vif(sem[[1]])
+    vif_tps_sem <- setNames(round(vif_tps_sem, 2), str_remove(names(vif_tps_sem), "mean_"))
+
+    vif_sp_sem <- round(car::vif(sp_sem[["ct_ff"]]), 2)
+
+    rbind(
+      tibble(Model = "temporal", enframe(vif_tps_sem)),
+      tibble(Model = "spatial", enframe(vif_sp_sem))
+      ) %>%
+    mutate(
+      Model = str_to_sentence(Model),
+      name = var_replacement()[name]
+      ) %>%
+    pivot_wider(names_from = "name", values_from = "value")
+  }
+  ),
 
   # Figure
   ## Direct effect SEM temporal
@@ -429,7 +446,7 @@ list(
       geom_vline(data = filter(sum_tps_10, metric == "med"), aes(xintercept = values)) + #, color = metric
       labs(x = "Temporal trends by decade", y = "Number of sites") +
         scale_x_continuous(n.breaks = 10) +
-        facet_wrap(vars(response), scales = "free",
+        facet_wrap(vars(response), scales = "free_x",
           ncol = 2, strip.position = "top") +
         theme_half_open() +
         theme(strip.background = element_blank())
@@ -446,6 +463,41 @@ list(
       `Cond. Rsq (95% CI)` = r2_mvp_cond95hpdci
     )
     ),
+  tar_target(p_corr, {
+    cor_tps <- tps_for_sem %>%
+      select(c(matches("mean"))) %>%
+      rename_with(~str_remove(.x, "mean_")) %>%
+      select(-c(matches("piel"))) %>%
+      rename_with(~var_replacement()[.x]) %>%
+      cor(.)
+
+    cor_sp <- sp_for_sem %>%
+      select(c(log_bm_std, ct_ff, w_trph_lvl_avg,
+          log_rich_std, prop_pisc_node, prop_pisc_rich)) %>%
+      rename_with(~var_replacement()[.x]) %>%
+      cor(., use = "complete.obs")
+
+    p_cor_tps <- ggcorrplot(cor_tps,
+      hc.order = FALSE,
+      type = "upper",
+      tl.srt = 20,
+      lab = TRUE)
+
+    p_cor_sp <- ggcorrplot(cor_sp,
+      hc.order = FALSE,
+      type = "upper",
+      tl.srt = 20,
+      lab = TRUE)
+
+    p_corr <- plot_grid(
+      p_cor_tps + theme(legend.position = "none"),
+      p_cor_sp + theme(legend.position = "none"),
+      get_legend(p_cor_tps),
+      ncol = 3,
+      rel_widths = c(1, 1, .1),
+      labels = c("a", "b", ""))
+
+  }),
 
   ## Random network extinction
   tar_target(node_tlvl,
@@ -471,7 +523,8 @@ list(
       keep_metaweb = FALSE)
     ),
   tar_target(sim_random_tlvl, {
-    nsim <- 10
+    nsim <- 50
+    set.seed(123)
     tibble(
       repl = seq_len(nsim),
       sim = furrr::future_map(repl,
@@ -628,7 +681,7 @@ list(
     }
     ),
   tar_target(sim_rand_species, {
-    nsim <- 10
+    nsim <- 50
     set.seed(123)
 
     sim_random_tlvl_species <- vector(mode = "list", length = length(fish_species_tlvl))
@@ -744,6 +797,7 @@ list(
             ),
           get_legend(p_ext_node + theme(legend.position = "bottom")),
           nrow = 3,
+          labels = c("a", "b", ""),
           rel_heights = c(1, 1, .1)
     )
     ),
@@ -807,10 +861,10 @@ list(
         plot = p_hist_site_tps10,
         nrow = 2,
         ncol = 2
+        ),
+      format = "file"
       ),
-    format = "file"
-  ),
-tar_target(figstd,
+    tar_target(figstd,
       save_plot(
         filename = here::here("figures", "p_sem_tps_sp.pdf"),
         plot = p_sem_tps_sp,
@@ -820,6 +874,10 @@ tar_target(figstd,
         base_asp = 1.618
       )
       ,
+      format = "file"
+    ),
+  tar_target(figcorr,
+    save_plot(here("figures", "p_corr.png"), p_corr, ncol = 2),
     format = "file"
   )
 
