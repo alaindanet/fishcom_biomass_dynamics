@@ -90,8 +90,11 @@ var_replacement <- function (slope = FALSE, several_lines = FALSE) {
     piel_bm = "Evenness (biomass)",
     prop_pisc_node = "Piscivorous node prop.",
     prop_pisc_rich = "Piscivorous rich prop.",
-    biomass = "Biomass (g)"#,
-    #richness = "Species richness"
+    biomass = "Biomass (g)",
+    biomass_kg = "Biomass (kg)",
+    richness = "Species richness",
+    nbnode = "Nb of nodes",
+    nind = "Nb of individuals"
   )
 
   if (several_lines) {
@@ -133,4 +136,43 @@ get_all_var_analysis <- function () {
 
 net_ext_met_to_keep <- function() {
     c("ct", "ct_ff", "avg_tl", "avg_tl_ff", "max_tl", "max_tl_ff")
+}
+
+replacement_random_term <- function() {
+  c(
+    "Gaussian observations" = "Error",
+    "intercept_basin" = "Intercept (basin)",
+    "basin1" = "Time (basin)",
+    "intercept_basin_station" = "Intercept (site nested in basin)",
+    "station1" = "Time (site nested in basin)"
+  )
+}
+
+
+replacement_pca_var <- function() {
+  c(
+    "alt"                    = "Altitude (m)",
+    "avg_depth_station_cv"   = "River depth CV",
+    "avg_depth_station_mean" = "River depth (m)",
+    "d_source"               = "Distance from source (km)",
+    "DBO_cv"                 = "BOD CV",
+    "DBO_med"                = "BOD",
+    "flow_cv"                = "Water flow CV",
+    "flow_med"               = "Water flow (m3/s)",
+    "slope"                  = "Slope (deg.)",
+    "strahler"               = "Strahler order",
+    "temperature_cv"         = "Temperature CV",
+    "temperature_med"        = "Temperature (°C)",
+    "width_river_cv"         = "River width CV",
+    "width_river_mean"       = "River width (m)"
+  )
+}
+
+replacement_op_data <- function() {
+  c(
+    "baseline_year" = "Baseline year",
+    "completeness"  = "Completeness",
+    "nb_op"         = "Sampling number",
+    "span"          = "Year span"
+  )
 }

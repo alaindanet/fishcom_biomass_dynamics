@@ -459,9 +459,32 @@ list(
     mutate(response = var_replacement()[response]) %>%
     select(
       Response = response,
-      `Marg. Rsq (95% CI)` = r2_mvp_marg95hpdci,
-      `Cond. Rsq (95% CI)` = r2_mvp_cond95hpdci
+      `Marg. Rsq` = r2_mvp_marg95hpdci,
+      `Cond. Rsq` = r2_mvp_cond95hpdci
     )
+    ),
+  tar_target(tab_inla_r2_rand,
+    gaussian_inla_rand %>%
+      filter(
+        ci_level == "level:0.95",
+        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")
+        ) %>%
+    select(-ci_level) %>%
+    mutate(across(c(mean, low, high), ~round(., 3))) %>%
+    mutate(
+      response = var_replacement()[response],
+      term = str_remove(term, "Precision for the |Precision for |"),
+      term = replacement_random_term()[term],
+      ci = paste0(mean, " [", high,",", low,"]")
+      ) %>%
+    arrange(response, desc(term)) %>%
+    select(
+      `Response` = response,
+      `Term` = term,
+      `S.D.` = ci
+      ) %>%
+    left_join(r2_inla_tab, by = "Response") %>%
+    select(1, 4, 5, 2, 3)
     ),
   tar_target(p_corr, {
     cor_tps <- tps_for_sem %>%
@@ -496,7 +519,6 @@ list(
       ncol = 3,
       rel_widths = c(1, 1, .1),
       labels = c("a", "b", ""))
-
   }),
 
   ## Random network extinction
@@ -877,8 +899,101 @@ list(
       format = "file"
     ),
   tar_target(figcorr,
-    save_plot(here("figures", "p_corr.png"), p_corr, ncol = 2),
+    save_plot(here("figures", "p_corr.pdf"), p_corr, ncol = 2),
     format = "file"
+  ),
+
+  # Tables:
+  tar_target(pca_table,
+    data_for_pca %>%
+      pivot_longer(-station, names_to = "metric", values_to = "values") %>%
+      group_by(metric) %>%
+      summarise(summ = list(enframe(summary_distribution(values, na.rm = TRUE)))) %>%
+      unnest(summ) %>%
+      pivot_wider(names_from = "name", values_from = "value") %>%
+      mutate(
+        median = format(round(median, 2), nsmall = 2),
+        `Median (Q1, Q3)` = paste0(median, " (",
+          format(round(`1st_quart`, 2), nsmall = 2), ",",
+          format(round(`2nd_quart`, 2), nsmall = 2),
+          ")"),
+        `(Min, Max)` = paste0("(",
+          format(round(min, 2), nsmall = 2),
+          ",",
+          format(round(max, 2), nsmall = 2),
+          ")")
+        ) %>%
+      arrange(metric) %>%
+      mutate(metric = replacement_pca_var()[metric]) %>%
+      select(`PCA variable` = metric, `Median (Q1, Q3)`, `(Min, Max)`)
+    ),
+  tar_target(op_table,
+    op_data %>%
+      filter(opcod %in% unique(data_inla$opcod)) %>%
+      ungroup() %>%
+      group_by(station) %>%
+      summarise(
+        span = max(year) - min(year) + 1,
+        completeness = n() / (span),
+        baseline_year = min(year),
+        nb_op = length(year)
+        ) %>%
+      pivot_longer(-station, names_to = "metric", values_to = "values") %>%
+      group_by(metric) %>%
+      summarise(summ = list(enframe(summary_distribution(values, na.rm = TRUE)))) %>%
+      unnest(summ) %>%
+      pivot_wider(names_from = "name", values_from = "value") %>%
+      mutate(
+        median = format(round(median, 2), nsmall = 2),
+        `Median (Q1, Q3)` = paste0(median, " (",
+          format(round(`1st_quart`, 2), nsmall = 2), ",",
+          format(round(`2nd_quart`, 2), nsmall = 2),
+          ")"),
+        `(Min, Max)` = paste0("(",
+          format(round(min, 2), nsmall = 2),
+          ",",
+          format(round(max, 2), nsmall = 2),
+          ")")
+        ) %>%
+      arrange(metric) %>%
+      mutate(metric = replacement_op_data()[metric]) %>%
+      select(`Sampling` = metric, `Median (Q1, Q3)`, `(Min, Max)`, median) %>%
+      select(-median)
+    ),
+  tar_target(com_metric_tab,
+    data_inla %>%
+      select(
+        -c(basin, basin1, station1, intercept_basin, intercept_basin_station)
+        ) %>%
+    mutate(biomass_kg = biomass * 10^-3) %>%
+    pivot_longer(-c(opcod, station), names_to = "metric", values_to = "values") %>%
+    filter(metric %in% c("richness", "biomass_kg", "nbnode", "nind", "w_trph_lvl_avg",
+        "ct_ff", "prop_pisc_node", "prop_pisc_rich")) %>%
+    group_by(metric) %>%
+    summarise(summ = list(enframe(summary_distribution(values, na.rm = TRUE)))) %>%
+    unnest(summ) %>%
+    pivot_wider(names_from = "name", values_from = "value") %>%
+    mutate(
+      median = format(round(median, 2), nsmall = 2),
+      `Median (Q1, Q3)` = paste0(median, " (",
+        format(round(`1st_quart`, 2), nsmall = 2), ",",
+        format(round(`2nd_quart`, 2), nsmall = 2),
+        ")"),
+      `(Min, Max)` = paste0("(",
+        format(round(min, 2), nsmall = 2),
+        ",",
+        format(round(max, 2), nsmall = 2),
+        ")")
+      ) %>%
+    mutate(metric = var_replacement()[metric]) %>%
+    select(`Community metric` = metric, `Median (Q1, Q3)`, `(Min, Max)`, median) %>%
+    arrange(median) %>%
+    select(-median)
   )
+
+#tar_render(main_text, here("paper", "manuscript.Rmd")),
+#tar_render(supplementary, here("paper", "appendix.Rmd"))
+
+
 
 )

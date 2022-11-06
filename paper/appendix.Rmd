@@ -7,13 +7,12 @@ output:
   bookdown::pdf_document2:
     fig_caption: true 
     keep_tex: true
-    toc: true
-fontsize: 12pt
+    toc: false 
+fontsize: 10pt
 header-includes:
    - \usepackage{natbib}
    - \newcommand{\beginsupplement}{\renewcommand{\thetable}{S\arabic{table}} \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}} 
    - \usepackage{float}
-   - \usepackage[table]{xcolor}
    - \usepackage{multirow}
    - \usepackage{booktabs}
    - \usepackage{makecell}
@@ -21,9 +20,10 @@ header-includes:
    - \doublespacing
    - \usepackage{lineno}
    - \linenumbers
+   - \renewcommand{\arraystretch}{1}
 geometry: margin=2cm
 bibliography: references.bib
-number_sections: true
+number_sections: false 
 ---
 
 
@@ -41,11 +41,15 @@ knitr::opts_chunk$set(
   warning = FALSE,
   results = TRUE
 )
+options(
+  #kableExtra.latex.load_packages = FALSE,
+  knitr.table.format = "latex"
+)
 ```
 
 
 ```{r, echo=FALSE, message=FALSE, results="hide"}
-library(drake)
+library(targets)
 library(tidyverse)
 library(magrittr)
 library(ggeffects)
@@ -65,7 +69,6 @@ mytheme <- theme_cowplot() +
   background_grid()
 
 theme_set(mytheme)
-options(knitr.table.format = "latex")
 ```
 ```{r}
 var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std")
@@ -76,21 +79,25 @@ var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std")
 
 
 ```{r}
-tar_load(r2_inla_tab)
-kable(r2_inla_tab,
+tar_load(tab_inla_r2_rand)
+kable(tab_inla_r2_rand,
   row.names = FALSE,
   booktabs = T,
   caption = "Marginal and Conditional R-squared for the INLA models estimating
-  the temporal trends of the food-web structure", label = "inlarsq",
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped"))
+  the temporal trends of the food-web structure. The table also displays the
+  standard deviation associated to the random effects and the general error of
+  the models. Confidence interval at 95\\% are displayed between square brackets.",
+  label = "inlarsq") %>%
+  collapse_rows(columns = c(1, 2, 3), valign = "top") %>%
+  kable_styling(latex_options = c("scale_down"))
 ```
 
 ```{r}
 tps10_cap <- paste0("Distribution of temporal trends per decade of the food-web
   structure by site estimated from the Bayesian models using Best Linear
-  Unbiaised Predictor (BLUP). Species richness and biomass temporal trends are
-  reported in percentage change per decade.")
+  Unbiaised Prediction (BLUP). Species richness and biomass temporal trends are
+  reported in percentage change per decade. Dashed red line and solid black line
+  respectively indicate 0 and median change.")
 
 ```
 ```{r tps10, fig.cap=tps10_cap}
@@ -107,20 +114,23 @@ rand_sim_cap <- paste0(
 
 )
 ```
+
 ```{r ext, fig.cap=rand_sim_cap}
 knitr::include_graphics(here::here("figures", "tot_ext_sim.pdf"))
 ```
 
 
 ```{r}
-cor_cap <- paste0("Correlation among food-web metrics for a) temporal trends by site, b) median values by site (cf Main Methods)", " Pisc: piscivorous, rich.: species richness, node: node
-  of the food-web corresponding to a trophic species, prop.: proportion."
+cor_cap <- paste0("Correlation among food-web metrics for a) temporal trends by
+  site, b) median values by site (cf Main Methods)", " Pisc: piscivorous, rich.:
+species richness, node: node of the food-web corresponding to a trophic species,
+prop.: proportion."
 )
 ```
 
 
 ```{r cor, fig.cap=cor_cap}
-knitr::include_graphics(here::here("fig", "p_corr.png"))
+knitr::include_graphics(here::here("figures", "p_corr.pdf"))
 ```
 
 ```{r}
@@ -143,8 +153,7 @@ kable(tabvif,
   caption = "Variance Inflation Factor for the more complex linear models
   included in the Structural Equation Models.",
   label = "vif",
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped"))
+  )
 ```
 
 ```{r}
@@ -156,7 +165,26 @@ kable(r2_sem_tab,
   Models.",
   label = "r2sem",
   ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped")) %>%
-  collapse_rows(columns = 1, valign = "top")
+  kableExtra::collapse_rows(columns = 1, valign = "top")
+```
+
+```{r}
+tar_load(c(pca_table, op_table, com_metric_tab))
+tab_quanti <- purrr::map_dfr(
+  list(com_metric_tab, op_table, pca_table),
+  function(x) {colnames(x)[1] <- "Variable"; x}
+)
+purrr::map_int(list(com_metric_tab, op_table, pca_table), nrow)
+
+tab_quanti %>%
+  kbl(
+    caption = "Summary distribution of community metrics, fish monitoring and of
+    environmental variables used in the PCA for the spatial SEM.",
+    booktabs = T
+    ) %>%
+  kable_styling() %>%
+  pack_rows("Community metrics", 1, 8) %>%
+  pack_rows("Summary of fish monitoring", 9, 12) %>%
+  pack_rows("Summary of Envionmental variables", 13, 26)
 ```
 

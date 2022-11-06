@@ -33,3 +33,21 @@ get_std_coef_from_reg_tab <- function(tab = NULL) {
   tab %>%
     select(response, term, estimate, std.error, std_estimate, stdse, statistic)
 }
+
+summary_distribution <-
+  function(x = NULL, na.rm = FALSE) {
+
+    quant <- quantile(x, probs = c(0, .25, .5, .75, 1), na.rm = na.rm)
+    names(quant) <- c("min", "1st_quart", "median", "2nd_quart", "max")
+
+    other_desc <- c(
+      mean = mean(x, na.rm = na.rm),
+      sd = sd(x, na.rm = na.rm),
+      n = length(x),
+      n_na = length(x[is.na(x)]),
+      frac_na = length(x[is.na(x)]) / length(x)
+    )
+
+    output <- c(quant, other_desc)
+    return(output)
+}
