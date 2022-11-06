@@ -101,7 +101,8 @@ tps10_cap <- paste0("Distribution of temporal trends per decade of the food-web
 
 ```
 ```{r tps10, fig.cap=tps10_cap}
-knitr::include_graphics(here::here("figures", "p_hist_site_tps10.pdf"))
+tar_load(figStps10)
+knitr::include_graphics(figStps10)
 ```
 
 
@@ -109,14 +110,15 @@ knitr::include_graphics(here::here("figures", "p_hist_site_tps10.pdf"))
 ```{r}
 rand_sim_cap <- paste0(
   "Simulations of (a) species and (b) nodes extinctions in the metaweb according
-  to three scenarios: random extinction sequence, decreasing trophic level,
-  increasing trophic level."
-
+  to three scenarios: random extinction sequence, extinction sequence by decreasing order of trophic level,
+ extinction sequence by increasing order of trophic level. The black line
+ represents the prediction of a GAM model for the random extinction sequences (N = 50)."
 )
 ```
 
 ```{r ext, fig.cap=rand_sim_cap}
-knitr::include_graphics(here::here("figures", "tot_ext_sim.pdf"))
+tar_load(figSext)
+knitr::include_graphics(figSext)
 ```
 
 
@@ -130,7 +132,8 @@ prop.: proportion."
 
 
 ```{r cor, fig.cap=cor_cap}
-knitr::include_graphics(here::here("figures", "p_corr.pdf"))
+tar_load(figcorr)
+knitr::include_graphics(figcorr)
 ```
 
 ```{r}
@@ -141,7 +144,8 @@ bissector. Pearson's correlation coefficients are displayed."
 
 
 ```{r, fig.cap=obs_fit_cap}
-knitr::include_graphics(here::here("figures", "p_obs_fit.pdf"))
+tar_load(figSobsfit)
+knitr::include_graphics(figSobsfit)
 ```
 
 
@@ -174,7 +178,7 @@ tab_quanti <- purrr::map_dfr(
   list(com_metric_tab, op_table, pca_table),
   function(x) {colnames(x)[1] <- "Variable"; x}
 )
-purrr::map_int(list(com_metric_tab, op_table, pca_table), nrow)
+#purrr::map_int(list(com_metric_tab, op_table, pca_table), nrow)
 
 tab_quanti %>%
   kbl(
