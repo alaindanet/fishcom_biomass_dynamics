@@ -89,5 +89,5 @@ get_semeff_ci <- function(
     deframe()
 
   out <- format(round(out, r), nsmall = r)
-  paste0(out["effect"], " [", out["lower_ci"],",", out["upper_ci"],"]")
+  paste0(out["effect"], "\ [", out["lower_ci"],",", out["upper_ci"],"]")
 }

@@ -43,7 +43,8 @@ knitr::opts_chunk$set(
 )
 options(
   #kableExtra.latex.load_packages = FALSE,
-  knitr.table.format = "latex"
+  knitr.table.format = "latex",
+  knitr.graphics.rel_path = FALSE
 )
 ```
 

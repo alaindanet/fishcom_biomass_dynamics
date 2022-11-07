@@ -989,11 +989,8 @@ list(
     select(`Community metric` = metric, `Median (Q1, Q3)`, `(Min, Max)`, median) %>%
     arrange(median) %>%
     select(-median)
-  )
-
-#tar_render(main_text, here("paper", "manuscript.Rmd")),
-#tar_render(supplementary, here("paper", "appendix.Rmd"))
-
-
+  ),
+  tar_render(main_text, here("paper", "manuscript.Rmd")),
+  tar_render(supplementary, here("paper", "appendix.Rmd"))
 
 )
