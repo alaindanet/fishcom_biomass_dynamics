@@ -79,19 +79,6 @@ var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std")
 \newpage
 
 
-```{r}
-tar_load(tab_inla_r2_rand)
-kable(tab_inla_r2_rand,
-  row.names = FALSE,
-  booktabs = T,
-  caption = "Marginal and Conditional R-squared for the INLA models estimating
-  the temporal trends of the food-web structure. The table also displays the
-  standard deviation associated to the random effects and the general error of
-  the models. Confidence interval at 95\\% are displayed between square brackets.",
-  label = "inlarsq") %>%
-  collapse_rows(columns = c(1, 2, 3), valign = "top") %>%
-  kable_styling(latex_options = c("scale_down"))
-```
 
 ```{r}
 tps10_cap <- paste0("Distribution of temporal trends per decade of the food-web
@@ -106,6 +93,19 @@ tar_load(figStps10)
 knitr::include_graphics(figStps10)
 ```
 
+```{r}
+tar_load(tab_inla_r2_rand)
+kable(tab_inla_r2_rand,
+  row.names = FALSE,
+  booktabs = T,
+  caption = "Marginal and Conditional R-squared for the INLA models estimating
+  the temporal trends of the food-web structure. The table also displays the
+  standard deviation associated to the random effects and the general error of
+  the models. Confidence interval at 95\\% are displayed between square brackets.",
+  label = "inlarsq") %>%
+  collapse_rows(columns = c(1, 2, 3), valign = "top") %>%
+  kable_styling(latex_options = c("scale_down"))
+```
 
 
 ```{r}
@@ -138,42 +138,6 @@ knitr::include_graphics(figcorr)
 ```
 
 ```{r}
-obs_fit_cap <- "Fitted versus observed values from the INLA models estimating
-the temporal trends of the food-web structure. The black line depicts the first
-bissector. Pearson's correlation coefficients are displayed."
-```
-
-
-```{r, fig.cap=obs_fit_cap}
-tar_load(figSobsfit)
-knitr::include_graphics(figSobsfit)
-```
-
-
-```{r}
-tar_load(tabvif)
-kable(tabvif,
-  row.names = FALSE,
-  booktabs = T,
-  caption = "Variance Inflation Factor for the more complex linear models
-  included in the Structural Equation Models.",
-  label = "vif",
-  )
-```
-
-```{r}
-tar_load(r2_sem_tab)
-kable(r2_sem_tab,
-  row.names = FALSE,
-  booktabs = T,
-  caption = "Marginal and conditional R squared for the Structural Equation
-  Models.",
-  label = "r2sem",
-  ) %>%
-  kableExtra::collapse_rows(columns = 1, valign = "top")
-```
-
-```{r}
 tar_load(c(pca_table, op_table, com_metric_tab))
 tab_quanti <- purrr::map_dfr(
   list(com_metric_tab, op_table, pca_table),
@@ -192,4 +156,42 @@ tab_quanti %>%
   pack_rows("Summary of fish monitoring", 9, 12) %>%
   pack_rows("Summary of Envionmental variables", 13, 26)
 ```
+
+```{r}
+obs_fit_cap <- "Fitted versus observed values from the INLA models estimating
+the temporal trends of the food-web structure. The black line depicts the first
+bissector. Pearson's correlation coefficients are displayed."
+```
+
+
+```{r, fig.cap=obs_fit_cap}
+tar_load(figSobsfit)
+knitr::include_graphics(figSobsfit)
+```
+
+```{r}
+tar_load(r2_sem_tab)
+kable(r2_sem_tab,
+  row.names = FALSE,
+  booktabs = T,
+  caption = "Marginal and conditional R squared for the Structural Equation
+  Models.",
+  label = "r2sem",
+  ) %>%
+  kableExtra::collapse_rows(columns = 1, valign = "top")
+```
+
+
+```{r}
+tar_load(tabvif)
+kable(tabvif,
+  row.names = FALSE,
+  booktabs = T,
+  caption = "Variance Inflation Factor for the more complex linear models
+  included in the Structural Equation Models.",
+  label = "vif",
+  )
+```
+
+
 
