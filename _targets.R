@@ -291,7 +291,7 @@ list(
             )) +
         geom_point(shape = 1, size = 2) +
         geom_abline(intercept = coef(sem[[3]])[1], slope = coef(sem[[3]])[2], size = 1) +
-        labs(x = "Species richness", y = "Biomass trend\n(% by decade)"),
+        labs(x = "Species richness trend\n(% by decade)", y = "Biomass trend\n(% by decade)"),
 
       p_ct_rich = tps_for_sem %>%
         ggplot(aes(
@@ -300,7 +300,7 @@ list(
             )) +
         geom_point(shape = 1, size = 2) +
         geom_abline(intercept = coef(sem[[1]])["(Intercept)"], slope = coef(sem[[1]])["mean_log_rich_std"], size = 1) +
-        labs(x = "Species richness", y = "Connectance trend\n(by decade)"),
+        labs(x = "Species richness trend\n(% by decade)", y = "Connectance trend\n(by decade)"),
       p_ct_bm = tps_for_sem %>%
         ggplot(aes(
             x = mean_log_bm_std,
@@ -308,7 +308,7 @@ list(
             )) +
         geom_point(shape = 1, size = 2) +
         geom_abline(intercept = coef(sem[[1]])["(Intercept)"], slope = coef(sem[[1]])["mean_log_bm_std"], size = 1) +
-        labs(x = "Biomass", y = "Connectance trend\n(by decade)"),
+        labs(x = "Biomass trend\n(% by decade)", y = "Connectance trend\n(by decade)"),
 
       p_tlvl_rich = tps_for_sem %>%
         ggplot(aes(
@@ -317,7 +317,7 @@ list(
             )) +
         geom_point(shape = 1, size = 2) +
         geom_abline(intercept = coef(sem[[2]])["(Intercept)"], slope = coef(sem[[2]])["mean_log_rich_std"], size = 1) +
-        labs(x = "Species richness trend (% by decade)", y = "Average trophic level trend\n(by decade)"),
+        labs(x = "Species richness trend\n(% by decade)", y = "Average trophic level trend\n(by decade)"),
 
       p_tlvl_bm = tps_for_sem %>%
         ggplot(aes(
@@ -329,7 +329,7 @@ list(
           intercept = coef(sem[[2]])["(Intercept)"],
           slope = coef(sem[[2]])["mean_log_bm_std"], size = 1) +
         labs(
-          x = "Biomass trend (% by decade)",
+          x = "Biomass trend\n(% by decade)",
           y = "Average trophic level trend\n(by decade)")
     )
     ),
@@ -647,7 +647,7 @@ list(
       deframe()
     ),
   tar_target(fish_sim_species, {
-    sim_dec_tlvl_species <- vector(mode ="list", length = length(fish_species_tlvl)) 
+    sim_dec_tlvl_species <- vector(mode ="list", length = length(fish_species_tlvl))
     sim_inc_tlvl_species <- vector(mode = "list", length = length(fish_species_tlvl))
     inc_species_tlvl <- sort(fish_species_tlvl, decreasing = FALSE)
 
