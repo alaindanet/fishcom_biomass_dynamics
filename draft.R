@@ -3,6 +3,73 @@ library(tidyverse)
 library(magrittr)
 library(cowplot)
 library(viridis)
+library(arrow)
+library(glmmTMB)
+library(piecewiseSEM)
+library(semEff)
+
+tar_load(c(sim, sim_std))
+
+bm_mod <- lm(total_bm ~ S, sim_std)
+tlvl_mod <- lm(weighted_average_trophic_level ~ K + S, sim_std)
+ct_mod <- lm(connectance_final ~ K + S, sim_std)
+
+car::vif(bioener_ks_mod_list[[2]])
+print(x %>% filter(effect_type == "total"), n = 22)
+
+bioener_bm_rich_mod_list <- list(
+  bm = lm(log_total_bm ~ log_final_richness, sim),
+  tlvl = lm(log_weighted_average_trophic_level ~ log_total_bm + log_final_richness, sim),
+  ct = lm(log_connectance_final ~ log_total_bm + log_final_richness, sim)
+)
+sem_bioener_bm_rich <- as.psem(bioener_bm_rich_mod_list)
+semeff_bioener_bm_rich <- semEff(sem_bioener_bm_rich, R = 20, ci.type = "perc")
+semeff_bioener_bm_rich_table <- from_semEff_to_table(x = semeff_bioener_bm_rich)
+print(semeff_bioener_bm_rich_table %>% filter(effect_type == "total"), n = 22)
+
+bm_mod <- lm(total_bm ~ final_richness, sim_std)
+tlvl_mod <- lm(weighted_average_trophic_level ~ total_bm + final_richness, sim_std)
+ct_mod <- lm(connectance_final ~ total_bm + final_richness, sim_std)
+
+lm(consumer_biomass ~ consumer_richness, sim_std)
+lm(weighted_average_trophic_level ~ consumer_biomass + consumer_richness, sim_std)
+lm(connectance_final ~ consumer_richness + consumer_biomass, sim_std)
+
+glmmTMB(total_bm ~ final_richness + (1|fw_id), sim_std)
+glmmTMB(weighted_average_trophic_level ~ total_bm + final_richness + (1|fw_id), sim_std)
+glmmTMB(connectance_final ~ total_bm + final_richness + (1|fw_id), sim_std)
+
+glmmTMB(total_bm ~ final_richness + (1|fw_id), simhc)
+glmmTMB(weighted_average_trophic_level ~ total_bm + final_richness +(1|fw_id), simhc)
+glmmTMB(connectance_final ~ total_bm + final_richness + (1|fw_id), simhc)
+
+bm_mod <- lm(total_bm ~ final_richness, sim_std)
+tlvl_mod <- lm(weighted_average_trophic_level ~ total_bm + final_richness, sim_std)
+ct_mod <- lm(connectance_final ~ total_bm + final_richness, sim_std)
+
+glmmTMB(total_bm ~ S + (1|fw_id), simhc)
+glmmTMB(weighted_average_trophic_level ~ K + S + (1|fw_id), simhc)
+glmmTMB(connectance_final ~ K + S + (1|fw_id), simhc)
+
+glmmTMB(consumer_biomass ~ consumer_richness + (1|fw_id), sim_std)
+glmmTMB(weighted_average_trophic_level ~ consumer_biomass + consumer_richness + (1|fw_id), sim_std)
+glmmTMB(connectance_final ~ consumer_richness + consumer_biomass + (1|fw_id), sim_std)
+
+glmmTMB(consumer_biomass ~ consumer_richness + (1|fw_id), simhc)
+glmmTMB(weighted_average_trophic_level ~ consumer_biomass + consumer_richness + (1|fw_id), simhc)
+glmmTMB(connectance_final ~ consumer_richness + consumer_biomass + (1|fw_id), simhc)
+
+glmmTMB(maximum_trophic_level ~ consumer_biomass + consumer_richness + (1|fw_id), simhc)
+glmmTMB(average_trophic_level ~ consumer_biomass + consumer_richness + (1|fw_id), simhc)
+
+lm(total_bm ~ final_richness, simhc)
+lm(weighted_average_trophic_level ~ final_richness + total_bm, simhc)
+lm(connectance_final ~ final_richness + total_bm, simhc)
+lm(connectance_final ~ final_richness + total_bm, simhc)
+lm(top_consumer_richness ~ final_richness + total_bm, sim)
+lm(maximum_trophic_level ~ final_richness + total_bm, simhc)
+lm(average_trophic_level ~ final_richness + total_bm, simhc)
+
 source("R/misc.R") # Define your custom code as a bunch of functions.
 source("R/variable_shortcut.R") # Define your custom code as a bunch of functions.
 source_dir(get_mypath("R")) # Define your custom code as a bunch of functions.
