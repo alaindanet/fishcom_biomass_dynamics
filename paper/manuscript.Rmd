@@ -1,14 +1,14 @@
 ---
 title: "Community biomass and species richness temporal trends reveal contrasting assembly and disassembly processes in natural food-webs"
 author: Alain Danet (a), Loubna El Madouri (a, c), Maud Mouchet (a), Elisa Thébault (d) and Colin Fontaine (a)
-date: Research report 
+date: Research report
 output:
   #bookdown::word_document2:
   #  fontsize: 12pt
   bookdown::pdf_document2:
-    fig_caption: true 
+    fig_caption: true
     keep_tex: true
-    toc: false 
+    toc: false
     fontsize: 12pt
 header-includes:
    - \usepackage{natbib}
@@ -82,42 +82,41 @@ CNRS-Sorbonne Université, Muséum national d’Histoire naturelle de Paris, 43 
 8 Buffon, 75005 Paris, France
 
 (b) Department of Biosciences, Alfred Denny Building, University of Sheffield,
-Western Bank, Sheffield S10 2TN, United Kingdom 
+Western Bank, Sheffield S10 2TN, United Kingdom
 
-(c) ? 
+(c) ?
 
 (d) Sorbonne Université, CNRS, IRD, INRAE, Université Paris Est Créteil, 15
 Institute of Ecology and Environmental Sciences of Paris (iEES-Paris), Paris,
 France
 
-- Classification: Biological Sciences (major) - Ecology (minor) 
+- Classification: Biological Sciences (major) - Ecology (minor)
 
 - Keywords: food-web, biodiversity changes, assembly rules, space-for-time
 
-# Abstract (242 / 250 words max)
+# Abstract (240 / 250 words max)
 
-Understanding how biodiversity changes is a central question in ecology, but a
-challenging one because of the multidimensionality of biodiversity changes.
-Although the structure of ecological networks is a crucial determinant of
-community dynamics, this dimension of biodiversity changes have been greatly
-overlooked. One main reason is the scarce availability of the temporal series of
-ecological networks. Our knowledge of the relationships among structural
-properties of ecological networks comes mainly from spatial comparison, assuming
-a space-for-time equivalence, which have rarely tested. We questioned the
-relationships between the temporal changes of food-web structure and the ones of
-community biomass and species richness, and assessed if they differed from the
-ones estimated in space. We inferred the structure of using food diet and body
-size data from fish monitoring in France. We estimated the temporal trends of
-food-web structure in 400 sites using a hierarchical Bayesian model and then
-assessed the relationships among them using structural equation models. We found
-that temporal trends of connectance and average trophic level are positively
-related to ones of community biomass but surprisingly poorly related to the
-temporal trends of species richness, which resonates with the energetic paradigm
-of food-webs. We further found general support for the space-for-time hypothesis
-for community biomass, but not for species richness. Our study
-sheds a new light on the dynamics of food-web assemblage in natural settings and
-how the structure of ecological networks changes according to the changes of
-other biodiversity facets. 
+Understanding food-web assembly processes is central to biological conservation
+and maintenance of ecosystem functions. In particular, temporal changes in
+community biomass and species richness are expected to significantly impact
+food-web structure but empirical assessments are lacking so far. Here, we
+investigate how temporal trends in species richness and community biomass affect
+temporal trends in food-web structure. To do so, we used more than 6000 sampled
+riverine fish community in 400 sites from french monitoring data. We inferred
+food-web structure for each sampling event, using diet data and body size. Using
+structural equation models, we estimated the effects of temporal changes in
+community biomass and species richness on temporal changes in food-web
+structure. We found that a positive effect of temporal trends in community
+biomass on the temporal trends of connectance and average trophic level, a
+result also found using spatial variations and a bioenergetic model. Temporal
+trends in species richness had a positive effect on average trophic level, but
+no effects on connectance. In space and in simulations, species richness had in
+contrast a negative effect on average trophic level and connectance. In sum, our
+study highlight that local temporal changes in biomass and species richness have
+contrasting effects on food-web structure. It further reveals that temporal
+changes and spatial variations in biomass lead to coherent food-web assembly
+patterns, in contrast to species richness. Our study sheds a new light on
+food-web assembly in natural settings.
 
 # Significance (115 / 120 words max)
 
@@ -169,7 +168,7 @@ was previously shown to scale negatively with species richness in empirical
 food-webs [@danet_species_2021].
 
 However, predicting how ecological networks will change in time according to
-other biodiversity facets based on spatial comparison of food-webs 
+other biodiversity facets based on spatial comparison of food-webs
 is valid if the assumption of space-for-time substitution is as
 well. Space-for-time substitution supposes a homology between variations in
 space and in time, i.e. that spatial sequences correspond to temporal sequences.
@@ -194,11 +193,13 @@ over time and then if the relationships between changes in food-web structure,
 community biomass and species richness, are the same over space and over time,
 i.e. is the space-for-time substitution valid?
 
+*Introduce hypothesis and the food-web metrics (connectance and average trophic
+level)*
+
 # Results
 
 ```{r, results=FALSE}
 tar_load(glob_tps_trends_decade_no_drivers)
-glob_tps_trends_decade_no_drivers
 gbm <- get_effect_ci(resp = "log_bm_std", ci_lvl = "level:0.80", p = TRUE)
 gr <- get_effect_ci(resp = "log_rich_std", ci_lvl = "level:0.80", p = TRUE)
 gt <- get_effect_ci(resp = "w_trph_lvl_avg", ci_lvl = "level:0.80", p = FALSE)
@@ -208,22 +209,51 @@ gct <- get_effect_ci(resp = "ct_ff", ci_lvl = "level:0.80", p = FALSE)
 ```{r}
 tar_load(c(r2_inla_tab, r2_inla, r2_sem))
 r2_inla_report <- r2_inla %>%
-  select(response, r2_mvp_marg95hpdci, r2_mvp_cond95hpdci)
+  select(response, r2_mvp_marg95hpdci, r2_mvp_cond95hpdci, r2_mvp_cond_mean)
+r2cond <- map(
+  setNames(r2_inla_report$response, r2_inla_report$response),
+  ~round(r2_inla_report[r2_inla_report$response == .x, ]$r2_mvp_cond_mean, 2)
+)
 r2ic <- map(
   setNames(r2_inla_report$response, r2_inla_report$response),
   ~r2_inla_report[r2_inla_report$response == .x, ]$r2_mvp_cond95hpdci
 )
 ```
 
-Using a Bayesian hierarchical model to estimate conjointly the temporal trends of
-food-web structure at all sites, we found weak evidence of a global decrease in
-community biomass (CI80%:`r gbm` by decade; median [Credible Interval], Fig. S1) but of a
-global increase in species richness (CI80%: `r gr` by decade) across the `r nb_st` sites. 
-We did not find evidence of a global trends in connectance and average trophic
-level (CI80%: `r gct` and `r gt` respectively). The hierarchical model captured
-well the variance associated to the spatial structure of the data with
-conditional $R^2$ going from  `r r2ic$log_bm_std` (mean [CI95%]) for community
-biomass to `r r2ic$log_rich_std` for species richness (Table S1).
+```{r}
+dfv <- function(
+  x = summary_pred_station_tps10,
+  r = "ct_ff",
+  v = "min",
+  d = 4
+) {
+  out <- x[x$response == r, ][[v]]
+  format(round(out, d), nsmall = d)
+}
+grbmn <- dfv(r = "log_bm_std", v = "min", d = 0)
+grbmx <- dfv(r = "log_bm_std", v = "max", d = 0)
+grrhn <- dfv(r = "log_rich_std", v = "min", d = 0)
+grrhx <- dfv(r = "log_rich_std", v = "max", d = 0)
+grctn <- dfv(r = "ct_ff", v = "min", d = 2)
+grctx <- dfv(r = "ct_ff", v = "max", d = 2)
+grtln <- dfv(r = "w_trph_lvl_avg", v = "min", d = 2)
+grtlx <- dfv(r = "w_trph_lvl_avg", v = "max", d = 2)
+```
+
+
+Using a Bayesian hierarchical model to jointly estimate the temporal trends of
+food-web structure at all sites, we found weak evidence of an overall decrease
+in community biomass (CI80%:`r gbm` by decade; median [Credible Interval], Fig.
+S1) but a weak evidence of an overall temporal increase in species richness
+(CI80%: `r gr` by decade) across the `r nb_st` sites. We did not find evidence
+of average temporal trends in connectance and average trophic level (CI80%:
+`r gct` and `r gt` respectively). However, we found a great heterogeneity in the
+temporal trends estimated at the site level (community biomass: from `r grbmn`%
+to `r grbmx`% per decade, species richness: `r grrhn` to +`r grrhx`%, average
+trophic level: `r grtln` to +`r grtlx`, connectance: `r grctn` to +`r grctx`,
+Fig. S1) which was well captured by the hierarchical model with conditional R2
+going from `r r2cond$log_bm_std` for community biomass to `r r2cond$log_rich_std`
+for species richness (Table S1).
 
 
 ```{r}
@@ -241,9 +271,10 @@ knitr::include_graphics(here::here("figures", "fig2.pdf"))
 ```
 
 ```{r}
-tar_load(semeff_tot)
+tar_load(c(semeff_tot, semeff_tot_ok))
 semeff_tot <- semeff_tot %>%
   mutate(across(c(response, predictor), ~str_remove(.x, "mean_")))
+unique(semeff_tot_ok$predictor)
 
 rdtps <- map(
   setNames(
@@ -263,6 +294,16 @@ rdsp <- map(
   ~ list(
     bm = get_semeff_ci(resp = .x, term = "log_bm_std", model = "spatial"),
     r = get_semeff_ci(resp = .x, term = "log_rich_std", model = "spatial")
+    )
+)
+rdm <- map(
+  setNames(
+    c("Connectance", "Avg trophic level", "Biomass"),
+    c("ct", "tlvl", "bm")
+    ),
+  ~ list(
+    bm = get_semeff_ci(x = semeff_tot_ok, type = "Direct", resp = .x, term = "Biomass", model = "Theoretical model"),
+    r = get_semeff_ci(x = semeff_tot_ok, type = "Direct", resp = .x, term = "Species richness", model = "Theoretical model")
     )
 )
 ```
@@ -287,6 +328,16 @@ ridsp <- map(
       model = "spatial", type = "indirect")
     )
 )
+ridm <- map(
+  setNames(
+    c("Connectance", "Avg trophic level", "Biomass"),
+    c("ct", "tlvl", "bm")
+    ),
+  ~ list(
+    bm = get_semeff_ci(x = semeff_tot_ok, type = "Indirect", resp = .x, term = "Biomass", model = "Theoretical model"),
+    r = get_semeff_ci(x = semeff_tot_ok, type = "Indirect", resp = .x, term = "Species richness", model = "Theoretical model")
+    )
+)
 rttps <- map(
   setNames(
     c("ct_ff", "w_trph_lvl_avg", "log_bm_std"),
@@ -309,49 +360,92 @@ rtsp <- map(
       model = "spatial", type = "total")
     )
 )
+rtm <- map(
+  setNames(
+    c("Connectance", "Avg trophic level", "Biomass"),
+    c("ct", "tlvl", "bm")
+    ),
+  ~ list(
+    bm = get_semeff_ci(x = semeff_tot_ok, type = "Total", resp = .x, term = "Biomass", model = "Theoretical model"),
+    r = get_semeff_ci(x = semeff_tot_ok, type = "Total", resp = .x, term = "Species richness", model = "Theoretical model")
+    )
+)
 ```
 
+Using structural equation models to disentangle the direct and indirect effects
+of temporal trends in fish species richness and community biomass on temporal
+trends in food-web structure, we found a strong positive effect of the temporal
+trends in species richness on community biomass ($r_\delta =$ `r rdtps$bm$r`,
+Fig. \@ref(fig:sem) a and b, $r_\delta$: standardized slope coefficient, [95%
+CI]), meaning that both temporal trends had the same direction in average. In
+other word, food-webs that have experienced a decrease in species richness over
+time have decreased in community biomass, and conversely, those that increased
+in species richness have increased in community biomass.
+Temporal trends in community biomass had in turn a positive effect on connectance and
+average trophic level (resp. $r_\delta =$ `r rdtps$ct$bm` and `r rdtps$tlvl$bm`,
+Fig. \@ref(fig:sem)a, c, e), meaning that food-web whose community biomass
+decreased over time have decreased in connectance and average trophic level, and
+conversely, those that have experienced an increase in biomass have increased in
+connectance and average trophic level. We further found that the temporal
+trends of community biomass were positively associated to the temporal trends of
+both number and proportion of piscivorous species present (Fig. S3a), meaning
+biomass trends are linked to the presence of high trophic level trophic
+species.
 
-Using structural equation models to disentangle the direct and indirect
-relationships among food-web structure descriptors, we found a strong positive
-relationship between the temporal trends of community biomass and of
-species richness ($r_\delta =$ `r rdtps$bm$r`, Fig. \@ref(fig:sem) a and b,
-$r_\delta$: standardized slope coefficient, [95% CI]), meaning that both
-temporal trends had the same direction in average. At the sites where species
-richness decreased over time, community biomass also decreased over time. On the
-other hand, at the sites where species richness increased over time, community
-biomass also increased over time. 
+We further tested if we find the same patterns using spatial variations in
+food-web structure rather than temporal changes over time, i.e. if the
+space-for-time hypothesis hold. To do so, we used the same dataset and same
+structural equation model but with the median food-web structure per site
+instead of the temporal trends. We additionally performed theoretical
+simulations with a bioenergetic food-web model to further get theoretical
+expectations about how food-web structure changes according to community biomass and
+species richness variations (see Methods). As in temporal data, species richness
+had a positive effect on community biomass both in empirical data and in
+theoretical simulations (resp. $r_\delta =$ `r rdsp$bm$r` and `r rdm$bm$r`, Fig.
+\@ref(fig:std)). In both empirical data and theoretical simulations, community
+biomass had a positive effect on connectance (resp. $r_\delta =$ `r rdsp$ct$bm`
+and `r rdm$ct$bm`, Fig. \@ref(fig:std)) and average trophic level (resp.
+$r_\delta =$ `r rdsp$tlvl$bm` and `r rdm$tlvl$bm`), as in temporal analysis.
 
-The temporal trends of connectance were positively linked with the ones of
-community biomass ($r_\delta =$ `r rdtps$ct$bm`), also meaning that both
-temporal trends had the same direction in average. That is, the sites where
-food-web connectance decreased over time also had community biomass that
-decreased over time and reversely. It suggests that communities that decreased
-in biomass over time lose highly connected trophic species over time, and
-reversely that communities gaining biomass over time also gain highly connected
-trophic species over time. We found a negative relationship between the temporal
-trends of connectance and the ones of species richness
-($r_\delta =$ `r rdtps$ct$r`, Fig. \@ref(fig:sem)d). We further found the
-species richness had an indirect positive effect on connectance, through
-community biomass ($r_\delta =$ `r ridtps$ct$r`). It resulted in a relatively
-weak total negative effect of species richness on connectance
-($r_\delta =$ `r rttps$ct$r`), that we also found in random extinction
-simulation (Fig. S2).
+The effects of species richness were more complex, because species richness had
+indirect effects on food-web structure through community biomass. Temporal
+trends in species richness had a direct negative effect on connectance
+($r_\delta =$ `r rdtps$ct$r`, Fig. \@ref(fig:sem)d), but had also a positive
+indirect effect through community biomass ($r_\delta =$ `r ridtps$ct$r`), so
+that species richness temporal trends had no effect in total on temporal in
+connectance ($r_\delta =$ `r rttps$ct$r`, Fig. \@ref(fig:sem)d).
+In contrast, temporal trends in species had no direct effects on the temporal
+trends in average trophic level ($r_\delta =$ `r rdtps$tlvl$r`, Fig.
+\@ref(fig:sem)f), however it had a positive indirect effect through community
+biomass ($r_\delta =$ `r ridtps$tlvl$r`). It means food-webs that have
+experienced a decrease in species richness over time have decreased in average
+trophic level, and conversely, those that increased in species richness have
+increased in average trophic level, through community biomass. Furthermore, we
+found that temporal trends of the proportion of piscivorous species was
+negatively associated with the temporal trends of species richness (Fig. S3),
+meaning that communities that increase in richness over time have an increase in
+the proportion of non-piscivorous species over time and vice versa.
 
-The temporal trends of average trophic level had a strong positive relationship
-with the ones of community biomass ($r_\delta =$ `r rdtps$tlvl$bm`, Fig.
-\@ref(fig:sem)e), meaning that sites where community biomass decreased over
-time, average trophic level decreased over time and reversely. It means that in
-communities losing biomass over time, the average biomass of the food-web moved
-down to lower trophic level and vice versa. However, we found that the temporal
-trends of average trophic level had no direct relationship the ones of species
-richness ($r_\delta =$ `r rdtps$tlvl$r`, Fig. \@ref(fig:sem)f). It suggests that
-in communities either losing or gaining species richness over time, the location
-of average biomass along trophic level does not significantly change according
-to species richness. However, the temporal trends of species richness had an
-indirect positive relationship with the temporal trends of average trophic level
-through community biomass ($r_\delta =$ `r ridtps$tlvl$r`), resulting in a total
-positive relationship ($r_\delta =$ `r rttps$tlvl$r`).
+The effects of spatial variations in species richness on food-web structure
+contrasts with the ones found with temporal trends. We found a direct negative
+effect of species richness on connectance both using data and model simulations
+(resp. $r_\delta =$ `r rdsp$ct$r` and `r rdm$ct$r`, Fig. \@ref(fig:std)) and on
+average trophic level (resp. $r_\delta =$ `r rdsp$tlvl$r` and `r rdm$tlvl$r`).
+Despite indirect positive effect of species richness through community biomass,
+species richness had strong total negative effects on connectance in empirical
+data and simulations (resp. $r_\delta =$ `r rtsp$ct$r` and `r rtm$ct$r` ) and
+average trophic level (resp. $r_\delta =$ `r rtsp$tlvl$r` and `r rtm$tlvl$r`).
+
+We performed extinction simulations scenario on the metaweb, the food-web
+including all the species and nodes found in the empirical data, to better
+understand how species richness change affect food-web structure. When species
+are removed in a sequential order beginning by the highest trophic levels,
+connectance and average trophic level decreased as we removed species (red
+lines, Fig. S2a). At the opposite, removing first low trophic level species first
+increase connectance and average trophic level (green lines, Fig. S2a). In turn,
+random species extinction sequence had little effect on food-web structure
+(black lines, Fig. S2a).
+
 
 ```{r}
 std_cap <- paste0(
@@ -368,175 +462,143 @@ std_cap <- paste0(
 knitr::include_graphics(here::here("figures", "p_sem_tps_sp.pdf"))
 ```
 
-As for the temporal analysis, we found a positive relationship between
-median community biomass and median species richness along the spatial gradient,
-but half the strength as the temporal one ($r_\delta =$ `r rdsp$bm$r`, Fig.
-\@ref(fig:std)). We further found a positive relationship between median
-connectance and median community biomass ($r_\delta =$ `r rdsp$ct$bm`), as in
-temporal trends analysis. However, we found a negative relationship between
-median connectance and median species richness, but
-three times stronger than in the temporal analysis ($r_\delta =$ `r rdsp$ct$r`,
-Fig. \@ref(fig:std)). We also found a positive indirect effect of median
-richness on median connectance through median community biomass but a weak one
-($r_\delta =$ `r ridsp$ct$r`), resulting in a strong negative total effect of
-median richness on median connectance ($r_\delta =$ `r rtsp$ct$r`).
-
-We found a positive relationship between median average trophic level and median
-community biomass, but half the strength as in the temporal analysis ($r_\delta
-=$ `r rdsp$tlvl$bm`, Fig. \@ref(fig:std)). However, we found a strong negative
-relationship between median average trophic level and median richness ($r_\delta
-=$ `r rdsp$tlvl$r`), in contrast with findings in temporal analysis. We also
-found a positive indirect relationship between average trophic level and  median
-richness through median community biomass (`r ridsp$tlvl$r`), resulting in a
-strong total negative effect of median richness on median average trophic level
-(`r rtsp$tlvl$r`).
 
 # Discussion
 
+We found remarkable heterogeneity in community biomass and species richness
+changes over the last decades in riverine fish communities, linked to changes in
+food-web structure. Community biomass changes spanned from `r grbmn`% to `r
+grbmx`% per decade, species richness from `r grrhn`% to +`r grrhx`% per decade,
+in line previous reports of the heterogeneity of local biodiversity changes in
+terrestrial, marine and freshwater realms[@dornelas_assemblage_2014;
+@blowes_geography_2019; @danet_past_2024]. In turn, connectance temporal changes
+spanned from `r grctn` to +`r grctx` per decade and average trophic level, from
+`r grtln` to +`r grtlx` per decade. We questioned the effects of community
+biomass and species richness changes over time on temporal changes in food-web
+structure, that we also tested across space and with simulations using a
+bioenergetic food-web model. We found positive effects of species richness
+changes on changes in community biomass that were consistent across temporal and
+spatial analysis and with the theoretical model. The effects of community
+biomass changes on food-web structure were also consistent across analysis,
+suggesting that loss of community biomass are linked to the loss of the trophic
+species of high trophic level. However, changes in species richness had
+contrasting effects on food-web structure depending on the type of analysis,
+temporal or spatial and theoretical simulations. It suggests that food-web
+structure changes induced by changes in species richness differs from the one
+induced by the changes in community biomass, and that they imply different
+processes across time and space. In what follows, we discuss how changes
+in community biomass and species richness changes over time and space are
+related to food-web assembly and disassembly processes.
+
 We found that species richness scaled positively with community biomass, both in
-spatial and temporal analysis. This result is in accordance with previous
+temporal, spatial and theoretical simulations, in accordance with previous
 analysis across space in stream communities [@woods_testing_2020;
 @danet_species_2021] but also in grasslands, salt marches and forests
 [@hector_plant_1999; @tilman_biodiversity_2014; @wu_relationship_2015;
-@li_relationship_2018; but see @grace_integrative_2016]. Therefore, our results
-suggest that Biodiversity-Ecosystem functioning prediction also hold in the
-temporal dynamics of food-webs. The positive relationship between species
-richness and total biomass might be due to positive complementarity in resource
-use [@carey_determining_2011], which is held by niche differentiation
-[@loreau_biodiversity_1998; @loreau_partitioning_2001] or to the higher
-probability of getting high biomass species with higher species
-richness [@loreau_biodiversity_2001].
+@li_relationship_2018; but see @grace_integrative_2016]. This results is in
+agreement with previous findings showing that food-web diversity can increase
+biomass by stimulating primary production and resource uptake
+[@wang_biodiversity_2018]. Our results suggest that food-web losing species
+richness over time also experience a loss of biomass, while those gaining
+species experience a increase in community biomass. This results is coherent the
+Biodiversity-Ecosystem Functioning theory [@loreau_biodiversity_2001;
+@wang_biodiversity_2018], and suggest that the loss of species richness and
+biomass might impair ecosystem functioning.
 
-Our results suggest that the disturbances that lead to decline or increase of
-community biomass over time are concomitant to the decline and increase
-respectively of trophic species at high trophic level. We found that both
-connectance and average trophic level had a positive relationship with community
-biomass over time, meaning that connectance and average trophic level increase
-over time when community biomass increases over time as well, and likewise that
-connectance and average trophic level decrease over time when community biomass
-decreases over time. We also found that the temporal trends of connectance and
-average trophic level were strongly correlated (Fig. S3). Likewise, we found
-that the temporal trends of community biomass were positively associated to the
-temporal trends of both number and proportion of piscivorous species
-present (Fig. S3). This result is in accordance with the
-energetic paradigm of food-webs which proposes that food-webs are primarily
-constrained by fluxes of matter and energy [@lindeman_trophic-dynamic_1942],
-which suggest that productivity constraints food chain length by energy
-limitation [@jenkins_productivity_1992; @takimoto_ecosystem_2008]. Higher
-trophic levels have been shown to be more sensible to ecosystem size
-[@takimoto_ecosystem_2008; @post_ecosystem_2000], to resource availability and
-disturbance in small systems [@post_long_2002] and particularly to disturbance
-in hydrologic regimes in streams [@sabo_role_2010; @mchugh_dual_2010;
-@jake_vander_zanden_global_2007]. In the same line, the metabolic theory of
-ecology also predicts that top predators are highly constrained by energy
-limitation [@arim_relationship_2007]. However, this interpretation holds if
-the temporal trends of community biomass are related to the quantity of resource
-available. Another explanation can be that top trophic level species are often
-the ones that are targeted, harvested and those that are artificially introduced
-for recreational fisheries [@reid_emerging_2019]. Further investigations on the
-drivers of community biomass decline and increase over time would be needed to
-further conclude.
+Our results suggest that food-web that have undergone a biomass decline
+experienced a loss of top trophic levels species and connectance, those gaining
+biomass experienced a gain in top trophic levels and connectance. Importantly,
+the same results were found using spatial comparison and theoretical models.
+This results can be linked with the energetic and trophic biogeography theories
+[@lindeman_trophic-dynamic_1942; @gravel_trophic_2011], which posits that the
+presence of top predators is limited by the amount of energy and
+resource available [@lindeman_trophic-dynamic_1942, @takimoto_ecosystem_2008;
+@post_ecosystem_2000; @post_long_2002]. Thereby, a decrease in community biomass
+can limit the amount of resource available to sustain top predators, while
+increase in community biomass may result in more resource available for top
+predators [@takimoto_ecosystem_2008; @post_ecosystem_2000].
 
-In contrast, we found that the temporal trends of connectance was negatively
-related to the temporal trends of species richness, in accordance with the
-strong negative relationships that we found in the present study and from
-previous results over spatial gradient [@dunne_network_2006;
-@danet_species_2021]. Furthermore, we found that temporal trends of the
-proportion of piscivorous species was negatively associated with the temporal
-trends of species richness (Fig. S3), meaning that communities that increase in
-richness over time have an increase in the proportion of non-piscivorous species over time
-and vice versa. This result is in accordance with a meta-analysis showing the
-number of species by trophic level decrease toward higher trophic level
-[@turney_pyramids_2016]. It suggests that the temporal increase of species
-richness found in our dataset is associated with a decrease of connectance
-because species richness increases are biased toward non-piscivorous species
-which have no piscivory links. We also found that the changes of average trophic
-level over time were not related to the changes of species richness over time.
-All together, an explanation can be that species richness changes over time,
-without changes in community biomass, are more linked to non piscivorous species
-having lower trophic level and relatively low biomass, which results in negative
-relationships with temporal trends in connectance and no relationship with
-average trophic level.
+Species richness temporal changes were positively associated to changes in average
+trophic level, such as food-webs that have suffered a decline in species richness
+have experienced a concomitant decline in average trophic level, those have seen
+an increase in species richness have experienced an increase in average trophic
+level. However, the effect of species richness temporal trends on average
+trophic level were twice lower than the one of community biomass, and had no
+effects on connectance temporal changes. Altogether, it suggests that species
+richness increase and decrease were less clearly linked to specific changes in
+food-web structure. Species richness temporal trends could be more linked to
+changes in the redundancy of trophic roles in the food-webs, such as it has
+little effects of food-web structure but increases its community biomass. This
+interpretation align with the insurance hypothesis [@yachi_biodiversity_1999;
+@loreau_biodiversity_2021], such as species richness and associated redundancy
+in species roles can increase ecosystem stability by buffering the impacts of
+perturbations [@sanders_trophic_2018].
 
-Our findings further suggest that species richness and community biomass have
-antagonistic effects on connectance, respectively negative and positive. As we
-found a strong positive relationship between the temporal trends of species
-richness and community biomass, it results that species richness temporal trends
-had an indirect positive effect on the temporal trends of both connectance and
-average trophic level via community biomass. Then,  The temporal trends of
-species richness had then a total effect on the temporal trends of connectance
-and average trophic level which was twice lower than the one of the temporal
-trends of community biomass. It suggests that the temporal assembly and
+When considering spatial analysis and model simulations, species richness
+effects on food-web structure were highly distinct from the temporal analysis.
+Spatial analysis and theoretical models suggest that increase in species
+richness results in lower connectance and average trophic level, a well known
+patterns in empirical food-web [@dunne_network_2006; @danet_species_2021]. This
+result is also in line with other studies which found a mismatch between spatial
+and temporal trends [@adler_contrasting_2007; @johnson_testing_2008]. This
+discrepancy in space and time is due to the strong assumption that variations in
+space reflect differences in assembly stages of ecological communities and then
+mirror their temporal assembly/disassembly trajectories. Temporal changes in
+species richness might relate to short-term dynamics while spatial gradients
+reflect aggregated dynamics over a longer time scale including a far number of
+processes including high species turnover along spatial gradients. Our results
+then suggest community biomass changes in space might be a good surrogate to
+infer assembly and disassembly of food-web in time, but that it is probably not
+the case for species richness.
+
+*Final message*
+
+It suggests that the temporal assembly and
 disassembly of food-webs are more sensitive to variations in community biomass
 than in species richness, in other words that food-web structure is more robust
 to changes in species richness than in biomass over time. Our study then
 suggests that the changes of food-web structure over time related to changes in
 species richness could be actually mediated by changes in community biomass.
 
-As studies reported community biomass or species richness temporal trends
-[@hallmann_more_2017; @ceballos_biological_2017; @dornelas_assemblage_2014;
-@blowes_geography_2019], we document that temporal trends of species richness
-and community biomass might have different consequences on the structure of the
-community. In particular, the decrease of the average trophic level associated
-to the loss of community biomass could have cascading effect on ecosystem
-functioning as the highest predators are predicted to increase productivity and
-stabilize communities [@wang_biodiversity_2018; @shanafelt_stability_2018;
-@danet_species_2021]. In contrast, the loss of species richness might be linked
-to loss of redundancy in the food-web, highlighting that those communities may
-become more at risk regarding future perturbations [@yachi_biodiversity_1999].
-Interestingly, the hypothesis that temporal trends in community biomass is
-related to species of higher trophic level in our system has a strong reasoning
-with the effect of human fisheries in marine systems which affect primarily fish
-species at top trophic levels [@sprules_surfing_2016].
-
-We found evidence that space-for-time substitution is valid for community
-biomass but not for species richness. More specifically, we found a positive
-relationship between community biomass and species richness both in space and
-time. We also found that connectance was positively linked to community biomass
-both over space and time, it resonates with theoretical studies showing that
-higher food-web connectance can result in higher community biomass
-[@thebault_food-web_2003], or lower [@poisot_trophic_2013] over space,
-highlighting that the relation between connectance and community biomass may be
-dependent on how food-web structure change with community biomass over space and
-time. Likewise, we found that the average trophic level had a positive
-relationship with community biomass over space and time, in accordance with a
-theoretical study predicting an increase of community biomass
-linked to the presence of higher predators [@wang_biodiversity_2018].
-However, while we found a total negative effect between connectance and species
-richness in space, in accordance with previous findings over space in
-empirical food-webs [@dunne_network_2006; @danet_species_2021], we found a null
-total effect in time. The result is even more contrasting for average trophic
-level, where we found a total positive effect of species richness in time but a
-negative one in space. This result is also in line with other studies which
-found a mismatch between spatial and temporal patterns [@adler_contrasting_2007;
-@johnson_testing_2008]. This discrepancy in space and time might be due to the
-strong assumption that variations in space reflect differences in assembly
-stages of ecological communities and then mirror their temporal
-assembly/disassembly trajectories. Temporal variation of species richness might
-relate to transitory dynamics while spatial gradients reflect aggregated
-dynamics over a longer time scale including a far number of processes including
-high species turnover along spatial gradients. Our results then suggest that food-web
-structure comparison along space gradient might be a reasonable surrogate for
-time sequence, it is probably not the case for species richness spatial
-comparison.
-
 ## Conclusion and perspectives
 
-Our study suggests that species richness and community biomass temporal trends
-in natural fish communities relate on different ecological processes. Biomass
-changes in time are related to variations of food-web structure at the
-higher trophic levels while changes in species richness are weakly related to
-changes in food-web structure, in accordance with the energetic
-paradigm of food-webs. Our results further highlight that the effects of species
-richness changes on food-web structure are strongly mediated by antagonistic
-effects of community biomass. We also find evidences which suggest that
-space-for-time substitution may be relevant to predict the effects of community
-biomass losses or gains on food-web structure but also that space-for-time
-substitution might not work for species richness. Our study calls for further
-investigations to support the generality of assembly rules in food-webs,
-according to changes in community biomass and species richness. They are crucial
-to better understand how biodiversity changes will affect community dynamics
-and ecosystem functioning.
+We investigated how food-web assemble and disassemble according to changes in
+community biomass and species richness. Our study shows that temporal changes in
+community biomass induced changes in food-web structure, such as decline in
+biomass translates in food-webs with fewer trophic links and top predators while
+increases in biomass results in food-webs with more trophic links and top
+predators. Species richness temporal trends translate in low changes in food-web
+structure, suggesting that species richness changes relates more to trophic role
+redundancy than in changes in food-web structure. Using replicating the analysis
+over spatial gradient and with a theoretical model, our study shows that
+community biomass changes over space and theoretical model results in the same
+changes in food-web structure than in temporal analysis, which is not the case
+for species richness. It suggests that using space-for-time substitution to
+infer assembly and disassembly processes in food-web structure works well for
+community biomass and not species richness.
+
+In the context of biodiversity crisis, our study reveals that declines of
+community biomass results in food-web downgrading. As species of top trophic
+levels plays a great role in ecosystem functioning [@estes_trophic_2011;
+@wang_biodiversity_2018; @thebault_food-web_2003], it raises concerns about the
+functioning of such degraded ecosystems. Loss of species richness in turn did
+not affect significantly food-web structure, suggesting that it implies loss of
+redundancy in trophic roles. As redundancy has a key role in buffering ecosystem
+variability against perturbations [@sanders_trophic_2018;
+@yachi_biodiversity_1999], it raises concerns about the stability of such
+food-webs. We used here empirical freshwater food-web inferred from in-situ fish
+bodysize and diet [@danet_species_2021; @bonnaffe_comparison_2021], which do not
+account for the variability in invertebrates and primary producers presences,
+and do not a number of processes such as changes in interaction strengths.
+However, the theoretical model embedding complete food-webs showed remarkably
+similar results to the empirical data.
+
+Our study opens stimulating perspectives to further understand of biodiversity
+changes alters community structure and ecosystem functioning. It is particularly
+needed for ecological networks, whose structure has tremendous effects on
+ecosystem functioning and stability. It implies to further investigate which
+processes drive the differences in the effects of species richness
+changes on food-web structure in space and time.
 
 # Material & Methods
 
@@ -556,10 +618,10 @@ We selected the sites that have been monitored at least 10 years on the
 one sampling a year by site. In each site, we ensured low temporal heterogeneity
 in sampling period by selecting sampling that were performed in the same period,
 leading to a mean standard deviation of sampled month in each site of three
-weeks [@danet_species_2021]. Those steps leads to the selection of 
+weeks [@danet_species_2021]. Those steps leads to the selection of
 `r nb_st` sites (Fig. \@ref(fig:matmet), Table S2).
 
-## Biomass 
+## Biomass
 
 We first inferred the body mass of each fish individual considering an allometric
 law, $B_i = 0.01 \times l_i^{3.03}$, $B_i$ being the biomass expressed in gram and $l_i$ the
@@ -567,15 +629,15 @@ body length of the individual $i$ expressed in millimeters [@froese_cube_2006]. 
 biomass of each species and community biomass were obtained by summing the body
 mass of individuals. Finally, the biomass was reported to the sampled surface
 (in $m^2$) to account for sampling effort.
- 
-## Food-web inference 
+
+## Food-web inference
 
 We inferred food-web structure in two steps [@bonnaffe_comparison_2021;
 @danet_species_2021]: (1) we first computed the metaweb, describing the
 potential trophic interactions among all size classes species, (2) then we
 extracted each yearly snapshot of food-webs by extracting species size classes
 and their interactions according to their presence in a given sampling event.
- 
+
 We inferred the metaweb according to ontogenic diet data and body size
 [@gravel_inferring_2013; @poisot_structure_2016; @brose_predator_2019;
 @bonnaffe_comparison_2021; @danet_species_2021]. The method is extensively
@@ -627,7 +689,7 @@ added to the mean trophic level of the preys that it consumes
 
 ## Temporal trends of food-web
 
-We modeled the temporal trends of food-web structure at each site ($Y_i$) using 
+We modeled the temporal trends of food-web structure at each site ($Y_i$) using
 linear hierarchical model. Time was considered as the number of year since the
 first sampling ($t = 0$) at each site. We accounted for the spatial structure of
 the data by adding random intercepts ($a$) and slopes ($b$) for the
@@ -639,7 +701,7 @@ $$
     Y_{i|n, t} &= \alpha + \beta Time_t + \epsilon_{i|n, t}
   (\#eq:gen)
 \end{aligned}
-$$ 
+$$
 
 - $\alpha = \alpha_0 + a_n + a_{i|n}$
 - $\beta = \mu + b_n + b_{i|n}$
@@ -655,7 +717,7 @@ effects were modelled as a log gamma distribution with
 shape and inverse scale parameters ($\mathcal{G}(s, \, \tau) = \mathcal{G}(1, \,
 5.10^-5)$), then their respective standard deviation were obtained by
 backtransforming the inverse scale parameter ($\sigma = 1 / \sqrt{\tau}$).
-Community biomass and species richness were logged transformed.  
+Community biomass and species richness were logged transformed.
 
 The performance of the model was assessed visually by plotting the fitted versus
 the observed values (Fig. S4). We also visually inspected the Posterior
@@ -697,7 +759,7 @@ comparing the relationships estimated among food-web structure in time to the
 ones inferred in space. We used the same sites as in the temporal analysis,
 but we summarised temporal series of each station by the median value over time
 of each facet of food-web structure described above (Fig. \@ref(fig:matmet)).
- 
+
 ## Statistical analysis
 
 We modeled the relationships among food-web structure, that is
@@ -755,7 +817,7 @@ order, of their trophic level, i.e. respectively beginning by the highest and
 lowest trophic level. In the random extinction sequence, we built 50 random
 extinction sequences. For each simulation, we removed fish species/nodes that
 lost all their preys. We then computed the connectance, the average and the
-maximum trophic level after each extinction. 
+maximum trophic level after each extinction.
 
 
 ```{r matmet, fig.cap=fig_mat_cap, out.width="80%"}

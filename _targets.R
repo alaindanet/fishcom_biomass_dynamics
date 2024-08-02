@@ -404,7 +404,45 @@ list(
     )
 
     }),
-  ## SEM spatial temporal
+  ## SEM spatial temporal theoretical
+  tar_target(semeff_tot_ok,
+    rbind(
+      semeff_tot %>%
+        filter(effect_type %in% c("direct", "total")),
+      semeff_bioener_bm_rich_tab %>%
+        mutate(model = "Theoretical model")
+      ) %>%
+    filter(!predictor %in% c("log_RC1", "log_RC2")) %>%
+    mutate(across(c(response, predictor),
+        ~var_replacement()[str_remove(.x, "mean_")]
+        )) %>%
+    mutate(
+      effect_type = str_to_sentence(effect_type),
+      model = str_to_sentence(model)
+    )
+    ),
+  tar_target(p_semeff_tot_ok,
+    semeff_tot_ok %>%
+      mutate(
+        response = factor(response, levels = c("Biomass", "Connectance", "Avg trophic level")),
+        model = factor(model, levels = c("Temporal", "Spatial", "Theoretical model"))
+        ) %>%
+      ggplot(aes(x = predictor, y = effect, ymin = lower_ci, ymax = upper_ci, color = model)) +
+      geom_pointrange(position = position_dodge(width = 0.4)) +
+      facet_grid(rows = vars(response), cols = vars(effect_type),
+        switch = "y") +
+      geom_hline(yintercept = 0, linetype = "dashed") +
+      labs(
+        x = "Predictor",
+        y = expression(paste("Standardized slope coefficients ", r[delta])),
+        color = "Model") +
+      theme_cowplot() +
+      background_grid() +
+      theme(
+        legend.position = "bottom",
+        strip.placement = "outside"
+      )
+    ),
   tar_target(p_sem_tps_sp,
     semeff_tot %>%
       filter(effect_type != "mediators",
@@ -434,7 +472,16 @@ list(
       theme_cowplot() +
       background_grid() +
       theme(legend.position = "bottom", strip.background = element_blank())
-  ),
+    ),
+  tar_target(p_semeff_tot_ok_file,
+    save_plot(
+      filename = here::here("figures", "p_semeff_tot_ok.png"),
+      plot = p_semeff_tot_ok,
+      nrow = 2,
+      ncol = 2
+      ),
+    format = "file"
+    ),
 
   # Supplementary material
   tar_target(obs_fit,
@@ -886,7 +933,8 @@ list(
     format = "file"
     ),
   ## Bioenergetic model
-  tar_target(p_sem_list_sim, list(
+  tar_target(p_sem_list_sim,
+    list(
       p_bm_rich = sim %>%
         ggplot(aes(
             x = log_final_richness,
@@ -899,69 +947,81 @@ list(
           slope = coef(bioener_bm_rich_mod_list[["bm"]])["log_final_richness"], size = 1) +
         labs(
           x = "Species richness",
-          y = "Total Biomass"
+          y = "Total Biomass"),
+      p_tlvl_rich = sim %>%
+        ggplot(aes(
+            x = log_final_richness,
+            y = log_weighted_average_trophic_level
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = coef(bioener_bm_rich_mod_list[["tlvl"]])["(Intercept)"] +
+            mean(sim$log_total_bm) * coef(bioener_bm_rich_mod_list[["tlvl"]])["log_total_bm"],
+          slope = coef(bioener_bm_rich_mod_list[["tlvl"]])["log_final_richness"], size = 1) +
+        labs(
+          x = "Species richness",
+          y = "Average trophic level"
           ),
-
-        p_tlvl_rich = sim %>%
+        p_tlvl_bm = sim %>%
           ggplot(aes(
-              x = log_final_richness,
+              x = log_total_bm,
               y = log_weighted_average_trophic_level
               )) +
           geom_point(shape = 1, size = 2) +
           geom_abline(
             intercept = coef(bioener_bm_rich_mod_list[["tlvl"]])["(Intercept)"] +
-              mean(sim$log_total_bm) * coef(bioener_bm_rich_mod_list[["tlvl"]])["log_total_bm"],
-            slope = coef(bioener_bm_rich_mod_list[["tlvl"]])["log_final_richness"], size
-            = 1) +
+              mean(sim$log_final_richness) * coef(bioener_bm_rich_mod_list[["tlvl"]])["log_final_richness"],
+            slope = coef(bioener_bm_rich_mod_list[["tlvl"]])["log_total_bm"], size = 1) +
           labs(
-            x = "Species richness",
-            y = "Average trophic level"
+            x = "Total biomass",
+            y = "Average trophic_level"
             ),
-          p_tlvl_bm = sim %>%
+          p_ct_rich = sim %>%
             ggplot(aes(
-                x = log_total_bm,
-                y = log_weighted_average_trophic_level
+                x = log_final_richness,
+                y = log_connectance_final
                 )) +
             geom_point(shape = 1, size = 2) +
             geom_abline(
-              intercept = coef(bioener_bm_rich_mod_list[["tlvl"]])["(Intercept)"] +
-                mean(sim$log_final_richness) * coef(bioener_bm_rich_mod_list[["tlvl"]])["log_final_richness"],
-              slope = coef(bioener_bm_rich_mod_list[["tlvl"]])["log_total_bm"], size = 1) +
+              intercept = coef(bioener_bm_rich_mod_list[["ct"]])["(Intercept)"] +
+                mean(sim$log_total_bm) * coef(bioener_bm_rich_mod_list[["ct"]])["log_total_bm"],
+              slope = coef(bioener_bm_rich_mod_list[["ct"]])["log_final_richness"], size
+              = 1) +
             labs(
-              x = "Total biomass",
-              y = "Average trophic_level"
+              x = "Species richness",
+              y = "Connectance"
               ),
-            p_ct_rich = sim %>%
+            p_ct_bm = sim %>%
               ggplot(aes(
-                  x = log_final_richness,
+                  x = log_total_bm,
                   y = log_connectance_final
                   )) +
               geom_point(shape = 1, size = 2) +
               geom_abline(
                 intercept = coef(bioener_bm_rich_mod_list[["ct"]])["(Intercept)"] +
-                  mean(sim$log_total_bm) * coef(bioener_bm_rich_mod_list[["ct"]])["log_total_bm"],
-                slope = coef(bioener_bm_rich_mod_list[["ct"]])["log_final_richness"], size
-                = 1) +
+                  mean(sim$log_final_richness) * coef(bioener_bm_rich_mod_list[["ct"]])["log_final_richness"],
+                slope = coef(bioener_bm_rich_mod_list[["ct"]])["log_total_bm"], size = 1) +
               labs(
-                x = "Species richness",
+                x = "Total biomass",
                 y = "Connectance"
-                ),
-              p_ct_bm = sim %>%
-                ggplot(aes(
-                    x = log_total_bm,
-                    y = log_connectance_final
-                    )) +
-                geom_point(shape = 1, size = 2) +
-                geom_abline(
-                  intercept = coef(bioener_bm_rich_mod_list[["ct"]])["(Intercept)"] +
-                    mean(sim$log_final_richness) * coef(bioener_bm_rich_mod_list[["ct"]])["log_final_richness"],
-                  slope = coef(bioener_bm_rich_mod_list[["ct"]])["log_total_bm"], size = 1) +
-                labs(
-                  x = "Total biomass",
-                  y = "Connectance"
-                )
-    )
+                )) %>%
+    map(., ~.x +theme_half_open() + background_grid())
+  ),
+  tar_target(p_sem_sim,
+    plot_grid(
+      NULL, p_sem_list_sim[["p_bm_rich"]],
+      p_sem_list_sim[["p_tlvl_bm"]], p_sem_list_sim[["p_tlvl_rich"]],
+      p_sem_list_sim[["p_ct_bm"]], p_sem_list_sim[["p_ct_rich"]],
+      nrow = 3, labels = c("", letters[1:5]))
     ),
+  tar_target(fig_bioener_sem,
+    save_plot(
+      filename = here::here("figures", "p_sem_sim.png"),
+      p_sem_sim,
+      ncol = 2, nrow = 3),
+    format = "file"
+  ),
+
 
   # Main figure parts:
   tar_target(fig2_right,
@@ -1120,7 +1180,7 @@ list(
     arrange(median) %>%
     select(-median)
   ),
-  tar_render(main_text, here("paper", "manuscript.Rmd")),
+  #tar_render(main_text, here("paper", "manuscript.Rmd")),
   tar_render(supplementary, here("paper", "appendix.Rmd"))
 
 )

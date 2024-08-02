@@ -7,12 +7,39 @@ library(arrow)
 library(glmmTMB)
 library(piecewiseSEM)
 library(semEff)
+library(lme4)
 
 tar_load(c(sim, sim_std))
+tar_load(p_sem_list_sim)
+tar_load(semeff_tot)
+tar_load(semeff_bioener_bm_rich_tab)
+tar_load(sim_cor_plot)
+corrplot::corrplot(sim_cor_plot)
 
+tar_load(gaussian_pred_station_tps10)
+summary_pred_station_tps10 <-
+  gaussian_pred_station_tps10 %>%
+  filter(
+    response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")
+    ) %>%
+  group_by(response) %>%
+  summarise(summ = list(enframe(summary_distribution(mean, na.rm = TRUE)))) %>%
+  unnest(summ) %>%
+  pivot_wider(names_from = "name", values_from = "value")
+
+summarise(quantile05 = quantile())
+
+
+
+
+
+
+
+c(NULL, list(a = 1))
 bm_mod <- lm(total_bm ~ S, sim_std)
 tlvl_mod <- lm(weighted_average_trophic_level ~ K + S, sim_std)
 ct_mod <- lm(connectance_final ~ K + S, sim_std)
+
 
 car::vif(bioener_ks_mod_list[[2]])
 print(x %>% filter(effect_type == "total"), n = 22)
@@ -22,10 +49,17 @@ bioener_bm_rich_mod_list <- list(
   tlvl = lm(log_weighted_average_trophic_level ~ log_total_bm + log_final_richness, sim),
   ct = lm(log_connectance_final ~ log_total_bm + log_final_richness, sim)
 )
-sem_bioener_bm_rich <- as.psem(bioener_bm_rich_mod_list)
-semeff_bioener_bm_rich <- semEff(sem_bioener_bm_rich, R = 20, ci.type = "perc")
-semeff_bioener_bm_rich_table <- from_semEff_to_table(x = semeff_bioener_bm_rich)
-print(semeff_bioener_bm_rich_table %>% filter(effect_type == "total"), n = 22)
+
+bioener_bm_rich_fwid_mod_list <- list(
+  bm = lmer(log_total_bm ~ log_final_richness + C + S + K + (1|fw_id), sim),
+  tlvl = lmer(log_weighted_average_trophic_level ~ log_total_bm + log_final_richness + C + S + K + (1|fw_id), sim),
+  ct = lmer(log_connectance_final ~ log_total_bm + log_final_richness + C + S + K + (1|fw_id), sim)
+)
+
+sem_bioener_bm_rich_fwid <- as.psem(bioener_bm_rich_fwid_mod_list)
+semeff_bioener_bm_rich_fwid <- semEff(sem_bioener_bm_rich_fwid, R = 20, ci.type = "perc", ran.eff = "fw_id")
+semeff_bioener_bm_rich_fwid_table <- from_semEff_to_table(x = semeff_bioener_bm_rich_fwid)
+print(semeff_bioener_bm_rich_fwid_table %>% filter(effect_type == "total"), n = 22)
 
 bm_mod <- lm(total_bm ~ final_richness, sim_std)
 tlvl_mod <- lm(weighted_average_trophic_level ~ total_bm + final_richness, sim_std)

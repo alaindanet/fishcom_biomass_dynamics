@@ -11,7 +11,7 @@ get_richness_var <- function (all = FALSE) {
 
   x <- c("log_rich_std")
   if (all) {
-    x <- c(x, "rich_std", "richness", "log_rich") 
+    x <- c(x, "rich_std", "richness", "log_rich")
   }
   return(x)
 }
@@ -71,14 +71,16 @@ get_com_str_var <- function (all = FALSE) {
 get_model_terms <- function ( ) {
   c("bm_slope", "inc_f", "bm", "log_bm")
 
-} 
+}
 
 var_replacement <- function (slope = FALSE, several_lines = FALSE) {
   x <- c(
     log_RC1 = "PCA Avg stream size",
     log_RC2 = "PCA Avg temperature",
     ct_ff = "Connectance",
+    ct = "Connectance",
     avg_tl_ff = "Avg trophic level",
+    tlvl = "Avg trophic level",
     max_tl_ff = "Max trophic level",
     w_trph_lvl_avg = "Avg trophic level",
     #connectance ,weighted_connectance,
@@ -86,11 +88,14 @@ var_replacement <- function (slope = FALSE, several_lines = FALSE) {
     log_bm_std = "Biomass",
     bm_std = "Biomass (g.m^-2)",
     rich_std = "Species richness (m^-2)",
+    log_final_richness = "Species richness",
     piel_nind = "Evenness (abundance)",
     piel_bm = "Evenness (biomass)",
     prop_pisc_node = "Piscivorous node prop.",
     prop_pisc_rich = "Piscivorous rich prop.",
     biomass = "Biomass (g)",
+    bm = "Biomass",
+    log_total_bm = "Biomass",
     biomass_kg = "Biomass (kg)",
     richness = "Species richness",
     nbnode = "Nb of nodes",
