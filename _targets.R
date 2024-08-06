@@ -2,7 +2,7 @@ library(targets)
 lapply(list.files(here::here("R"), full.names = TRUE), source)
 tar_option_set(packages = c(
     "targets", "tarchetypes", "tidyverse", "magrittr",
-    "lubridate", "here", "kableExtra", "scales", "rmarkdown", "sf",
+    "lubridate", "here", "kableExtra", "scales", "rmarkdown", "sf", "igraph",
     "piecewiseSEM", "semEff", "piecewiseSEM", "DiagrammeR", "cowplot", "future", "INLA",
     "inlatools", "ggeffects", "corrplot", "arrow"))
 
@@ -52,8 +52,19 @@ list(
   # Compute dataset:
   tar_target(net_l_ld_IS, get_l_ld_IS(net = net_analysis_data)),
   tar_target(metrics_fishfish_only, get_network_metric_fish_only(net = net_analysis_data)),
+  tar_target(extra_net_metrics,
+    net_analysis_data %>%
+      select(opcod, network) %>%
+      mutate(
+        node_fish_top_nb = map_int(network, get_nb_fish_node_top_consumers),
+        redundancy_metrics = map_dfr(network, get_redundancy)
+        ) %>%
+      select(-network) %>%
+      unnest(redundancy_metrics)
+  ),
   tar_target(net_data2,
     left_join(net_data, net_l_ld_IS, by = "opcod") %>%
+    left_join(extra_net_metrics, by = "opcod") %>%
     left_join(select(metrics_fishfish_only, opcod, ct_ff, l_ff, ld_ff), by = "opcod")),
   tar_target(com_data2, com_data %>%
     left_join(piel, by = "opcod")),
@@ -83,13 +94,20 @@ list(
     mutate(
       consumer_biomass = total_bm - producer_bm,
       consumer_richness = final_richness - producer_richness,
-      K_std = K / producer_richness) %>%
+      K_std = K / producer_richness
+      ) %>%
     mutate(across(c(
           total_bm, final_richness,
           connectance_final, weighted_average_trophic_level),
         ~log(.x),
         .names = "log_{.col}")
-      )),
+      ) %>%
+    mutate(
+      top_consumer_nb = map_int(A, get_nb_species_top_consumers_sim),
+      redundancy_metrics = map_dfr(A, get_redundancy_sim)) %>%
+    unnest(redundancy_metrics) %>%
+    select(-A)
+    ),
   tar_target(sim_std,
     sim %>%
       mutate(across(where(is.double), ~scale(.x)[, 1])) %>%
@@ -104,7 +122,14 @@ list(
   # Data analysis:
   tar_target(facet_var, c(get_biomass_var(), get_com_str_var())),
   tar_target(data_inla, full_data2 %>%
+    select(-starts_with("piel"),
+      -c(surface, biomass, richness, nbnode, weighted_connectance),
+      -c(l:avg_IS),
+      -c(l_ff, ld_ff),
+      -c(functional_links, total_links, redundant_links, prop_functional_links)
+    ) %>%
     left_join(basin_station, by = "station") %>%
+    na.omit() %>%
     mutate(
       station = as.character(station),
       basin = as.character(basin),
@@ -172,26 +197,31 @@ list(
       select(response, station, mean, sd) %>%
       pivot_wider(everything(),
         names_from = "response", values_from = c("mean", "sd")
-        )),
+        ) %>%
+      rename_with(~str_remove(.x, "mean_"))
+      ),
 
     ### SEM:
     tar_target(sem, list(
-        lm(mean_ct_ff ~ mean_log_bm_std + mean_log_rich_std, data = tps_for_sem,
-          weight = 1 / (sd_log_rich_std + sd_log_bm_std + sd_ct_ff)),
-        lm(mean_w_trph_lvl_avg ~ mean_log_bm_std + mean_log_rich_std, data = tps_for_sem,
-          weight = 1 / (sd_log_rich_std + sd_log_bm_std + sd_w_trph_lvl_avg)),
-        lm(mean_log_bm_std ~ mean_log_rich_std, data = tps_for_sem,
+      prop_redundant_links = lm(prop_redundant_links ~ log_bm_std + log_rich_std, data = tps_for_sem,
+        weight = 1 / (sd_log_rich_std + sd_log_bm_std + sd_prop_redundant_links)),
+      connectance = lm(connectance ~ log_bm_std + log_rich_std, data = tps_for_sem,
+        weight = 1 / (sd_log_rich_std + sd_log_bm_std + sd_connectance)),
+      w_trph_lvl_avg = lm(w_trph_lvl_avg ~ log_bm_std + log_rich_std, data = tps_for_sem,
+        weight = 1 / (sd_log_rich_std + sd_log_bm_std + sd_w_trph_lvl_avg)),
+      log_bm_std = lm(log_bm_std ~ log_rich_std, data = tps_for_sem,
           weight = 1 / (sd_log_rich_std + sd_log_bm_std)
         )
       )
     ),
   tar_target(semeff_perc_inla, get_tps_semeff(sem = sem, sem_data = tps_for_sem, ci_type = "perc")),
   tar_target(sp_sem, list(
-      log_rich_std = lmer(log_rich_std ~ log_RC1 + log_RC2 + (1 | basin), data = sp_for_sem),
-      log_bm_std = lmer(log_bm_std ~ log_rich_std + log_RC1 + log_RC2 + (1 | basin), data = sp_for_sem),
-      ct_ff = lmer(ct_ff ~ log_rich_std + log_bm_std + log_RC1 + log_RC2 + (1 | basin), data = sp_for_sem),
-      w_trph_lvl_avg = lmer(w_trph_lvl_avg ~ log_rich_std + log_bm_std + log_RC1 + log_RC2 +
-        (1 | basin), data = sp_for_sem)
+      #log_rich_std = lmer(log_rich_std ~ log_RC1 + log_RC2 + (1 | basin), data = sp_for_sem),
+      prop_redundant_links = lmer(prop_redundant_links ~ log_rich_std + log_bm_std + (1 | basin), data = sp_for_sem),
+      log_bm_std = lmer(log_bm_std ~ log_rich_std  + (1 | basin), data = sp_for_sem), #+ log_RC1 + log_RC2
+      connectance = lmer(connectance ~ log_rich_std + log_bm_std + (1 | basin), data = sp_for_sem), #+ log_RC1 + log_RC2
+      w_trph_lvl_avg = lmer(w_trph_lvl_avg ~ log_rich_std + log_bm_std  +
+        (1 | basin), data = sp_for_sem) #+ log_RC1 + log_RC2
       )),
   tar_target(sp_semeff_perc, get_sp_semeff(sem = sp_sem, sem_data = sp_for_sem, ci_type = "perc")),
   tar_target(sp_semeff_tab, from_semEff_to_table(sp_semeff_perc)),
@@ -203,9 +233,9 @@ list(
     ### Bioenergetic model
   tar_target(bioener_ks_mod_list,
     list(
-      bm = lm(log_total_bm ~ log_final_richness + S + K, sim),
-      tlvl = lm(log_weighted_average_trophic_level ~ log_total_bm + log_final_richness + S + K, sim),
-      ct = lm(log_connectance_final ~ log_total_bm + log_final_richness + S + K, sim)
+      log_total_bm = lm(log_total_bm ~ log_final_richness + S + K, sim),
+      log_weighted_average_trophic_level = lm(log_weighted_average_trophic_level ~ log_total_bm + log_final_richness + S + K, sim),
+      log_connectance_final = lm(log_connectance_final ~ log_total_bm + log_final_richness + S + K, sim)
       )),
   tar_target(sem_bioener_ks, as.psem(bioener_ks_mod_list)),
   tar_target(semeff_bioener_ks,
@@ -216,9 +246,10 @@ list(
     ),
   tar_target(bioener_bm_rich_mod_list,
     list(
-      bm = lm(log_total_bm ~ log_final_richness, sim),
-      tlvl = lm(log_weighted_average_trophic_level ~ log_total_bm + log_final_richness, sim),
-      ct = lm(log_connectance_final ~ log_total_bm + log_final_richness, sim)
+      log_total_bm = lm(log_total_bm ~ log_final_richness, sim),
+      log_weighted_average_trophic_level = lm(log_weighted_average_trophic_level ~ log_total_bm + log_final_richness, sim),
+      log_connectance_final = lm(log_connectance_final ~ log_total_bm + log_final_richness, sim),
+      prop_redundant_links = lm(prop_redundant_links ~ log_total_bm + log_final_richness, sim)
       )
     ),
   tar_target(sem_bioener_bm_rich, as.psem(bioener_bm_rich_mod_list)),
@@ -299,6 +330,9 @@ list(
         mutate(type = "spatial"),
       rsquared(as.psem(sem)) %>%
         mutate(Marginal = R.squared, Conditional = NA, type = "temporal") %>%
+        select(Response, Marginal, Conditional, type),
+      rsquared(as.psem(sem_bioener_bm_rich)) %>%
+        mutate(Marginal = R.squared, Conditional = NA, type = "theoretical model") %>%
         select(Response, Marginal, Conditional, type)
       )),
   tar_target(r2_sem_tab,
@@ -319,13 +353,13 @@ list(
   ),
   tar_target(tabvif,{
     vif_tps_sem <- car::vif(sem[[1]])
-    vif_tps_sem <- setNames(round(vif_tps_sem, 2), str_remove(names(vif_tps_sem), "mean_"))
-
-    vif_sp_sem <- round(car::vif(sp_sem[["ct_ff"]]), 2)
-
+    vif_tps_sem <- setNames(round(vif_tps_sem, 2), names(vif_tps_sem))
+    vif_sp_sem <- round(car::vif(sp_sem[["connectance"]]), 2)
+    vif_bioener_sem <- round(car::vif(bioener_bm_rich_mod_list[["log_connectance_final"]]), 2)
     rbind(
       tibble(Model = "temporal", enframe(vif_tps_sem)),
-      tibble(Model = "spatial", enframe(vif_sp_sem))
+      tibble(Model = "spatial", enframe(vif_sp_sem)),
+      tibble(Model = "theoretical model", enframe(vif_bioener_sem))
       ) %>%
     mutate(
       Model = str_to_sentence(Model),
@@ -341,49 +375,73 @@ list(
     list(
       p_bm_rich = tps_for_sem %>%
         ggplot(aes(
-            x = mean_log_rich_std,
-            y = mean_log_bm_std
+            x = log_rich_std,
+            y = log_bm_std
             )) +
         geom_point(shape = 1, size = 2) +
-        geom_abline(intercept = coef(sem[[3]])[1], slope = coef(sem[[3]])[2], size = 1) +
+        geom_abline(intercept = coef(sem[["log_bm_std"]])[1], slope = coef(sem[["log_bm_std"]])[2], size = 1) +
         labs(x = "Species richness trend\n(% by decade)", y = "Biomass trend\n(% by decade)"),
       p_ct_rich = tps_for_sem %>%
         ggplot(aes(
-            x = mean_log_rich_std,
-            y = mean_ct_ff,
+            x = log_rich_std,
+            y = connectance,
             )) +
         geom_point(shape = 1, size = 2) +
-        geom_abline(intercept = coef(sem[[1]])["(Intercept)"], slope = coef(sem[[1]])["mean_log_rich_std"], size = 1) +
+        geom_abline(intercept = coef(sem[["connectance"]])["(Intercept)"] + mean(tps_for_sem$log_bm_std) * coef(sem[["connectance"]])["log_bm_std"],
+          slope = coef(sem[["connectance"]])["log_rich_std"], size = 1) +
         labs(x = "Species richness trend\n(% by decade)", y = "Connectance trend\n(by decade)"),
       p_ct_bm = tps_for_sem %>%
         ggplot(aes(
-            x = mean_log_bm_std,
-            y = mean_ct_ff,
-            )) +
-        geom_point(shape = 1, size = 2) +
-        geom_abline(intercept = coef(sem[[1]])["(Intercept)"], slope = coef(sem[[1]])["mean_log_bm_std"], size = 1) +
-        labs(x = "Biomass trend\n(% by decade)", y = "Connectance trend\n(by decade)"),
-      p_tlvl_rich = tps_for_sem %>%
-        ggplot(aes(
-            x = mean_log_rich_std,
-            y = mean_w_trph_lvl_avg,
-            )) +
-        geom_point(shape = 1, size = 2) +
-        geom_abline(intercept = coef(sem[[2]])["(Intercept)"], slope = coef(sem[[2]])["mean_log_rich_std"], size = 1) +
-        labs(x = "Species richness trend\n(% by decade)", y = "Average trophic level trend\n(by decade)"),
-
-      p_tlvl_bm = tps_for_sem %>%
-        ggplot(aes(
-            x = mean_log_bm_std,
-            y = mean_w_trph_lvl_avg,
+            x = log_bm_std,
+            y = connectance,
             )) +
         geom_point(shape = 1, size = 2) +
         geom_abline(
-          intercept = coef(sem[[2]])["(Intercept)"],
-          slope = coef(sem[[2]])["mean_log_bm_std"], size = 1) +
+          intercept = coef(sem[["connectance"]])["(Intercept)"] + mean(tps_for_sem$log_rich_std) * coef(sem[["connectance"]])["log_rich_std"],
+          slope = coef(sem[["connectance"]])["log_bm_std"], size = 1) +
+        labs(x = "Biomass trend\n(% by decade)", y = "Connectance trend\n(by decade)"),
+      p_tlvl_rich = tps_for_sem %>%
+        ggplot(aes(
+            x = log_rich_std,
+            y = w_trph_lvl_avg,
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(intercept = coef(sem[["w_trph_lvl_avg"]])["(Intercept)"] + mean(tps_for_sem$log_bm_std) * coef(sem[["w_trph_lvl_avg"]])["log_bm_std"],
+          slope = coef(sem[["w_trph_lvl_avg"]])["log_rich_std"], size = 1) +
+        labs(x = "Species richness trend\n(% by decade)", y = "Avg trophic level trend\n(by decade)"),
+      p_tlvl_bm = tps_for_sem %>%
+        ggplot(aes(
+            x = log_bm_std,
+            y = w_trph_lvl_avg,
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = coef(sem[["w_trph_lvl_avg"]])["(Intercept)"] + mean(tps_for_sem$log_rich_std) * coef(sem[["w_trph_lvl_avg"]])["log_rich_std"],
+          slope = coef(sem[["w_trph_lvl_avg"]])["log_bm_std"], size = 1) +
         labs(
           x = "Biomass trend\n(% by decade)",
-          y = "Average trophic level trend\n(by decade)")
+          y = "Avg trophic level trend\n(by decade)"),
+      p_redundant_rich = tps_for_sem %>%
+        ggplot(aes(
+            x = log_rich_std,
+            y = prop_redundant_links,
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(intercept = coef(sem[["prop_redundant_links"]])["(Intercept)"] + mean(tps_for_sem$log_bm_std) * coef(sem[["prop_redundant_links"]])["log_bm_std"],
+          slope = coef(sem[["prop_redundant_links"]])["log_rich_std"], size = 1) +
+        labs(x = "Species richness trend\n(% by decade)", y = "Redundancy trend"),
+      p_redundant_bm = tps_for_sem %>%
+        ggplot(aes(
+            x = log_bm_std,
+            y = prop_redundant_links
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = coef(sem[["prop_redundant_links"]])["(Intercept)"] + mean(tps_for_sem$log_rich_std) * coef(sem[["prop_redundant_links"]])["log_rich_std"],
+          slope = coef(sem[["prop_redundant_links"]])["log_bm_std"], size = 1) +
+        labs(
+          x = "Biomass trend\n(% by decade)",
+          y = "Redundancy trend")
     )
     ),
   tar_target(p_sem_tps_right, {
@@ -397,22 +455,50 @@ list(
     plot_grid(
       NULL, p_list_sem_tps$p_bm_rich + del_x(),
       p_list_sem_tps$p_ct_bm + del_x(), p_list_sem_tps$p_ct_rich + del_x(),
-      p_list_sem_tps$p_tlvl_bm, p_list_sem_tps$p_tlvl_rich,
+      p_list_sem_tps$p_tlvl_bm + del_x(), p_list_sem_tps$p_tlvl_rich + del_x(),
+      p_list_sem_tps$p_redundant_bm, p_list_sem_tps$p_redundant_rich,
       ncol = 2,
-      labels = c("", letters[2:6]),
+      labels = c("", letters[2:8]),
       align = "v"
     )
 
     }),
+  tar_target(p_sem_tps_biplot, {
+    theme_set(theme_half_open() + background_grid())
+    plot_grid(
+      NULL, p_list_sem_tps$p_ct_bm, p_list_sem_tps$p_tlvl_bm, p_list_sem_tps$p_redundant_bm,
+      p_list_sem_tps$p_bm_rich, p_list_sem_tps$p_ct_rich, p_list_sem_tps$p_tlvl_rich,
+      p_list_sem_tps$p_redundant_rich,
+      ncol = 4, byrow = TRUE,
+      labels = c("", letters[2:8]),
+      align = "v",
+      label_x = 0.1
+      ) }),
+  tar_target(p_sem_tps,
+    plot_grid(
+      ggdraw() + draw_image(here::here("figures", "sem_tps2.png"), scale = .9),
+      p_sem_tps_biplot,
+      nrow = 2, rel_heights = c(1, 1), labels = c("a", "")
+      )),
+  tar_target(p_sem_tps_file,
+    ggsave(
+      filename = here::here("figures", "fig_sem_tps.png"),
+      p_sem_tps,
+      scale = 2.6,
+      units = c("mm"),
+      width = 120,
+      height = 120 * .8),
+    format = "file"
+    ),
   ## SEM spatial temporal theoretical
   tar_target(semeff_tot_ok,
     rbind(
       semeff_tot %>%
         filter(effect_type %in% c("direct", "total")),
       semeff_bioener_bm_rich_tab %>%
+        filter(effect_type %in% c("direct", "total")) %>%
         mutate(model = "Theoretical model")
       ) %>%
-    filter(!predictor %in% c("log_RC1", "log_RC2")) %>%
     mutate(across(c(response, predictor),
         ~var_replacement()[str_remove(.x, "mean_")]
         )) %>%
@@ -424,7 +510,7 @@ list(
   tar_target(p_semeff_tot_ok,
     semeff_tot_ok %>%
       mutate(
-        response = factor(response, levels = c("Biomass", "Connectance", "Avg trophic level")),
+        response = recode_factor(response, !!!var_replacement()),
         model = factor(model, levels = c("Temporal", "Spatial", "Theoretical model"))
         ) %>%
       ggplot(aes(x = predictor, y = effect, ymin = lower_ci, ymax = upper_ci, color = model)) +
@@ -498,7 +584,7 @@ list(
   tar_target(p_obs_fit,
     obs_fit %>%
       filter(
-        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")
+        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std", "prop_redundant_links")
         ) %>%
       mutate(response = var_replacement()[response]) %>%
       ggplot(aes(x = obs, y = fit)) +
@@ -517,7 +603,7 @@ list(
   tar_target(r2_obs_fit,
     obs_fit %>%
       filter(
-        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")
+        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std", "prop_redundant_links")
         ) %>%
       mutate(response = var_replacement()[response]) %>%
       group_by(response) %>%
@@ -530,15 +616,16 @@ list(
       ),
   tar_target(p_hist_site_tps10, {
     sum_tps_10 <- gaussian_pred_station_tps10 %>%
-      filter(response %in% c("log_bm_std", "ct_ff",
-          "w_trph_lvl_avg", "log_rich_std")) %>%
+      filter(response %in% c("log_bm_std", "connectance",
+          "w_trph_lvl_avg", "log_rich_std", "prop_redundant_links")) %>%
       mutate(response = var_replacement()[response]) %>%
       group_by(response) %>%
       summarise(avg = mean(mean), med = median(mean)) %>%
       pivot_longer(-response, names_to = "metric", values_to = "values")
 
     gaussian_pred_station_tps10 %>%
-      filter(response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")) %>%
+      filter(response %in% c("log_bm_std", "connectance", "w_trph_lvl_avg", "log_rich_std",
+          "prop_redundant_links")) %>%
       mutate(response = var_replacement()[response]) %>%
       ggplot(aes(x = mean)) +
       geom_histogram(fill = "lightblue", bins = 60) +
@@ -554,7 +641,7 @@ list(
   tar_target(r2_inla_tab,
     r2_inla %>%
       filter(
-        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")
+        response %in% c("log_bm_std", "connectance", "w_trph_lvl_avg", "log_rich_std", "prop_redundant_links")
         ) %>%
     mutate(response = var_replacement()[response]) %>%
     select(
@@ -563,11 +650,32 @@ list(
       `Cond. Rsq` = r2_mvp_cond95hpdci
     )
     ),
+  tar_target(tab_inla_rand,
+    gaussian_inla_rand %>%
+      filter(
+        ci_level == "level:0.95",
+        response %in% c("log_bm_std", "connectance", "w_trph_lvl_avg", "log_rich_std", "prop_redundant_links")
+        ) %>%
+    select(-ci_level) %>%
+    mutate(across(c(mean, low, high), ~round(., 3))) %>%
+    mutate(
+      response = var_replacement()[response],
+      term = str_remove(term, "Precision for the |Precision for |"),
+      term = replacement_random_term()[term],
+      ci = paste0(mean, " [", high,",", low,"]")
+      ) %>%
+    arrange(response, desc(term)) %>%
+    select(
+      `Response` = response,
+      `Term` = term,
+      `S.D.` = ci
+      )
+    ),
   tar_target(tab_inla_r2_rand,
     gaussian_inla_rand %>%
       filter(
         ci_level == "level:0.95",
-        response %in% c("log_bm_std", "ct_ff", "w_trph_lvl_avg", "log_rich_std")
+        response %in% c("log_bm_std", "connectance", "w_trph_lvl_avg", "log_rich_std", "prop_redundant_links")
         ) %>%
     select(-ci_level) %>%
     mutate(across(c(mean, low, high), ~round(., 3))) %>%
@@ -588,17 +696,23 @@ list(
     ),
   tar_target(p_corr, {
     cor_tps <- tps_for_sem %>%
-      select(c(matches("mean"))) %>%
-      rename_with(~str_remove(.x, "mean_")) %>%
-      select(-c(matches("piel"))) %>%
-      rename_with(~var_replacement()[.x]) %>%
-      cor(.)
-
-    cor_sp <- sp_for_sem %>%
-      select(c(log_bm_std, ct_ff, w_trph_lvl_avg,
-          log_rich_std, prop_pisc_node, prop_pisc_rich)) %>%
+      select(c(log_bm_std, connectance, w_trph_lvl_avg, log_rich_std,
+          prop_pisc_node, prop_pisc_rich, prop_redundant_links)) %>%
       rename_with(~var_replacement()[.x]) %>%
       cor(., use = "complete.obs")
+
+    cor_sp <- sp_for_sem %>%
+      select(c(log_bm_std, connectance, w_trph_lvl_avg, log_rich_std,
+          prop_pisc_node, prop_pisc_rich, prop_redundant_links)) %>%
+    rename_with(~var_replacement()[.x]) %>%
+    cor(., use = "complete.obs")
+
+    cor_model <- sim %>%
+      select(c(log_total_bm, log_connectance_final,
+          log_weighted_average_trophic_level, log_final_richness,
+          prop_redundant_links)) %>%
+    rename_with(~var_replacement()[.x]) %>%
+    cor(., use = "complete.obs")
 
     p_cor_tps <- ggcorrplot(cor_tps,
       hc.order = FALSE,
@@ -612,15 +726,32 @@ list(
       tl.srt = 20,
       lab = TRUE)
 
+    p_cor_model <- ggcorrplot(cor_model,
+      hc.order = FALSE,
+      type = "upper",
+      tl.srt = 20,
+      lab = TRUE)
+
     p_corr <- plot_grid(
       p_cor_tps + theme(legend.position = "none"),
       p_cor_sp + theme(legend.position = "none"),
+      p_cor_model + theme(legend.position = "none"),
       get_legend(p_cor_tps),
-      ncol = 3,
-      rel_widths = c(1, 1, .1),
-      labels = c("a", "b", ""))
+      ncol = 2,
+      rel_widths = c(1, 1, 1,.1),
+      labels = c("a", "b", "c", ""))
   }),
-
+tar_target(semeff_tot_tab,
+  semeff_tot_ok %>%
+    mutate(across(c(effect, lower_ci, upper_ci), ~round(., 2))) %>%
+    mutate(
+      effect = paste0(effect, " [", lower_ci,"; ", upper_ci,"]")
+      ) %>%
+    mutate(
+      model = recode_factor(model, !!!effect_type_var())) %>%
+    select(model, response, `Effect type` = effect_type, predictor, effect) %>%
+    rename_with(~str_to_sentence(.x))
+  ),
   ## Random network extinction
   tar_target(node_tlvl,
     setNames(NetIndices::TrophInd(metaweb_analysis$metaweb)$TL,
@@ -938,16 +1069,13 @@ list(
       p_bm_rich = sim %>%
         ggplot(aes(
             x = log_final_richness,
-            y = log_total_bm
-            )) +
+            y = log_total_bm)) +
         geom_point(shape = 1, size = 2) +
         #geom_boxplot() +
         geom_abline(
           intercept = coef(bioener_bm_rich_mod_list[["bm"]])["(Intercept)"],
           slope = coef(bioener_bm_rich_mod_list[["bm"]])["log_final_richness"], size = 1) +
-        labs(
-          x = "Species richness",
-          y = "Total Biomass"),
+        labs(x = "Species richness", y = "Total Biomass"),
       p_tlvl_rich = sim %>%
         ggplot(aes(
             x = log_final_richness,
@@ -958,71 +1086,219 @@ list(
           intercept = coef(bioener_bm_rich_mod_list[["tlvl"]])["(Intercept)"] +
             mean(sim$log_total_bm) * coef(bioener_bm_rich_mod_list[["tlvl"]])["log_total_bm"],
           slope = coef(bioener_bm_rich_mod_list[["tlvl"]])["log_final_richness"], size = 1) +
-        labs(
-          x = "Species richness",
-          y = "Average trophic level"
-          ),
-        p_tlvl_bm = sim %>%
-          ggplot(aes(
-              x = log_total_bm,
-              y = log_weighted_average_trophic_level
-              )) +
-          geom_point(shape = 1, size = 2) +
-          geom_abline(
-            intercept = coef(bioener_bm_rich_mod_list[["tlvl"]])["(Intercept)"] +
-              mean(sim$log_final_richness) * coef(bioener_bm_rich_mod_list[["tlvl"]])["log_final_richness"],
-            slope = coef(bioener_bm_rich_mod_list[["tlvl"]])["log_total_bm"], size = 1) +
-          labs(
-            x = "Total biomass",
-            y = "Average trophic_level"
-            ),
-          p_ct_rich = sim %>%
-            ggplot(aes(
-                x = log_final_richness,
-                y = log_connectance_final
-                )) +
-            geom_point(shape = 1, size = 2) +
-            geom_abline(
-              intercept = coef(bioener_bm_rich_mod_list[["ct"]])["(Intercept)"] +
-                mean(sim$log_total_bm) * coef(bioener_bm_rich_mod_list[["ct"]])["log_total_bm"],
-              slope = coef(bioener_bm_rich_mod_list[["ct"]])["log_final_richness"], size
-              = 1) +
-            labs(
-              x = "Species richness",
-              y = "Connectance"
-              ),
-            p_ct_bm = sim %>%
-              ggplot(aes(
-                  x = log_total_bm,
-                  y = log_connectance_final
-                  )) +
-              geom_point(shape = 1, size = 2) +
-              geom_abline(
-                intercept = coef(bioener_bm_rich_mod_list[["ct"]])["(Intercept)"] +
-                  mean(sim$log_final_richness) * coef(bioener_bm_rich_mod_list[["ct"]])["log_final_richness"],
-                slope = coef(bioener_bm_rich_mod_list[["ct"]])["log_total_bm"], size = 1) +
-              labs(
-                x = "Total biomass",
-                y = "Connectance"
-                )) %>%
-    map(., ~.x +theme_half_open() + background_grid())
+        labs(x = "Species richness", y = "Avg trophic level"),
+      p_tlvl_bm = sim %>%
+        ggplot(aes(
+            x = log_total_bm,
+            y = log_weighted_average_trophic_level
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = coef(bioener_bm_rich_mod_list[["tlvl"]])["(Intercept)"] +
+            mean(sim$log_final_richness) * coef(bioener_bm_rich_mod_list[["tlvl"]])["log_final_richness"],
+          slope = coef(bioener_bm_rich_mod_list[["tlvl"]])["log_total_bm"], size = 1) +
+        labs( x = "Total biomass", y = "Avg trophic_level"),
+      p_ct_rich = sim %>%
+        ggplot(aes(
+            x = log_final_richness,
+            y = log_connectance_final
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = coef(bioener_bm_rich_mod_list[["ct"]])["(Intercept)"] +
+            mean(sim$log_total_bm) * coef(bioener_bm_rich_mod_list[["ct"]])["log_total_bm"],
+          slope = coef(bioener_bm_rich_mod_list[["ct"]])["log_final_richness"], size
+          = 1) +
+        labs(x = "Species richness", y = "Connectance"),
+      p_ct_bm = sim %>%
+        ggplot(aes(
+            x = log_total_bm,
+            y = log_connectance_final
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = coef(bioener_bm_rich_mod_list[["ct"]])["(Intercept)"] +
+            mean(sim$log_final_richness) * coef(bioener_bm_rich_mod_list[["ct"]])["log_final_richness"],
+          slope = coef(bioener_bm_rich_mod_list[["ct"]])["log_total_bm"], size = 1) +
+        labs(x = "Total biomass", y = "Connectance"),
+      p_redundant_bm = sim %>%
+        ggplot(aes(
+            x = log_total_bm,
+            y = prop_redundant_links
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = coef(bioener_bm_rich_mod_list[["prop_redundant_links"]])["(Intercept)"] +
+            mean(sim$log_final_richness) * coef(bioener_bm_rich_mod_list[["prop_redundant_links"]])["log_final_richness"],
+          slope = coef(bioener_bm_rich_mod_list[["prop_redundant_links"]])["log_total_bm"], size
+          = 1) +
+        labs(x = "Total biomass", y = "Redundancy"),
+      p_redundant_rich = sim %>%
+        ggplot(aes(
+            x = log_final_richness,
+            y = prop_redundant_links
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = coef(bioener_bm_rich_mod_list[["prop_redundant_links"]])["(Intercept)"] +
+            mean(sim$log_total_bm) * coef(bioener_bm_rich_mod_list[["prop_redundant_links"]])["log_total_bm"],
+          slope = coef(bioener_bm_rich_mod_list[["prop_redundant_links"]])["log_final_richness"], size = 1) +
+        labs(x = "Species richness", y = "Redundancy")
+      ) %>%
+    map(., ~.x + theme_half_open() + background_grid())
   ),
-  tar_target(p_sem_sim,
+  tar_target(p_sem_sim, {
+    theme_set(theme_half_open() + background_grid())
     plot_grid(
-      NULL, p_sem_list_sim[["p_bm_rich"]],
-      p_sem_list_sim[["p_tlvl_bm"]], p_sem_list_sim[["p_tlvl_rich"]],
-      p_sem_list_sim[["p_ct_bm"]], p_sem_list_sim[["p_ct_rich"]],
-      nrow = 3, labels = c("", letters[1:5]))
+      NULL, p_sem_list_sim$p_ct_bm, p_sem_list_sim$p_tlvl_bm, p_sem_list_sim$p_redundant_bm,
+      p_sem_list_sim$p_bm_rich, p_sem_list_sim$p_ct_rich, p_sem_list_sim$p_tlvl_rich, p_sem_list_sim$p_redundant_rich,
+      nrow = 2, byrow = TRUE,
+      align = "v",
+      label_x = 0.1
+    )
+  }
     ),
   tar_target(fig_bioener_sem,
-    save_plot(
+    ggsave(
       filename = here::here("figures", "p_sem_sim.png"),
       p_sem_sim,
-      ncol = 2, nrow = 3),
+      scale = 2.6,
+      units = c("mm"),
+      width = 120,
+      height = 120 * .4),
     format = "file"
   ),
-
-
+  ## Spatial
+  tar_target(p_sem_sp_biplot, {
+    avg_coef_sp <- function(d = sp_sem,
+      y = "w_trph_lvl_avg",
+      x = "(Intercept)") {
+      mean(coef(d[[y]])$basin[[x]])
+    }
+    list(
+      p_bm_rich = sp_for_sem %>%
+        ggplot(aes(
+            x = log_rich_std,
+            y = log_bm_std)) +
+        geom_point(shape = 1, size = 2) +
+        #geom_boxplot() +
+        geom_abline(
+          intercept = avg_coef_sp(y = "log_bm_std", x = "(Intercept)"),
+          slope = avg_coef_sp(y = "log_bm_std", x = "log_rich_std"), size = 1) +
+        labs(x = "Species richness", y = "Total Biomass"),
+      p_tlvl_rich = sp_for_sem %>%
+        ggplot(aes(
+            x = log_rich_std,
+            y = w_trph_lvl_avg
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = avg_coef_sp(y = "w_trph_lvl_avg", x = "(Intercept)") +
+            mean(sp_for_sem$log_bm_std) *
+            avg_coef_sp(y = "w_trph_lvl_avg", x = "log_bm_std"),
+          slope = avg_coef_sp(y = "w_trph_lvl_avg", x = "log_rich_std"), size = 1) +
+        labs(x = "Species richness", y = "Avg trophic level"),
+      p_tlvl_bm = sp_for_sem %>%
+        ggplot(aes(
+            x = log_bm_std,
+            y = w_trph_lvl_avg
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = avg_coef_sp(y = "w_trph_lvl_avg", x = "(Intercept)") +
+            mean(sp_for_sem$log_rich_std) *
+            avg_coef_sp(y = "w_trph_lvl_avg", x = "log_rich_std"),
+          slope = avg_coef_sp(y = "w_trph_lvl_avg", x = "log_bm_std"), size = 1) +
+        labs(x = "Total biomass", y = "Avg trophic_level"),
+      p_ct_rich = sp_for_sem %>%
+        ggplot(aes(
+            x = log_rich_std,
+            y = connectance
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = avg_coef_sp(y = "connectance", x = "(Intercept)") +
+            mean(sp_for_sem$log_bm_std) *
+            avg_coef_sp(y = "connectance", x = "log_bm_std"),
+          slope = avg_coef_sp(y = "connectance", x = "log_rich_std"), size
+          = 1) +
+        labs(x = "Species richness", y = "Connectance"),
+      p_ct_bm = sp_for_sem %>%
+        ggplot(aes(
+            x = log_bm_std,
+            y = connectance
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = avg_coef_sp(y = "connectance", x = "(Intercept)") +
+            mean(sp_for_sem$log_rich_std) *
+            avg_coef_sp(y = "connectance", x = "log_rich_std"),
+          slope = avg_coef_sp(y = "connectance", x = "log_bm_std"), size = 1) +
+        labs(x = "Total biomass", y = "Connectance"),
+      p_redundant_bm = sp_for_sem %>%
+        ggplot(aes(
+            x = log_bm_std,
+            y = prop_redundant_links
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = avg_coef_sp(y = "prop_redundant_links", x = "(Intercept)") +
+            mean(sp_for_sem$log_rich_std) *
+            avg_coef_sp(y = "prop_redundant_links", x = "log_rich_std"),
+          slope = avg_coef_sp(y = "prop_redundant_links", x = "log_bm_std"), size
+          = 1) +
+        labs(x = "Total biomass", y = "Redundancy"),
+      p_redundant_rich = sp_for_sem %>%
+        ggplot(aes(
+            x = log_rich_std,
+            y = prop_redundant_links
+            )) +
+        geom_point(shape = 1, size = 2) +
+        geom_abline(
+          intercept = avg_coef_sp(y = "prop_redundant_links", x = "(Intercept)") +
+            mean(sp_for_sem$log_bm_std) *
+            avg_coef_sp(y = "prop_redundant_links", x = "log_bm_std"),
+          slope = avg_coef_sp(y = "prop_redundant_links", x = "log_rich_std"), size = 1) +
+        labs(x = "Species richness", y = "Redundancy")
+      ) %>%
+    map(., ~.x + theme_half_open() + background_grid())
+  }
+  ),
+  tar_target(p_sem_sp, {
+    theme_set(theme_half_open() + background_grid())
+    plot_grid(
+      NULL, p_sem_sp_biplot$p_ct_bm, p_sem_sp_biplot$p_tlvl_bm, p_sem_sp_biplot$p_redundant_bm,
+      p_sem_sp_biplot$p_bm_rich, p_sem_sp_biplot$p_ct_rich, p_sem_sp_biplot$p_tlvl_rich, p_sem_sp_biplot$p_redundant_rich,
+      nrow = 2, byrow = TRUE,
+      align = "v",
+      label_x = 0.1
+    )
+  }
+    ),
+  tar_target(fig_sp_sem,
+    ggsave(
+      filename = here::here("figures", "p_sem_sp.png"),
+      p_sem_sp,
+      scale = 2.6,
+      units = c("mm"),
+      width = 120,
+      height = 120 * .4),
+    format = "file"
+    ),
+  tar_target(p_sem_sp_sim,
+    plot_grid(p_sem_sp, p_sem_sim,
+      nrow = 2, labels = c("a", "b")
+      )),
+  tar_target(p_sem_sp_sim_file,
+    ggsave(
+      filename = here::here("figures", "p_sem_sp_sim.png"),
+      p_sem_sp_sim,
+      scale = 2.6,
+      units = c("mm"),
+      width = 120,
+      height = 120 * .7),
+    format = "file"
+    ),
   # Main figure parts:
   tar_target(fig2_right,
     save_plot(
@@ -1089,10 +1365,14 @@ list(
       format = "file"
     ),
   tar_target(figcorr,
-    save_plot(here("figures", "p_corr.pdf"), p_corr, ncol = 2),
+    ggsave(
+      here::here("figures", "p_corr.pdf"),
+      p_corr,
+      units = "mm",
+      scale = 2.8,
+      width = 80, height = 80 * .75),
     format = "file"
-  ),
-
+    ),
   # Tables:
   tar_target(pca_table,
     data_for_pca %>%
@@ -1151,14 +1431,13 @@ list(
       select(-median)
     ),
   tar_target(com_metric_tab,
-    data_inla %>%
-      select(
-        -c(basin, basin1, station1, intercept_basin, intercept_basin_station)
-        ) %>%
-    mutate(biomass_kg = biomass * 10^-3) %>%
+    full_data2 %>%
+      left_join(basin_station, by = "station") %>%
+      select(-basin) %>%
+      mutate(biomass_kg = biomass * 10^-3) %>%
     pivot_longer(-c(opcod, station), names_to = "metric", values_to = "values") %>%
     filter(metric %in% c("richness", "biomass_kg", "nbnode", "nind", "w_trph_lvl_avg",
-        "ct_ff", "prop_pisc_node", "prop_pisc_rich")) %>%
+        "connectance", "prop_pisc_node", "prop_pisc_rich", "prop_redundant_links")) %>%
     group_by(metric) %>%
     summarise(summ = list(enframe(summary_distribution(values, na.rm = TRUE)))) %>%
     unnest(summ) %>%
@@ -1180,6 +1459,14 @@ list(
     arrange(median) %>%
     select(-median)
   ),
+  tar_target(summary_pred_station_tps10,
+    gaussian_pred_station_tps10 %>%
+      filter(response %in% c("log_bm_std", "connectance", "w_trph_lvl_avg", "log_rich_std", "prop_redundant_links")) %>%
+      group_by(response) %>%
+      summarise(summ = list(enframe(summary_distribution(mean, na.rm = TRUE)))) %>%
+      unnest(summ) %>%
+      pivot_wider(names_from = "name", values_from = "value")
+    ),
   #tar_render(main_text, here("paper", "manuscript.Rmd")),
   tar_render(supplementary, here("paper", "appendix.Rmd"))
 

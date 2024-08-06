@@ -75,19 +75,20 @@ function get_output_sim(model, solution; last = 1)
 
     if ismissing(model)
         output = (;
-         total_bm = missing,
-         final_richness = missing,
-         maximum_trophic_level = missing,
-         average_trophic_level = missing,
-         weighted_average_trophic_level = missing,
-         connectance_final = missing,
-         persistence_final = missing,
-         top_consumer_bm = missing,
-         producer_bm = missing,
-         intermediate_consumer_bm = missing,
-         top_consumer_richness = missing,
-         producer_richness = missing,
-         intermediate_consumer_richness = missing
+                  A = missing,
+                  total_bm = missing,
+                  final_richness = missing,
+                  maximum_trophic_level = missing,
+                  average_trophic_level = missing,
+                  weighted_average_trophic_level = missing,
+                  connectance_final = missing,
+                  persistence_final = missing,
+                  top_consumer_bm = missing,
+                  producer_bm = missing,
+                  intermediate_consumer_bm = missing,
+                  top_consumer_richness = missing,
+                  producer_richness = missing,
+                  intermediate_consumer_richness = missing
         )
         return output
     end
@@ -97,9 +98,10 @@ function get_output_sim(model, solution; last = 1)
     final_richness = mean(richness(solution)[(end - last + 1):end])
     bm_species = vec(mean(solution[living_species_indexes, (end - last + 1):end], dims = 2))
     rel_bm_species = bm_species ./ sum(bm_species)
+    A = model.A[living_species_indexes, living_species_indexes]
 
     #@infiltrate
-    m = default_model(Foodweb(model.A[living_species_indexes, living_species_indexes]),
+    m = default_model(Foodweb(A),
                        MetabolicClass(model.metabolic_classes[living_species_indexes])
                   )
     tops_consumer_mask =  m.consumers_mask .& m.tops_mask
@@ -118,6 +120,7 @@ function get_output_sim(model, solution; last = 1)
     intermediate_consumer_richness = final_richness - top_consumer_richness - producer_richness
 
     (;
+     A,
      total_bm,
      final_richness,
      maximum_trophic_level,

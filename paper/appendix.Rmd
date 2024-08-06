@@ -2,16 +2,16 @@
 title: Appendix
 subtitle:
 author: Alain Danet, Loubna El Madouri, Maud Mouchet, Elisa Thébault and Colin Fontaine
-date: \today 
+date: \today
 output:
   bookdown::pdf_document2:
-    fig_caption: true 
+    fig_caption: true
     keep_tex: true
-    toc: false 
+    toc: false
 fontsize: 10pt
 header-includes:
    - \usepackage{natbib}
-   - \newcommand{\beginsupplement}{\renewcommand{\thetable}{S\arabic{table}} \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}} 
+   - \newcommand{\beginsupplement}{\renewcommand{\thetable}{S\arabic{table}} \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}}
    - \usepackage{float}
    - \usepackage{multirow}
    - \usepackage{booktabs}
@@ -23,7 +23,7 @@ header-includes:
    - \renewcommand{\arraystretch}{1}
 geometry: margin=2cm
 bibliography: references.bib
-number_sections: false 
+number_sections: false
 ---
 
 
@@ -35,7 +35,7 @@ knitr::opts_chunk$set(
   #fig.dim = c(7, 7),
   fig.align = "center",
   fig.fullwidth = TRUE,
-  fig.show = "hold",
+  fig.pos = "H",
   echo = FALSE,
   message = FALSE,
   warning = FALSE,
@@ -71,13 +71,10 @@ mytheme <- theme_cowplot() +
 
 theme_set(mytheme)
 ```
-```{r}
-var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std")
-```
 
 \beginsupplement
-\newpage
 
+# Supplementary figures
 
 
 ```{r}
@@ -93,19 +90,6 @@ tar_load(figStps10)
 knitr::include_graphics(figStps10)
 ```
 
-```{r}
-tar_load(tab_inla_r2_rand)
-kable(tab_inla_r2_rand,
-  row.names = FALSE,
-  booktabs = T,
-  caption = "Marginal and Conditional R-squared for the INLA models estimating
-  the temporal trends of the food-web structure. The table also displays the
-  standard deviation associated to the random effects and the general error of
-  the models. Confidence interval at 95\\% are displayed between square brackets.",
-  label = "inlarsq") %>%
-  collapse_rows(columns = c(1, 2, 3), valign = "top") %>%
-  kable_styling(latex_options = c("scale_down"))
-```
 
 
 ```{r}
@@ -137,25 +121,6 @@ tar_load(figcorr)
 knitr::include_graphics(figcorr)
 ```
 
-```{r}
-tar_load(c(pca_table, op_table, com_metric_tab))
-tab_quanti <- purrr::map_dfr(
-  list(com_metric_tab, op_table, pca_table),
-  function(x) {colnames(x)[1] <- "Variable"; x}
-)
-#purrr::map_int(list(com_metric_tab, op_table, pca_table), nrow)
-
-tab_quanti %>%
-  kbl(
-    caption = "Summary distribution of community metrics, fish monitoring and of
-    environmental variables used in the PCA for the spatial SEM.",
-    booktabs = T
-    ) %>%
-  kable_styling() %>%
-  pack_rows("Community metrics", 1, 8) %>%
-  pack_rows("Summary of fish monitoring", 9, 12) %>%
-  pack_rows("Summary of Envionmental variables", 13, 26)
-```
 
 ```{r}
 obs_fit_cap <- "Fitted versus observed values from the INLA models estimating
@@ -169,9 +134,92 @@ tar_load(figSobsfit)
 knitr::include_graphics(figSobsfit)
 ```
 
+
+```{r}
+sem_sp_mod_cap <- "Direct effects of biomass and species richness on food-web
+structure, derived from the structural equation models for the (a) spatial and
+(b) bioenergetic model. Points display the data, black lines display the
+predicted relationships."
+
+```
+
+```{r, fig.cap=sem_sp_mod_cap, out.width = "100%"}
+tar_load(p_sem_sp_sim_file)
+knitr::include_graphics(p_sem_sp_sim_file)
+```
+
+
+\pagebreak
+
+# Supplementary tables
+
+```{r}
+tar_load(r2_inla_tab)
+kable(r2_inla_tab,
+  row.names = FALSE,
+  booktabs = T,
+  caption = "Marginal and Conditional R-squared for the INLA models estimating
+  the temporal trends of the food-web structure. Mean [95\\% Credible Interval].",
+  label = "inlarsq") %>%
+  kable_styling()
+```
+
+```{r}
+tar_load(c(op_table, com_metric_tab))
+tab_quanti <- purrr::map_dfr(
+  list(com_metric_tab, op_table),
+  function(x) {colnames(x)[1] <- "Variable"; x}
+)
+tab_quanti %>%
+  kbl(
+    caption = "Summary distribution of community metrics and fish monitoring variables.",
+    booktabs = T
+    ) %>%
+  kable_styling() %>%
+  pack_rows("Community metrics", 1, 8) %>%
+  pack_rows("Summary of fish monitoring", 9, 13)
+```
+
+```{r}
+tar_load(tab_inla_rand)
+tab_inla_rand %>%
+  mutate(Response = factor(Response, levels = unique(var_replacement()))) %>%
+  arrange(Response) %>%
+  kable(
+    row.names = FALSE,
+    booktabs = T,
+    caption = "Standard deviation associated to the random effects and the residual error of
+    the models. Mean [95\\% Credible Interval].",
+    label = "inlarand") %>%
+  collapse_rows(columns = c(1), valign = "top") %>%
+  kable_styling()
+```
+
+```{r}
+tar_load(semeff_tot_tab)
+ti <- semeff_tot_tab %>%
+  pivot_wider(names_from = "Effect type", values_from = "Effect") %>%
+  mutate(Response = factor(Response, levels = unique(var_replacement()))) %>%
+  arrange(Model, Response)
+kable(ti %>%
+    select(-Model),
+  row.names = FALSE,
+  booktabs = T,
+  caption = "Direct and total Standardized effects derived from the structural
+  equation models. [95\\% Confidence Interval]. The confidence intervals were
+  obtained with bootstrap (see Methods).") %>%
+  collapse_rows(columns = c(1), valign = "top") %>%
+  pack_rows(index = table(ti$Model))
+```
+
 ```{r}
 tar_load(r2_sem_tab)
-kable(r2_sem_tab,
+kable(r2_sem_tab %>%
+  mutate(
+    Type = factor(Type, levels = effect_type_var()),
+    Response = factor(Response, levels = unique(var_replacement()))
+    ) %>%
+  arrange(Type, Response),
   row.names = FALSE,
   booktabs = T,
   caption = "Marginal and conditional R squared for the Structural Equation
@@ -192,6 +240,4 @@ kable(tabvif,
   label = "vif",
   )
 ```
-
-
 

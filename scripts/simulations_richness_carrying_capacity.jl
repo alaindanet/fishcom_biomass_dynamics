@@ -10,7 +10,7 @@ if !isdir(dest_dir)
 end
 
 #df_fw = DataFrame(Arrow.Table(joinpath(proj_dir, "scripts/fw_comb_ct_S.arrow")))
-#df_fw = DataFrame(Arrow.Table(joinpath("scripts/fw_comb_ct_S.arrow")))
+df_fw = DataFrame(Arrow.Table(joinpath("scripts/fw_comb_ct_S.arrow")))
 #
 # Add carrying capacity
 K = collect(1:10)

@@ -51,8 +51,8 @@ model_type_var <- function(
 get_com_str_var <- function (all = FALSE) {
 
   x <- c(
-    "ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_nind", "piel_bm",
-    "prop_pisc_node", "prop_pisc_rich"
+    "ct_ff", "connectance", "w_trph_lvl_avg", "log_rich_std", "prop_pisc_node",
+    "prop_pisc_rich", "node_fish_top_nb", "prop_redundant_links"
   )
 
   if (all) {
@@ -75,29 +75,34 @@ get_model_terms <- function ( ) {
 
 var_replacement <- function (slope = FALSE, several_lines = FALSE) {
   x <- c(
-    log_RC1 = "PCA Avg stream size",
-    log_RC2 = "PCA Avg temperature",
-    ct_ff = "Connectance",
-    ct = "Connectance",
-    avg_tl_ff = "Avg trophic level",
-    tlvl = "Avg trophic level",
-    max_tl_ff = "Max trophic level",
-    w_trph_lvl_avg = "Avg trophic level",
-    #connectance ,weighted_connectance,
-    log_rich_std = "Species richness",
     log_bm_std = "Biomass",
     bm_std = "Biomass (g.m^-2)",
-    rich_std = "Species richness (m^-2)",
-    log_final_richness = "Species richness",
-    piel_nind = "Evenness (abundance)",
-    piel_bm = "Evenness (biomass)",
-    prop_pisc_node = "Piscivorous node prop.",
-    prop_pisc_rich = "Piscivorous rich prop.",
     biomass = "Biomass (g)",
     bm = "Biomass",
     log_total_bm = "Biomass",
     biomass_kg = "Biomass (kg)",
+    log_RC1 = "PCA Avg stream size",
+    log_RC2 = "PCA Avg temperature",
+    ct_ff = "Connectance (fish)",
+    ct = "Connectance",
+    connectance = "Connectance",
+    log_connectance_final = "Connectance",
+    avg_tl_ff = "Avg trophic level (fish)",
+    tlvl = "Avg trophic level",
+    max_tl_ff = "Max trophic level",
+    w_trph_lvl_avg = "Avg trophic level",
+    log_w_trph_lvl_avg = "Avg trophic level",
+    log_weighted_average_trophic_level = "Avg trophic level",
+    log_rich_std = "Species richness",
+    rich_std = "Species richness (m^-2)",
+    log_final_richness = "Species richness",
     richness = "Species richness",
+    piel_nind = "Evenness (abundance)",
+    piel_bm = "Evenness (biomass)",
+    prop_pisc_node = "Piscivorous node prop.",
+    prop_pisc_rich = "Piscivorous rich prop.",
+    prop_redundant_links = "Redundancy",
+    node_fish_top_nb = "Top consumer node nb",
     nbnode = "Nb of nodes",
     nind = "Nb of individuals"
   )
@@ -179,5 +184,13 @@ replacement_op_data <- function() {
     "completeness"  = "Completeness",
     "nb_op"         = "Sampling number",
     "span"          = "Year span"
+  )
+}
+
+effect_type_var <- function() {
+  c(
+    temporal = "Temporal",
+    spatial = "Spatial",
+    `theoretical model` = "Theoretical model"
   )
 }
