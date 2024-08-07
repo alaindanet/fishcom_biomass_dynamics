@@ -108,6 +108,12 @@ list(
     unnest(redundancy_metrics) %>%
     select(-A)
     ),
+  tar_target(sim_param,
+    open_dataset(here::here("data-raw", "sim_richness_carrying_capacity.arrow"),
+      format = "arrow") %>%
+    collect() %>%
+    select(sim_id, fw_id, S, C, K)
+    ),
   tar_target(sim_std,
     sim %>%
       mutate(across(where(is.double), ~scale(.x)[, 1])) %>%
@@ -511,24 +517,21 @@ list(
     semeff_tot_ok %>%
       mutate(
         response = recode_factor(response, !!!var_replacement()),
-        model = factor(model, levels = c("Temporal", "Spatial", "Theoretical model"))
-        ) %>%
-      ggplot(aes(x = predictor, y = effect, ymin = lower_ci, ymax = upper_ci, color = model)) +
-      geom_pointrange(position = position_dodge(width = 0.4)) +
-      facet_grid(rows = vars(response), cols = vars(effect_type),
-        switch = "y") +
-      geom_hline(yintercept = 0, linetype = "dashed") +
-      labs(
-        x = "Predictor",
-        y = expression(paste("Standardized slope coefficients ", r[delta])),
-        color = "Model") +
-      theme_cowplot() +
-      background_grid() +
-      theme(
-        legend.position = "bottom",
-        strip.placement = "outside"
-      )
-    ),
+        model = factor(model, levels = c("Temporal", "Spatial", "Theoretical model"))) %>%
+    ggplot(aes(x = predictor, y = effect, ymin = lower_ci, ymax = upper_ci, color = model, shape = effect_type)) +
+    geom_pointrange(position = position_dodge(width = 0.4)) +
+    facet_grid(cols = vars(response), switch = "y") +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    labs(x = "Predictor",
+      y = expression(paste("Standardized slope coefficients ", r[delta])),
+      color = "Model",
+      shape = "Effect") +
+    theme_cowplot() +
+    background_grid(minor = "y") +
+    theme(
+      legend.position = "bottom",
+      strip.placement = "outside"
+      )),
   tar_target(p_sem_tps_sp,
     semeff_tot %>%
       filter(effect_type != "mediators",
@@ -560,12 +563,13 @@ list(
       theme(legend.position = "bottom", strip.background = element_blank())
     ),
   tar_target(p_semeff_tot_ok_file,
-    save_plot(
+    ggsave(
       filename = here::here("figures", "p_semeff_tot_ok.png"),
-      plot = p_semeff_tot_ok,
-      nrow = 2,
-      ncol = 2
-      ),
+      p_semeff_tot_ok,
+      scale = 2.6,
+      units = c("mm"),
+      width = 120,
+      height = 120 * .4),
     format = "file"
     ),
 

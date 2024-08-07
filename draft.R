@@ -10,6 +10,10 @@ library(semEff)
 library(lme4)
 library(INLA)
 lapply(list.files(here::here("R"), full.names = TRUE), source)
+tar_load(semeff_tot_ok)
+p_try <-
+
+
 
 map2(p_list_sem_tps, names(p_list_sem_tps),
   function(p, name) {
@@ -27,6 +31,7 @@ map2(p_list_sem_tps, names(p_list_sem_tps),
     )
   }
 )
+
 
 
 v_colors <- viridisLite::viridis(n = 2, begin = 0.5, end = 1)
