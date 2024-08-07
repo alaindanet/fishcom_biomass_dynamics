@@ -1,28 +1,28 @@
 ---
 title: "Community biomass and species richness temporal trends reveal contrasting assembly and disassembly processes in natural food-webs"
 author: Alain Danet (a), Loubna El Madouri (a, c), Maud Mouchet (a), Elisa Thébault (d) and Colin Fontaine (a)
-date: Research report
+date: "Research report"
 output:
-  #bookdown::word_document2:
-  #  fontsize: 12pt
   bookdown::pdf_document2:
-    fig_caption: true
+    latex_engine: xelatex
     keep_tex: true
-    toc: false
-    fontsize: 12pt
-header-includes:
-   - \usepackage{natbib}
-   - \usepackage{float}
-   - \usepackage{multirow}
-   - \usepackage{booktabs}
-   - \usepackage{makecell}
-   - \usepackage{setspace}
-   - \doublespacing
-   - \usepackage{lineno}
-   - \linenumbers
-geometry: margin=2cm
-number_sections: true
+    spacing: double
+    number_sections: false
+  officedown::rdocx_document:
+    number_sections: false
+    base_format: "bookdown::word_document2"
+always_allow_html: true
 bibliography: references.bib
+link-citations: true
+#csl: ecology-letters.csl
+toc: false
+linestretch: 2.0
+header-includes:
+  - \usepackage[left]{lineno}
+  - \linenumbers
+  - \usepackage{hyperref}
+  - \hypersetup{backref=true}
+  - \usepackage{setspace}\doublespacing
 csl: pnas.csl
 ---
 
@@ -85,7 +85,8 @@ CNRS-Sorbonne Université, Muséum national d’Histoire naturelle de Paris, 43 
 (b) Department of Biosciences, Alfred Denny Building, University of Sheffield,
 Western Bank, Sheffield S10 2TN, United Kingdom
 
-(c) ?
+(c) Laboratoire d’Écologie Fonctionnelle et Environnement, UMR 5245
+CNRS-UT3-INPT, Avenue de l’Agrobiopôle, Toulouse, France
 
 (d) Sorbonne Université, CNRS, IRD, INRAE, Université Paris Est Créteil, 15
 Institute of Ecology and Environmental Sciences of Paris (iEES-Paris), Paris,
@@ -121,6 +122,12 @@ food-web assembly in natural settings.
 
 # Significance (115 / 120 words max)
 
+- Biodiversity changes = changes in food-web structure that are important for
+  ecosystem functioning and stability.
+- Unique combination of empirical data and theoretical simulations.
+- Inform how community biomass and species richness declines result in an
+  increase of the fragility of food-webs.
+
 While the multidimensional nature of biodiversity changes has been clearly
 emphasized, little is known on how the structure of food-web changes according to
 changes in species richness and community biomass. By inferring food-web
@@ -133,6 +140,21 @@ species richness. Our results shed a new light on the assembly and disassembly
 of food-web according to changes in biomass and in species richness.
 
 # Introduction (487 words)
+
+- Ideas:
+  1. Biodiversity at risk; widespread heterogeneity in changes; ignores
+     community struture
+  2. Community structure is important for ecosystem functioning and robustness
+     to perturbations
+  3. Questions: assembly and disassembly processes of food-webs associated with
+     biodiversity changes?; possible due to inference of food-web structure;
+     Energetic constraints, redundancy and robustness; Validity of space for
+     time hypothesis
+  4. Presentation of the study data, theoretical models and extinction
+     simulation: presentation of the hypothesis associated to the SEM
+
+Why redundancy? Because not all links in the same way to the robustness of
+food-webs
 
 Understanding how biodiversity changes is a central question in ecology,
 although challenging because biodiversity changes are multidimensional
@@ -149,8 +171,8 @@ impede perturbation propagations, i.e. secondary extinctions [@paine_note_1969;
 @stouffer_compartmentalization_2011]. Higher connectance, which measures the
 degree of generalism in a network, is predicted to increase robustness to
 secondary extinctions [@dunne_network_2002; @sole_complexity_2001] and studies
-found that the presence of higher trophic levels is associated to a higher temporal stability of
-community biomass in theoretical models and empirical data
+found that the presence of higher trophic levels is associated to a higher
+temporal stability of community biomass in theoretical models and empirical data
 [@shanafelt_stability_2018; @danet_species_2021]. Then, accounting for how the
 structure of ecological networks changes over time according to other
 biodiversity facets is crucial to understand biodiversity changes.
@@ -196,6 +218,20 @@ i.e. is the space-for-time substitution valid?
 
 *Introduce hypothesis and the food-web metrics (connectance and average trophic
 level)*
+
+```{r}
+fig_mat_cap <- paste0("Using sites of stream fishes in French streams that
+  have been monitored at least 10 years, 1) we infered the food-web at each site
+and each sampling event based on ontogenic food diet information for each
+species and predator-prey body size ratio. 2) We computed the temporal trends
+and the median of community biomass, species richness, connectance, average
+trophic level and evenness of biomass at each site. 3) We then assessed the
+relationships among food-web structure descriptors, (a) in time and (b) across space.")
+```
+
+```{r matmet, fig.cap=fig_mat_cap, out.width="100%"}
+knitr::include_graphics(get_mypath("figures", "mat_met.png"))
+```
 
 # Results
 
@@ -272,8 +308,9 @@ the site temporal trends are displayed in Fig. S1. All the effects are reported
 in Table S4."
 ```
 
-```{r sem, fig.cap = sem_cap}
-knitr::include_graphics(here::here("figures", "fig2.pdf"))
+```{r sem, fig.cap = sem_cap, out.width = "100%"}
+tar_load(p_sem_tps_file)
+knitr::include_graphics(p_sem_tps_file)
 ```
 
 ```{r}
@@ -471,18 +508,19 @@ random species extinction sequence had little effect on food-web structure
 
 ```{r}
 std_cap <- paste0(
-  "Direct and total effects of community biomass and species richness.
-  Standardized coefficients ($r_\\delta$) derived from the temporal, spatial,
-  and bioenergetic model Structural Equation Models. Points and lines display
-  the estimated effects and their confidence intervals at 95\\%. Values are
-  displayed in Table SXX, R-squared in Table SXX, and the visualisation of the
-  bivariate relationships for the spatial and bioenergetic model SEMs are
-  displayed in Figure SXX.")
+  "Direct and total effects of community biomass and species richness on
+  food-web structure. Standardized coefficients ($r_\\delta$) derived from the
+  temporal, spatial, and bioenergetic model Structural Equation Models. Points
+  and lines display the estimated effects and their confidence intervals at
+  95\\%. Values are displayed in Table SXX, R-squared in Table SXX, and the
+  visualisation of the bivariate relationships for the spatial and bioenergetic
+  model SEMs are displayed in Figure SXX.")
 
 ```
 
-```{r std, fig.cap=std_cap, fig.width=7, fig.asp = .7}
-knitr::include_graphics(here::here("figures", "p_sem_tps_sp.pdf"))
+```{r std, fig.cap=std_cap, out.width = "100%"}
+tar_load(p_semeff_tot_ok_file)
+knitr::include_graphics(p_semeff_tot_ok_file)
 ```
 
 
@@ -542,7 +580,8 @@ available [@lindeman_trophic-dynamic_1942, @takimoto_ecosystem_2008;
 @post_ecosystem_2000; @post_long_2002]. Thereby, a decrease in community biomass
 can limit the amount of resource available to sustain top predators, while
 increase in community biomass may result in more resource available for top
-predators [@takimoto_ecosystem_2008; @post_ecosystem_2000].
+predators [@takimoto_ecosystem_2008; @post_ecosystem_2000]. (Add something about
+the role of apex predators?)
 
 Species richness temporal changes were positively associated to changes in
 average trophic level through community biomass and in connectance mainly
@@ -818,15 +857,6 @@ All the statistical models displayed low multicollinearity (Variance inflation
 factors < 3, Table S4). We visually inspected the residuals of the linear
 models.
 
-```{r}
-fig_mat_cap <- paste0("Using sites of stream fishes in French streams that
-  have been monitored at least 10 years, 1) we infered the food-web at each site
-and each sampling event based on ontogenic food diet information for each
-species and predator-prey body size ratio. 2) We computed the temporal trends
-and the median of community biomass, species richness, connectance, average
-trophic level and evenness of biomass at each site. 3) We then assessed the
-relationships among food-web structure descriptors, (a) in time and (b) across space.")
-```
 
 
 ## Extinction simulation in the metaweb
@@ -919,19 +949,15 @@ We simulated the food-webs dynamics across a gradient of global carrying capacit
 range: `r k_range["min"]`-`r k_range["max"]`). The carrying capacity were
 standardized according to the number of producers and interspecific competition
 ($K_i = \frac{1 + \alpha_{ij} (S - 1)}{S}K$) to prevent changes in productivity
-due to system size [@ives_stability_2000; @loreau_synchrony_2008]. We ran
+due to system size [@ives_stability_2000; @loreau_species_2008]. We ran
 simulations for 5000 timesteps. At the end of simulations, we removed dead
 species and measured community biomass, species richness and food-web structure.
 If the final community contained disconnected producers (i.e. without consumers)
 or disconnected consumers (i.e. consumers without preys), we discarded them and
 run the simulations again with the same parametrisation. The simulations were
 done using the Julia package `EcologicalNetworksDynamics.jl`
-[@lajaiiti_ecological_2024].
+[@lajaaiti_ecologicalnetworksdynamicsjl_2024].
 
-
-```{r matmet, fig.cap=fig_mat_cap, out.width="80%"}
-knitr::include_graphics(get_mypath("figures", "mat_met.pdf"))
-```
 
 # References  {-}
 
