@@ -35,6 +35,7 @@ knitr::opts_chunk$set(
   #fig.dim = c(7, 7),
   fig.align = "center",
   fig.fullwidth = TRUE,
+  fig.show = "hold",
   fig.pos = "H",
   echo = FALSE,
   message = FALSE,
@@ -74,7 +75,7 @@ theme_set(mytheme)
 
 \beginsupplement
 
-# Supplementary figures
+# Supplementary figures {-}
 
 
 ```{r}
@@ -85,25 +86,10 @@ tps10_cap <- paste0("Distribution of temporal trends per decade of the food-web
   respectively indicate 0 and median change.")
 
 ```
+
 ```{r tps10, fig.cap=tps10_cap}
 tar_load(figStps10)
 knitr::include_graphics(figStps10)
-```
-
-
-
-```{r}
-rand_sim_cap <- paste0(
-  "Simulations of (a) species and (b) nodes extinctions in the metaweb according
-  to three scenarios: random extinction sequence, extinction sequence by decreasing order of trophic level,
- extinction sequence by increasing order of trophic level. The black line
- represents the prediction of a GAM model for the random extinction sequences (N = 50)."
-)
-```
-
-```{r ext, fig.cap=rand_sim_cap}
-tar_load(figSext)
-knitr::include_graphics(figSext)
 ```
 
 
@@ -121,20 +107,6 @@ tar_load(figcorr)
 knitr::include_graphics(figcorr)
 ```
 
-
-```{r}
-obs_fit_cap <- "Fitted versus observed values from the INLA models estimating
-the temporal trends of the food-web structure. The black line depicts the first
-bissector. Pearson's correlation coefficients are displayed."
-```
-
-
-```{r, fig.cap=obs_fit_cap}
-tar_load(figSobsfit)
-knitr::include_graphics(figSobsfit)
-```
-
-
 ```{r}
 sem_sp_mod_cap <- "Direct effects of biomass and species richness on food-web
 structure, derived from the structural equation models for the (a) spatial and
@@ -149,20 +121,42 @@ knitr::include_graphics(p_sem_sp_sim_file)
 ```
 
 
-\pagebreak
+```{r}
+rand_sim_cap <- paste0(
+  "Simulations of (a) species and (b) nodes extinctions in the metaweb according
+  to three scenarios: random extinction sequence, extinction sequence by decreasing order of trophic level,
+ extinction sequence by increasing order of trophic level. The black line
+ represents the prediction of a GAM model for the random extinction sequences (N = 50)."
+)
+```
 
-# Supplementary tables
+```{r ext, fig.cap=rand_sim_cap}
+tar_load(figSext)
+knitr::include_graphics(figSext)
+```
+
+
+
 
 ```{r}
-tar_load(r2_inla_tab)
-kable(r2_inla_tab,
-  row.names = FALSE,
-  booktabs = T,
-  caption = "Marginal and Conditional R-squared for the INLA models estimating
-  the temporal trends of the food-web structure. Mean [95\\% Credible Interval].",
-  label = "inlarsq") %>%
-  kable_styling()
+obs_fit_cap <- "Fitted versus observed values from the INLA models estimating
+the temporal trends of the food-web structure. The black line depicts the first
+bissector. Pearson's correlation coefficients are displayed."
 ```
+
+
+```{r, fig.cap=obs_fit_cap}
+tar_load(figSobsfit)
+knitr::include_graphics(figSobsfit)
+```
+
+\pagebreak
+\newpage
+
+
+# Supplementary tables {-}
+
+\pagebreak
 
 ```{r}
 tar_load(c(op_table, com_metric_tab))
@@ -181,17 +175,13 @@ tab_quanti %>%
 ```
 
 ```{r}
-tar_load(tab_inla_rand)
-tab_inla_rand %>%
-  mutate(Response = factor(Response, levels = unique(var_replacement()))) %>%
-  arrange(Response) %>%
-  kable(
-    row.names = FALSE,
-    booktabs = T,
-    caption = "Standard deviation associated to the random effects and the residual error of
-    the models. Mean [95\\% Credible Interval].",
-    label = "inlarand") %>%
-  collapse_rows(columns = c(1), valign = "top") %>%
+tar_load(r2_inla_tab)
+kable(r2_inla_tab,
+  row.names = FALSE,
+  booktabs = T,
+  caption = "Marginal and Conditional R-squared for the INLA models estimating
+  the temporal trends of the food-web structure. Mean [95\\% Credible Interval].",
+  label = "inlarsq") %>%
   kable_styling()
 ```
 
@@ -227,6 +217,22 @@ kable(r2_sem_tab %>%
   label = "r2sem",
   ) %>%
   kableExtra::collapse_rows(columns = 1, valign = "top")
+```
+
+
+```{r}
+tar_load(tab_inla_rand)
+tab_inla_rand %>%
+  mutate(Response = factor(Response, levels = unique(var_replacement()))) %>%
+  arrange(Response) %>%
+  kable(
+    row.names = FALSE,
+    booktabs = T,
+    caption = "Standard deviation associated to the random effects and the residual error of
+    the models. Mean [95\\% Credible Interval].",
+    label = "inlarand") %>%
+  collapse_rows(columns = c(1), valign = "top") %>%
+  kable_styling()
 ```
 
 
