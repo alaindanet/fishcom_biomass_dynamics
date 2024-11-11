@@ -168,11 +168,13 @@ get_redundancy <- function(x = NULL) {
       ), nrow = 4, byrow = TRUE,
     dimnames = list(root_names, root_names)
   )
-  root_graph <- graph_from_adjacency_matrix(root_mat, mode = "directed", diag = FALSE)
+  root_graph <- igraph::graph_from_adjacency_matrix(root_mat, mode = "directed", diag = FALSE)
 
   # Check for starving fish nodes
   no_int <- colnames(x)[colSums(x) == 0]
   if  (any(!no_int %in% root_names)) {
+    # We do not commute redundancy if there are starving fishes as
+    #the metric will not make sense
     out <-  list(
       functional_links = NA,
       total_links = NA,
@@ -182,11 +184,11 @@ get_redundancy <- function(x = NULL) {
     )
   } else {
 
-    mygraph <- graph_from_adjacency_matrix(x, mode = "directed", diag = FALSE)
+    mygraph <- igraph::graph_from_adjacency_matrix(x, mode = "directed", diag = FALSE)
     rooted_graph <- mygraph + root_graph
-    dtree <- dominator_tree(rooted_graph, root="R", mode = "out")
-    functional_links <- length(E(dtree$domtree))
-    total_links <- length(E(rooted_graph))
+    dtree <- igraph::dominator_tree(rooted_graph, root="R", mode = "out")
+    functional_links <- length(igraph::E(dtree$domtree))
+    total_links <- length(igraph::E(rooted_graph))
     redundant_links  <- total_links - functional_links
 
     out <- list(

@@ -1,7 +1,7 @@
 #' Save objects
 #'
-#' As devtools::use_data but choosing dest_dir 
-#'  
+#' As devtools::use_data but choosing dest_dir
+#'
 #' @export
 #mysave <- function (..., dir = ".", overwrite = FALSE,
     #compress = "bzip2") {
@@ -47,3 +47,6 @@ source_dir <- function(path, trace = TRUE, ...) {
   }
 }
 
+ggsave_multiple <- function(fns, ...) {
+  purrr::map(fns, function(x) ggsave(x, ...))
+}

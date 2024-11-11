@@ -1,6 +1,7 @@
 library(targets)
 library(tidyverse)
 library(magrittr)
+library(lubridate)
 library(cowplot)
 library(viridis)
 library(arrow)
@@ -11,8 +12,120 @@ library(lme4)
 library(INLA)
 lapply(list.files(here::here("R"), full.names = TRUE), source)
 tar_load(semeff_tot_ok)
-p_try <-
 
+tar_load(sim_sp_dec_inc)
+
+tu <- matrix(
+  c(0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+    0, 0, 0, 0
+  ), byrow = TRUE, nrow = 4,
+  dimnames = list(
+    c("plant", "HERBIVORE_1", "CARNIVORE_1", "DINO_1"),
+    c("plant", "HERBIVORE_1", "CARNIVORE_1", "DINO_1")
+  )
+)
+# Extinction cascade, everybody dies
+ti <- get_sim_net(net = tu, ext_seq = c("plant" = 1),
+      keep_metaweb = TRUE
+)
+ncol(ti$metaweb[[1]]) == 0
+node_seq$node_fish_dec_tlvl[length(node_seq$node_fish_dec_tlvl)]
+ti <- get_sim_net(net = metaweb_analysis$metaweb, ext_seq = node_seq$node_fish_dec_tlvl,
+      keep_metaweb = FALSE)
+
+tar_load(c(metaweb_analysis, node_seq))
+get_fw_metrics2(metaweb_analysis$metaweb)
+ti <- get_sim_net(net = metaweb_analysis$metaweb, ext_seq = node_seq$node_fish_dec_tlvl[1:10],
+      keep_metaweb = TRUE)
+get_fw_metrics2(ti$metaweb[[2]])
+fish(colnames(ti$metaweb[[1]]))
+resource <- str_extract(colnames(ti$metaweb[[1]]), "[a-z]+") %>%
+  na.omit()
+resource <- str_extract(colnames(metaweb_analysis$metaweb), "[a-z]+") %>%
+  na.omit()
+  return(!string %in% resource)
+map(ti$metaweb, ~get_redundancy(.x))
+get_redundancy(ti$metaweb[[1]])
+sum(str_detect(colnames(ti$metaweb[[1]]), "[a-z]+"))
+sum(colSums(ti$metaweb[[1]]) > 0)
+sum(str_detect(colnames(metaweb_analysis$metaweb), "[a-z]+"))
+sum(colSums(metaweb_analysis$metaweb) > 0)
+ti$metrics[[1]]
+ti %>%
+  mutate(met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()])))) %>%
+  select(-metrics) %>%
+  unnest(met) %>%
+  pivot_wider(names_from = "name", values_from = "value")
+
+tar_load(sim_node_dec_inc)
+get_redundancy(metaweb_analysis$metaweb)
+get_redundancy(metaweb_analysis$metaweb)[["prop_redundant_links"]]
+
+ti <- semeff_tot_ok %>%
+  mutate(response = recode_factor(response, !!!var_replacement()),
+    model = factor(model, levels = c("Temporal", "Spatial", "Theoretical model"))
+    ) %>%
+ggplot(
+  aes(x = predictor, y = effect,
+    ymin = lower_ci, ymax = upper_ci, color = model, shape = effect_type)
+  ) +
+geom_pointrange(position = position_dodge(width = 0.4)) +
+facet_grid(cols = vars(response), switch = "y") +
+geom_hline(yintercept = 0, linetype = "dashed") +
+labs(x = "Predictor",
+  y = expression(paste("Standardized slope coefficients ", r[delta])),
+  color = "Model",
+  shape = "Effect") +
+theme_cowplot() +
+background_grid(minor = "y") +
+theme(
+  legend.position = "bottom",
+  strip.placement = "outside"
+  )
+tar_load(p_ext_sp)
+plot_grid(
+  ti,
+  p_ext_sp +
+    theme_half_open() +
+    background_grid() +
+    theme(
+      strip.background = element_blank(),
+      legend.position = "bottom"
+      ),
+    nrow = 2,
+    labels = c("a", "b"),
+    rel_heights = c(.9, 1)
+)
+
+ggsave_multiple(
+  paste0("tot_ext_sim", c(".png", ".pdf")),
+  plot = p_tot_ext_sim,
+  path = here::here("figures"),
+  scale = 2.4,
+  units = c("mm"),
+  width = 120,
+  height = 120 * .6)
+
+
+tar_load(p_tot_ext_sim)
+ggsave_multiple(
+  paste0("tot_ext_sim", c(".png", ".pdf")),
+  plot = p_tot_ext_sim,
+  path = here::here("figures"),
+  scale = 2.4,
+  units = c("mm"),
+  width = 120,
+  height = 120 * .6)
+
+ggsave(
+  filename = here::here("figures", "tot_ext_sim.pdf"),
+  plot = (p_tot_ext_sim),
+  scale = 2.6,
+  units = c("mm"),
+  width = 120,
+  height = 120 * .4)
 
 
 map2(p_list_sem_tps, names(p_list_sem_tps),
@@ -32,12 +145,12 @@ map2(p_list_sem_tps, names(p_list_sem_tps),
   }
 )
 
-
+tar_load(full_data2)
 
 v_colors <- viridisLite::viridis(n = 2, begin = 0.5, end = 1)
 names(v_colors) <- c("tps", "sp")
 
-tps_dec_inc <- map(c("log_bm_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg"), #
+tps_dec_inc <- map(c("log_bm_std", "log_rich_std", "prop_redundant_links", "connectance", "w_trph_lvl_avg"), #
   function(x) {
     tmp <- plot_temporal_variable_lm(
       st = "9561",
@@ -46,6 +159,7 @@ tps_dec_inc <- map(c("log_bm_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg"), #
       col_median = v_colors["sp"],
       col_trend = v_colors["tps"]
       ) +
+    theme_half_open() +
     theme(axis.title = element_text(size = 12))
   tmp$layers[[1]]$aes_params$size <- 4
   tmp
@@ -53,16 +167,57 @@ tps_dec_inc <- map(c("log_bm_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg"), #
 )
 
 ex_tps_net <- plot_grid(plotlist = tps_dec_inc)
-ggsave(
-  filename = here::here("figures", "example_tps_net.pdf"),
+ggsave_multiple(
+  paste0("example_tps_net", c(".png", ".pdf")),
   plot = ex_tps_net,
-  scale = 2.0,
-  width = 88,
-  height = 88 * .8,
-  units = "mm"
-)
+  path = here::here("figures"),
+  scale = 1.8,
+  width = 120,
+  height = 120 * .6,
+  units = "mm")
 
 tar_load(semeff_tot)
+
+# Talk EEB sheffield
+tps_dec_inc <- map(c("log_bm_std", "log_rich_std", "prop_redundant_links"), #
+  function(x) {
+    tmp <- plot_temporal_variable_lm(
+      st = "9561",
+      var = x,
+      add_median = FALSE,
+      col_median = v_colors["sp"],
+      col_trend = v_colors["tps"]
+      ) +
+    theme_half_open() +
+    theme(axis.title = element_text(size = 12))
+  tmp$layers[[1]]$aes_params$size <- 4
+  tmp
+  }
+)
+ex_tps_net <- plot_grid(plotlist = tps_dec_inc, nrow = 2)
+ggsave_multiple(
+  paste0("example_tps_net_redun", c(".png", ".pdf")),
+  plot = ex_tps_net,
+  path = here::here("figures"),
+  scale = 1.8,
+  width = 80,
+  height = 80 * 1,
+  units = "mm")
+
+tar_load(p_list_sem_tps)
+
+sem_tps_redun <- map(p_list_sem_tps[c("p_redundant_bm", "p_redundant_rich")],
+  ~.x + theme_bw()
+)
+
+ggsave_multiple(
+  paste0("example_tps_net_redun", c(".png", ".pdf")),
+  plot = plot_grid(plotlist = sem_tps_redun),
+  path = here::here("figures"),
+  scale = 1.8,
+  width = 80,
+  height = 80 * .45,
+  units = "mm")
 
 p_semeff_tot <- semeff_tot %>%
   filter(effect_type == "total", !predictor %in% c("log_RC1", "log_RC2")) %>%

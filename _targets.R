@@ -843,7 +843,7 @@ tar_target(semeff_tot_tab,
           )
     )
     ),
-  tar_target(p_ext_node,
+  tar_target(p_ext_node_ff,
     sim_node_dec_inc %>%
       filter(str_detect(metric, "_ff")) %>%
       mutate(
@@ -861,6 +861,34 @@ tar_target(semeff_tot_tab,
           )) +
       geom_smooth(data = rand_node_tmp %>%
         filter(str_detect(metric, "_ff")) %>%
+        mutate(
+          metric = var_replacement()[metric],
+          type = str_to_sentence(type)
+          ), color = "black") +
+      facet_wrap(~metric, scale = "free_y") +
+      labs(y = "Network metric values",
+        x = "Number of node removed",
+        color = "Trophic level scenario") +
+      theme(legend.position = "bottom")
+    ),
+  tar_target(p_ext_node,
+    sim_node_dec_inc %>%
+      filter(!str_detect(metric, "_ff")) %>%
+      mutate(
+        nb_ext = map_int(node_rm_tot, length),
+        metric = var_replacement()[metric],
+        type = str_to_sentence(type)
+        ) %>%
+      ggplot(aes(x = nb_ext, y = value, color = type)) +
+      geom_line() +
+      geom_point(data = rand_node_tmp %>%
+        filter(!str_detect(metric, "_ff")) %>%
+        mutate(
+          metric = var_replacement()[metric],
+          type = str_to_sentence(type)
+          )) +
+      geom_smooth(data = rand_node_tmp %>%
+        filter(!str_detect(metric, "_ff")) %>%
         mutate(
           metric = var_replacement()[metric],
           type = str_to_sentence(type)
@@ -1009,7 +1037,7 @@ tar_target(semeff_tot_tab,
       unnest(met) %>%
       rename(metric = name)
     ),
-  tar_target(p_ext_sp,
+  tar_target(p_ext_sp_ff,
     sim_sp_dec_inc %>%
       filter(str_detect(metric, "_ff")) %>%
       mutate(
@@ -1036,6 +1064,55 @@ tar_target(semeff_tot_tab,
           color = "Trophic level scenario") +
         theme(legend.position = "bottom")
     ),
+  tar_target(p_ext_sp,
+    sim_sp_dec_inc %>%
+      filter(!str_detect(metric, "_ff")) %>%
+      mutate(
+        metric = var_replacement()[metric],
+        type = str_to_sentence(type)
+        ) %>%
+      ggplot(aes(x = nb_ext, y = value, color = type)) +
+      geom_line() +
+      geom_point(
+        data = rand_sp_met %>%
+          filter(!str_detect(metric, "_ff")) %>%
+          mutate(
+            metric = var_replacement()[metric],
+            type = str_to_sentence(type)
+            )) +
+        geom_smooth(data = rand_sp_met %>%
+          filter(!str_detect(metric, "_ff")) %>%
+          mutate(
+            metric = var_replacement()[metric],
+            type = str_to_sentence(type)
+            ), color = "black") +
+        facet_wrap(~metric, scale = "free_y") +
+        labs(y = "Network metric values", x = "Number of species removed",
+          color = "Trophic level scenario") +
+        theme(legend.position = "bottom")
+    ),
+  tar_target(p_tot_ext_sim_ff,
+    plot_grid(
+      p_ext_sp_ff +
+        theme_half_open() +
+        background_grid() +
+        theme(
+          strip.background = element_blank(),
+          legend.position = "none"
+          ),
+        p_ext_node_ff +
+          theme_half_open() +
+          background_grid() +
+          theme(
+            strip.background = element_blank(),
+            legend.position = "none"
+            ),
+          get_legend(p_ext_node_ff + theme(legend.position = "bottom")),
+          nrow = 3,
+          labels = c("a", "b", ""),
+          rel_heights = c(1, 1, .1)
+    )
+    ),
   tar_target(p_tot_ext_sim,
     plot_grid(
       p_ext_sp +
@@ -1059,13 +1136,14 @@ tar_target(semeff_tot_tab,
     )
     ),
   tar_target(figSext,
-    save_plot(
-      filename = here::here("figures", "tot_ext_sim.pdf"),
+    ggsave_multiple(
+      paste0("tot_ext_sim", c(".png", ".pdf")),
       plot = p_tot_ext_sim,
-      nrow = 2,
-      ncol = 3
-    ),
-    format = "file"
+      path = here::here("figures"),
+      scale = 2.4,
+      units = c("mm"),
+      width = 120,
+      height = 120 * .6)
     ),
   ## Bioenergetic model
   tar_target(p_sem_list_sim,

@@ -88,8 +88,10 @@ var_replacement <- function (slope = FALSE, several_lines = FALSE) {
     connectance = "Connectance",
     log_connectance_final = "Connectance",
     avg_tl_ff = "Avg trophic level (fish)",
+    avg_tl = "Avg trophic level",
     tlvl = "Avg trophic level",
-    max_tl_ff = "Max trophic level",
+    max_tl_ff = "Max trophic level (fish)",
+    max_tl = "Max trophic level",
     w_trph_lvl_avg = "Avg trophic level",
     log_w_trph_lvl_avg = "Avg trophic level",
     log_weighted_average_trophic_level = "Avg trophic level",
@@ -145,7 +147,7 @@ get_all_var_analysis <- function () {
 }
 
 net_ext_met_to_keep <- function() {
-    c("ct", "ct_ff", "avg_tl", "avg_tl_ff", "max_tl", "max_tl_ff")
+    c("ct", "ct_ff", "avg_tl", "avg_tl_ff", "max_tl", "max_tl_ff", "prop_redundant_links")
 }
 
 replacement_random_term <- function() {
@@ -157,7 +159,6 @@ replacement_random_term <- function() {
     "station1" = "Time (site nested in basin)"
   )
 }
-
 
 replacement_pca_var <- function() {
   c(
