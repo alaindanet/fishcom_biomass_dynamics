@@ -138,7 +138,8 @@ compute_gini <- function (mat) {
 #' Computes redundant and functional links.
 #'
 #' @examples
-#' The example from Allesina et al. (2009) https://doi.org/10.1098/rstb.2008.0214
+#' The example from Bodini et al. (2009): https://doi.org/10.1098/rstb.2008.0278
+#' https://royalsocietypublishing.org/action/downloadSupplement?doi=10.1098%2Frstb.2008.0278&file=rstb20080278supp01.doc
 #' tu_names <- c("R", "Sediment_1", "POC", "Benthos", "Zooplankton")
 #' tu <- matrix(
 #'   c(
@@ -158,7 +159,7 @@ compute_gini <- function (mat) {
 #' plot(dtree$domtree, layout=layout, vertex.label=V(dtree$domtree)$name)
 get_redundancy <- function(x = NULL) {
   # Get a root "R" to compute dominant tree
-  root_names <- c("R","det", "biof", "phytopl")
+  root_names <- c("R", "det", "biof", "phytopl")
   root_mat <- matrix(
     c(
       0, 1, 1, 1,
@@ -168,7 +169,11 @@ get_redundancy <- function(x = NULL) {
       ), nrow = 4, byrow = TRUE,
     dimnames = list(root_names, root_names)
   )
-  root_graph <- igraph::graph_from_adjacency_matrix(root_mat, mode = "directed", diag = FALSE)
+  root_graph <- igraph::graph_from_adjacency_matrix(
+    root_mat,
+    mode = "directed",
+    diag = FALSE
+  )
 
   # Check for starving fish nodes
   no_int <- colnames(x)[colSums(x) == 0]
@@ -183,23 +188,89 @@ get_redundancy <- function(x = NULL) {
       prop_functional_links = NA
     )
   } else {
-
     mygraph <- igraph::graph_from_adjacency_matrix(x, mode = "directed", diag = FALSE)
     rooted_graph <- mygraph + root_graph
-    dtree <- igraph::dominator_tree(rooted_graph, root="R", mode = "out")
-    functional_links <- length(igraph::E(dtree$domtree))
-    total_links <- length(igraph::E(rooted_graph))
-    redundant_links  <- total_links - functional_links
+    out <- compute_redundancy(rooted_graph = rooted_graph)
+  }
+  out
+}
 
-    out <- list(
+compute_redundancy <- function(rooted_graph, root = "R") {
+
+  # Compute the dominator tree 
+  dtree <- igraph::dominator_tree(rooted_graph, root = root, mode = "out")
+
+  # Compute number of links
+  functional_links <- length(igraph::E(dtree$domtree))
+  total_links <- length(igraph::E(rooted_graph))
+  redundant_links <- total_links - functional_links
+
+  list(
       functional_links = functional_links,
       total_links = total_links,
       redundant_links = redundant_links,
       prop_redundant_links = redundant_links / total_links,
       prop_functional_links = functional_links / total_links
-    )
-  }
-  out
+  )
+}
+
+get_bodini_graph_fig1 <- function () {
+  #The example from Bodini et al. (2009)
+  #https://royalsocietypublishing.org/doi/10.1098/rstb.2008.0278
+  tu_names <- c("root", letters[1:6])
+  tu <- matrix(
+    # Trophic fluxes from rows to columns
+    c(
+      0, 1, 1, 0, 0, 0, 0,
+      0, 0, 0, 1, 1, 0, 0,
+      0, 0, 0, 0, 0, 0, 1,
+      0, 0, 0, 0, 1, 1, 0,
+      0, 0, 0, 1, 0, 1, 1,
+      0, 0, 0, 1, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0
+      ), nrow = 7, byrow = TRUE,
+    dimnames = list(tu_names, tu_names)
+  )
+  igraph::graph_from_adjacency_matrix(tu, mode = "directed", diag = FALSE)
+
+
+}
+get_bodini_graph_appendix <- function() {
+  #The example from Bodini et al. (2009)
+  #https://royalsocietypublishing.org/action/downloadSupplement?doi=10.1098%2Frstb.2008.0278&file=rstb20080278supp01.doc
+  tu_names <- c("R", "Sediment_1", "POC", "Benthos", "Zooplankton")
+  tu <- matrix(
+    # Trophic fluxes from rows to columns
+    c(
+      0, 1, 1, 0, 0,
+      0, 0, 0, 1, 0,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 0,
+      0, 1, 0, 0, 0
+      ), nrow = 5, byrow = TRUE,
+    dimnames = list(tu_names, tu_names)
+  )
+  igraph::graph_from_adjacency_matrix(tu, mode = "directed", diag = FALSE)
+}
+
+get_allesina_graph <- function(diag = TRUE) {
+
+  tu_names <- as.character(seq(0, 5))
+  tu <- matrix(
+    # Trophic fluxes from rows to columns
+    c(
+      0, 1, 1, 0, 0, 0,
+      0, 0, 0, 1, 0, 0,
+      0, 1, 0, 0, 0, 1,
+      0, 0, 0, 0, 1, 1,
+      0, 0, 1, 0, 0, 1,
+      0, 0, 0, 0, 0, 1
+      ), nrow = length(tu_names), byrow = TRUE,
+    dimnames = list(tu_names, tu_names)
+  )
+
+  igraph::graph_from_adjacency_matrix(tu, mode = "directed", diag = diag)
+
 }
 
 get_nb_fish_node_top_consumers <- function(x = NULL) {

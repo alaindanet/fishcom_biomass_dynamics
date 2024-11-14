@@ -1234,34 +1234,71 @@ tar_target(semeff_tot_tab,
       ncol = 2, nrow = 3),
     format = "file"
     ),
-  tar_target(p_station,
+  tar_target(p_map_fr,
     ggplot() +
-      geom_sf(data = st_geometry(basin_dce$basin_tot), fill = "grey90") +
+      geom_sf(data = st_geometry(basin_dce$basin_tot), fill = NA) +
       geom_sf(
         data = st_geometry(station_analysis),
-        shape = 21,
-        color = "white", fill = "black", size = 1, stroke = 1) +
+        shape = 21, alpha = 1,
+        color = "white", fill = "black", size = 3, stroke = 1
+        ) +
       geom_sf(data = st_geometry(
           station_analysis %>%
             filter(id == 9561)
           ),
         shape = 21,
-        color = "white", fill = "red", size = 1, stroke = 1) +
+        color = "white", fill = "red", size = 3, stroke = 1) +
       theme(
         axis.text = element_blank(),
         axis.title = element_blank(),
         axis.ticks = element_blank(),
-        axis.line = element_blank()
-      )
-      ),
-    tar_target(map_plot,
-      save_plot(filename = here::here("figures", "map_fr.pdf"), p_station,
-        base_height = 5.71,
-        base_asp = 1
-        ),
-      format = "file"
-      ),
-    tar_target(figSobsfit,
+        axis.line = element_blank(),
+        panel.background = element_blank()
+        )
+    ),
+  tar_target(map_plot,
+    ggsave_multiple(
+      paste0("map_fr", c(".png", ".pdf")),
+      plot = p_map_fr,
+      path = here::here("figures"),
+      scale = 2.4,
+      units = c("mm"),
+      width = 80,
+      height = 80 * 1)
+    ),
+  tar_target(ex_tps_sp_net,{
+    v_colors <- viridisLite::viridis(n = 2, begin = 0.5, end = 1)
+    names(v_colors) <- c("tps", "sp")
+
+    tps_dec_inc <- map(c("log_bm_std", "log_rich_std", "connectance", "w_trph_lvl_avg", "prop_redundant_links"), #
+      function(x) {
+        tmp <- plot_temporal_variable_lm(
+          .df = full_data2,
+          st = "9561",
+          var = x,
+          add_median = TRUE,
+          col_median = v_colors["sp"],
+          col_trend = v_colors["tps"]
+          ) +
+        theme_half_open() +
+        theme(axis.title = element_text(size = 12))
+      tmp$layers[[1]]$aes_params$size <- 4
+      tmp
+      }
+    )
+    plot_grid(plotlist = tps_dec_inc)
+    }),
+  tar_target(figmetC,
+    ggsave_multiple(
+      paste0("example_tps_sp_net", c(".png", ".pdf")),
+      plot = ex_tps_sp_net,
+      path = here::here("figures"),
+      scale = 1.8,
+      width = 120,
+      height = 120 * .6,
+      units = "mm")
+    ),
+  tar_target(figSobsfit,
       save_plot(
         filename = here::here("figures", "p_obs_fit.pdf"),
         plot = p_obs_fit,
