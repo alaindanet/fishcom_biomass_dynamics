@@ -199,3 +199,113 @@ get_sim_net <- function(net = NULL, ext_seq = NULL, keep_metaweb = TRUE) {
 
   return(out)
 }
+
+#' Extinct a species
+#'
+#' @example
+#' tu <- matrix(
+#'   c(0, 1, 0, 0,
+#'     0, 0, 1, 0,
+#'     0, 0, 0, 1,
+#'     0, 0, 0, 0
+#'     ), byrow = TRUE, nrow = 4,
+#'   dimnames = list(
+#'     c("plant", "HERBIVORE_1", "CARNIVORE_1", "DINO_1"),
+#'     c("plant", "HERBIVORE_1", "CARNIVORE_1", "DINO_1")
+#'   )
+#' )
+#' # Extinction cascade, only the plant survived
+#' ti <- make_extinction(tu, "HERBIVORE_1")
+#' ncol(ti) == 1
+#'
+#' # Extinction cascade, only two species  survived
+#' ti <- make_extinction(tu, "CARNIVORE_1")
+#' ncol(ti) == 2
+make_extinction <- function(network = NULL, species_to_remove = NULL) {
+  stopifnot(!any(map_lgl(list(network, species_to_remove), is.null)))
+  tmp <- network[
+    !rownames(network) %in% species_to_remove,
+    !colnames(network) %in% species_to_remove,
+    drop = FALSE
+    ]
+  # Keep only the trophic species that have feeding links
+  # and keep also the resources
+  mask_link <- colSums(tmp) != 0 | !fish(colnames(tmp))
+  to_remove <- any(!mask_link)
+  while (to_remove) {
+    tmp <- tmp[mask_link, mask_link, drop = FALSE]
+    mask_link <- colSums(tmp) != 0 | !fish(colnames(tmp))
+    to_remove <- any(!mask_link)
+  }
+  return(tmp)
+}
+
+#' Simulate an extinction sequence
+#'
+#' @example
+#' tu <- matrix(
+#'   c(0, 1, 0, 0,
+#'     0, 0, 1, 0,
+#'     0, 0, 0, 1,
+#'     0, 0, 0, 0
+#'     ), byrow = TRUE, nrow = 4,
+#'   dimnames = list(
+#'     c("plant", "HERBIVORE_1", "CARNIVORE_1", "DINO_1"),
+#'     c("plant", "HERBIVORE_1", "CARNIVORE_1", "DINO_1")
+#'   )
+#' )
+#' extinction_simulation(tu, species_names = c("CARNIVORE_1"))
+#' ti <- extinction_simulation(tu, random = TRUE, seed = 123, species_names = c("DINO_1", "CARNIVORE_1", "HERBIVORE_1"))
+#' bind_rows(ti)
+#' ti <- extinction_simulation(tu, random = TRUE, seed = 1, species_names = c("DINO_1", "CARNIVORE_1", "HERBIVORE_1"))
+#' bind_rows(ti)
+extinction_simulation <- function(
+  metaweb = NULL,
+  species_names = NULL,
+  random = FALSE,
+  seed = 123
+  ) {
+  set.seed(seed)
+  nb_extinction <- vector(mode = "integer", length = length(species_names))
+  metrics_list <- vector(mode = "list", length = length(species_names))
+  species <- species_names
+  i <- 1
+  # Sanitize species_list
+  mask_species_in_metaweb <- map_lgl(species,
+    ~any(str_detect(colnames(metaweb), .x)))
+  if (any(!mask_species_in_metaweb)) {
+    message("species ", cat(species[!mask_species_in_metaweb], sep = ","), " not in metaweb. Been removed.")
+    species <- species[mask_species_in_metaweb]
+  }
+  while (length(species) > 0) {
+    # Take a species to remove among remaining species
+    ## Match species names or trophic species to metaweb names
+    if (random) {
+      species <- sample(species, replace = FALSE)
+    }
+    mask_metaweb_species <- str_detect(colnames(metaweb), species[1])
+    species_to_remove <- colnames(metaweb)[mask_metaweb_species]
+    # Remove it & Remove disconnected
+    tmp_metaweb <- make_extinction(metaweb, species_to_remove)
+    # Compute network metrics
+    metrics_list[[i]] <- get_fw_metrics2(tmp_metaweb, keep_metaweb = FALSE)
+    ## Remove unnecessary matrices and metrics
+    long_met <- map_lgl(metrics_list[[i]], ~length(.x) > 1)
+    metrics_list[[i]] <- metrics_list[[i]][!long_met]
+    nb_node_extinction <- ncol(metaweb) - ncol(tmp_metaweb)
+    get_nb_species <- function(x) length(unique(get_species(x)[, 1] %>% .[str_detect(., "[A-Z]{3}")]))
+    nb_species_extinction  <- get_nb_species(colnames(metaweb)) - get_nb_species(colnames(tmp_metaweb))
+    metrics_list[[i]] <- append(metrics_list[[i]], c(
+        nb_node_extinction = nb_node_extinction,
+        nb_species_extinction = nb_species_extinction,
+        iteration = i))
+    # Compute nb extinction
+    # Update metaweb and species list
+    metaweb <- tmp_metaweb
+    species <- species[
+      map_lgl(species, ~any(str_detect(colnames(metaweb), .x)))
+      ]
+    i <- i + 1
+  }
+  return(metrics_list)
+}

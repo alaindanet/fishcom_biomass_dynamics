@@ -771,133 +771,40 @@ tar_target(semeff_tot_tab,
       node_fish_inc_tlvl = node_inc_tlvl[fish(names(node_inc_tlvl))]
     )
     }),
-  tar_target(sim_dec_tlvl,
-    get_sim_net(net = metaweb_analysis$metaweb, ext_seq = node_seq$node_fish_dec_tlvl,
-      keep_metaweb = FALSE)
-    ),
-  tar_target(sim_inc_tlvl,
-    get_sim_net(net = metaweb_analysis$metaweb, ext_seq = node_seq$node_fish_inc_tlvl,
-      keep_metaweb = FALSE)
-    ),
-  tar_target(sim_random_tlvl, {
-    nsim <- 50
-    set.seed(123)
-    tibble(
-      repl = seq_len(nsim),
-      sim = furrr::future_map(repl,
-        ~get_sim_net(net = metaweb_analysis$metaweb, ext_seq = sample(node_seq$node_fish_inc_tlvl),
-          keep_metaweb = FALSE)
-      )
-    )
-    }),
-  tar_target(node_sim_metrics,
-    list(
-      dec = sim_dec_tlvl %>%
-        mutate(met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()])))) %>%
-        select(-metrics) %>%
-        unnest(met) %>%
-        pivot_wider(names_from = "name", values_from = "value"),
-      inc = sim_inc_tlvl %>%
-        mutate(met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()])))) %>%
-        select(-metrics) %>%
-        unnest(met) %>%
-        pivot_wider(names_from = "name", values_from = "value"),
-      random = sim_random_tlvl %>%
-        mutate(res = map(sim, function(x) {
-            x %>%
-              mutate(met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()])))) %>%
-              unnest(met) %>%
-              pivot_wider(names_from = "name", values_from = "value")
-          })) %>%
-      select(-sim) %>%
-      unnest(res)
-    )
-    ),
-  tar_target(rand_node_tmp,
-    sim_random_tlvl %>%
-      unnest(sim) %>%
-      mutate(
-        met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()]))),
-        nb_ext = map_int(node_rm_tot, length),
-        type = "random",
-        extinct = "node"
-        ) %>%
-      select(-metrics, - node_rm_tot) %>%
-      unnest(met) %>%
-      rename(metric = name)
-    ),
-  tar_target(sim_node_dec_inc,
-
-    rbind(
-      node_sim_metrics$dec %>%
-        pivot_longer(!!net_ext_met_to_keep(), names_to = "metric", values_to = "value") %>%
-        mutate(
-          type = "decreasing",
-          extinct = "node"
-          ),
-      node_sim_metrics$inc %>%
-          pivot_longer(!!net_ext_met_to_keep(), names_to = "metric", values_to = "value") %>%
-          mutate(
-            type = "increasing",
-            extinct = "node"
-          )
-    )
-    ),
-  tar_target(p_ext_node_ff,
-    sim_node_dec_inc %>%
-      filter(str_detect(metric, "_ff")) %>%
-      mutate(
-        nb_ext = map_int(node_rm_tot, length),
-        metric = var_replacement()[metric],
-        type = str_to_sentence(type)
-        ) %>%
-      ggplot(aes(x = nb_ext, y = value, color = type)) +
-      geom_line() +
-      geom_point(data = rand_node_tmp %>%
-        filter(str_detect(metric, "_ff")) %>%
-        mutate(
-          metric = var_replacement()[metric],
-          type = str_to_sentence(type)
-          )) +
-      geom_smooth(data = rand_node_tmp %>%
-        filter(str_detect(metric, "_ff")) %>%
-        mutate(
-          metric = var_replacement()[metric],
-          type = str_to_sentence(type)
-          ), color = "black") +
-      facet_wrap(~metric, scale = "free_y") +
-      labs(y = "Network metric values",
-        x = "Number of node removed",
-        color = "Trophic level scenario") +
-      theme(legend.position = "bottom")
-    ),
   tar_target(p_ext_node,
-    sim_node_dec_inc %>%
-      filter(!str_detect(metric, "_ff")) %>%
+    extinction_simulation_node_inc_dec_lg %>%
+      filter(metric %in% c("ct", "avg_tl", "prop_redundant_links")) %>%
       mutate(
-        nb_ext = map_int(node_rm_tot, length),
-        metric = var_replacement()[metric],
+        metric = recode_factor(metric, !!!var_replacement()),
         type = str_to_sentence(type)
         ) %>%
-      ggplot(aes(x = nb_ext, y = value, color = type)) +
+      ggplot(aes(x = nb_extinct_node, y = value, color = type, alpha = type)) +
       geom_line() +
-      geom_point(data = rand_node_tmp %>%
-        filter(!str_detect(metric, "_ff")) %>%
-        mutate(
-          metric = var_replacement()[metric],
-          type = str_to_sentence(type)
-          )) +
-      geom_smooth(data = rand_node_tmp %>%
-        filter(!str_detect(metric, "_ff")) %>%
-        mutate(
-          metric = var_replacement()[metric],
-          type = str_to_sentence(type)
-          ), color = "black") +
-      facet_wrap(~metric, scale = "free_y") +
-      labs(y = "Network metric values",
-        x = "Number of node removed",
+      geom_point(
+        data = extinction_simulation_node_random_lg %>%
+          filter(metric %in% c("ct", "avg_tl", "prop_redundant_links")) %>%
+          mutate(
+            metric = recode_factor(metric, !!!var_replacement()),
+            type = str_to_sentence(type)
+            )) +
+      geom_smooth(data = extinction_simulation_node_random_lg %>%
+          filter(metric %in% c("ct", "avg_tl", "prop_redundant_links")) %>%
+          mutate(
+            metric = recode_factor(metric, !!!var_replacement()),
+            type = str_to_sentence(type)
+            ), color = "black") +
+      scale_color_manual(values = c("Increasing" = "#FDE725FF", "Decreasing" = "#482677FF", "Random" = "grey")) +
+      scale_alpha_manual(values = c("Increasing" = 1, "Decreasing" = 1, "Random" = 0.12), guide = "none") +
+      facet_wrap(~metric, scale = "free_y", strip.position = "left") +
+      labs(y = "Network metric values", x = "Number of node removed",
         color = "Trophic level scenario") +
-      theme(legend.position = "bottom")
+      cowplot::theme_half_open() +
+      theme(
+        legend.position = "bottom",
+        strip.placement = "outside",
+        strip.background = element_blank(),
+        axis.title.y = element_blank()
+      )
     ),
   tar_target(fish_species_tlvl,
     fish_species_tlvl <- node_tlvl %>%
@@ -909,241 +816,179 @@ tar_target(semeff_tot_tab,
       arrange(desc(tlvl_med)) %>%
       deframe()
     ),
-  tar_target(fish_sim_species, {
-    sim_dec_tlvl_species <- vector(mode ="list", length = length(fish_species_tlvl))
-    sim_inc_tlvl_species <- vector(mode = "list", length = length(fish_species_tlvl))
-    inc_species_tlvl <- sort(fish_species_tlvl, decreasing = FALSE)
-
-    for (i in seq_along(fish_species_tlvl)) {
-      decreasing_tlvl_metaweb <- metaweb_analysis$metaweb[
-        !str_detect(
-          rownames(metaweb_analysis$metaweb),
-          paste0(names(fish_species_tlvl)[1:i], collapse = "|")
-          ),
-        !str_detect(
-          colnames(metaweb_analysis$metaweb),
-          paste0(names(fish_species_tlvl)[1:i], collapse = "|")
-        )
-        ]
-
-      # Remove without feeding links
-      mask_link <- colSums(decreasing_tlvl_metaweb) != 0
-      decreasing_tlvl_metaweb <- decreasing_tlvl_metaweb[mask_link, mask_link]
-      sim_dec_tlvl_species[[i]] <- get_fw_metrics2(decreasing_tlvl_metaweb,
-        keep_metaweb = FALSE)
-
-      increasing_tlvl_metaweb <- metaweb_analysis$metaweb[
-        !str_detect(
-          rownames(metaweb_analysis$metaweb),
-          paste0(names(inc_species_tlvl)[1:i], collapse = "|")
-          ),
-        !str_detect(
-          colnames(metaweb_analysis$metaweb),
-          paste0(names(inc_species_tlvl)[1:i], collapse = "|")
-        )
-        ]
-
-      # Remove without feeding links
-      mask_link <- colSums(increasing_tlvl_metaweb) != 0
-      increasing_tlvl_metaweb <- increasing_tlvl_metaweb[mask_link, mask_link]
-      sim_inc_tlvl_species[[i]] <- get_fw_metrics2(increasing_tlvl_metaweb,
-        keep_metaweb = FALSE)
-    }
-    list(
-      dec =  tibble(
-        one_sp_rm = names(fish_species_tlvl),
-        species_removed = map(seq_along(fish_species_tlvl),
-          ~names(fish_species_tlvl)[1:.x]),
-        metrics = sim_dec_tlvl_species
-        ),
-      inc = tibble(
-        one_sp_rm = names(inc_species_tlvl),
-        species_removed = map(seq_along(inc_species_tlvl),
-          ~names(inc_species_tlvl)[1:.x]),
-        metrics = sim_inc_tlvl_species
-      )
-    )
-    }
+  tar_target(extinction_simulation_species_increasing,
+    extinction_simulation(
+      metaweb_analysis$metaweb,
+      species_names = names(sort(fish_species_tlvl, decreasing = FALSE))
+      ) %>%
+    bind_rows()
     ),
-  tar_target(sim_rand_species, {
-    nsim <- 50
-    set.seed(123)
-
-    sim_random_tlvl_species <- vector(mode = "list", length = length(fish_species_tlvl))
-    sim_random_tlvl_species <- map(sim_random_tlvl_species, ~vector(mode = "list", length = nsim))
-    sp_to_rm <- vector(mode = "list", length = length(fish_species_tlvl))
-    sp_to_rm <- map(sp_to_rm, ~vector(mode = "list", length = nsim))
-
-    for (i in seq_along(fish_species_tlvl)) {
-      for (j in seq_len(nsim)) {
-        sp_to_rm[[i]][[j]] <- sample(names(fish_species_tlvl), size = i, replace = FALSE)
-
-        tmp_metaweb <- metaweb_analysis$metaweb[
-          !str_detect(
-            rownames(metaweb_analysis$metaweb),
-            paste0(sp_to_rm[[i]][[j]], collapse = "|")
-            ),
-          !str_detect(
-            colnames(metaweb_analysis$metaweb),
-            paste0(sp_to_rm[[i]][[j]], collapse = "|")
-          )
-          ]
-        # Remove without feeding links
-        mask_link <- colSums(tmp_metaweb) != 0
-        tmp_metaweb <- tmp_metaweb[mask_link, mask_link]
-        sim_random_tlvl_species[[i]][[j]] <- get_fw_metrics2(
-          tmp_metaweb,
-          keep_metaweb = FALSE)
-      }
-    }
-    tibble(
-      nsp_rm = seq_along(fish_species_tlvl),
-      species_removed = sp_to_rm,
-      metrics = sim_random_tlvl_species
-    )
-    }
-    ),
-  tar_target(sim_sp_dec_inc,
+  tar_target(extinction_simulation_species_decreasing,
+    extinction_simulation(
+      metaweb_analysis$metaweb,
+      species_names = names(sort(fish_species_tlvl, decreasing = TRUE))
+      ) %>%
+    bind_rows()),
+  tar_target(extinction_simulation_species_inc_dec_lg,
     rbind(
-      fish_sim_species$inc %>%
-        mutate(
-          met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()]))),
-          nb_ext = map_int(species_removed, length),
-          type = "increasing",
-          extinct = "species"
-          ) %>%
-      unnest(met) %>%
-      rename(metric = name),
-    fish_sim_species$dec %>%
-      mutate(
-        met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()]))),
-        nb_ext = map_int(species_removed, length),
-        type = "decreasing",
-        extinct = "species"
-        ) %>%
-    unnest(met) %>%
-    rename(metric = name)
-    )
+      extinction_simulation_species_increasing %>%
+        arrange(iteration) %>%
+        mutate(nb_extinct_species = cumsum(nb_species_extinction),
+          nb_extinct_node = cumsum(nb_node_extinction),
+          type = "increasing"),
+      extinction_simulation_species_decreasing %>%
+        arrange(iteration) %>%
+        mutate(nb_extinct_species = cumsum(nb_species_extinction),
+          nb_extinct_node = cumsum(nb_node_extinction),
+          type = "decreasing")) %>%
+    pivot_longer(
+      cols = -c(nb_node_extinction, nb_species_extinction,
+        iteration, nb_extinct_species,
+        nb_extinct_node, type),
+      names_to = "metric",
+      values_to = "value")
     ),
-  tar_target(rand_sp_met,
-    sim_rand_species %>%
-      unnest(metrics) %>%
+  tar_target(extinction_simulation_species_random,
+    furrr::future_map_dfr(1:50, function (id_sim) {
+      extinction_simulation(metaweb_analysis$metaweb,
+        species_names = names(sort(fish_species_tlvl, decreasing = TRUE)),
+        random = TRUE, seed = id_sim) %>%
+      bind_rows() %>%
+      mutate(id_sim = id_sim, seed = id_sim)
+  })),
+  tar_target(extinction_simulation_species_random_lg,
+    extinction_simulation_species_random %>%
+      group_by(id_sim) %>%
+      arrange(iteration) %>%
       mutate(
-        met = map(metrics, ~enframe(unlist(.x[net_ext_met_to_keep()]))),
-        nb_ext = nsp_rm,
-        type = "random",
-        extinct = "species"
+        nb_extinct_species = cumsum(nb_species_extinction),
+        nb_extinct_node = cumsum(nb_node_extinction),
+        type = "random"
         ) %>%
-      unnest(met) %>%
-      rename(metric = name)
+      pivot_longer(
+        cols = -c(nb_node_extinction, nb_species_extinction,
+          iteration, nb_extinct_species, nb_extinct_node,
+          type, id_sim, seed),
+        names_to = "metric", values_to = "value")),
+  tar_target(extinction_simulation_node_increasing,
+    extinction_simulation(
+      metaweb_analysis$metaweb,
+      species_names = names(sort(node_seq$node_fish_inc_tlvl, decreasing = FALSE))
+      ) %>%
+    bind_rows()
     ),
-  tar_target(p_ext_sp_ff,
-    sim_sp_dec_inc %>%
-      filter(str_detect(metric, "_ff")) %>%
+  tar_target(extinction_simulation_node_decreasing,
+    extinction_simulation(
+      metaweb_analysis$metaweb,
+      species_names = names(sort(node_seq$node_fish_dec_tlvl, decreasing = TRUE))
+      ) %>%
+    bind_rows()
+    ),
+  tar_target(extinction_simulation_node_inc_dec_lg,
+    rbind(
+      extinction_simulation_node_increasing %>%
+        arrange(iteration) %>%
+        mutate(nb_extinct_species = cumsum(nb_species_extinction),
+          nb_extinct_node = cumsum(nb_node_extinction),
+          type = "increasing"),
+      extinction_simulation_node_decreasing %>%
+        arrange(iteration) %>%
+        mutate(nb_extinct_species = cumsum(nb_species_extinction),
+          nb_extinct_node = cumsum(nb_node_extinction),
+          type = "decreasing")
+        ) %>%
+    pivot_longer(
+      cols = -c(nb_node_extinction, nb_species_extinction,
+        iteration, nb_extinct_species,
+        nb_extinct_node, type),
+      names_to = "metric",
+      values_to = "value")
+    ),
+  tar_target(extinction_simulation_node_random,
+    furrr::future_map_dfr(1:50, function (id_sim) {
+      extinction_simulation(metaweb_analysis$metaweb,
+        species_names = names(sort(node_seq$node_fish_dec_tlvl, decreasing = TRUE)),
+        random = TRUE, seed = id_sim) %>%
+      bind_rows() %>%
+      mutate(id_sim = id_sim, seed = id_sim)
+  })
+
+    ),
+  tar_target(extinction_simulation_node_random_lg,
+    extinction_simulation_node_random %>%
+      group_by(id_sim) %>%
+      arrange(iteration) %>%
       mutate(
-        metric = var_replacement()[metric],
-        type = str_to_sentence(type)
+        nb_extinct_species = cumsum(nb_species_extinction),
+        nb_extinct_node = cumsum(nb_node_extinction),
+        type = "random"
         ) %>%
-      ggplot(aes(x = nb_ext, y = value, color = type)) +
-      geom_line() +
-      geom_point(
-        data = rand_sp_met %>%
-          filter(str_detect(metric, "_ff")) %>%
-          mutate(
-            metric = var_replacement()[metric],
-            type = str_to_sentence(type)
-            )) +
-        geom_smooth(data = rand_sp_met %>%
-          filter(str_detect(metric, "_ff")) %>%
-          mutate(
-            metric = var_replacement()[metric],
-            type = str_to_sentence(type)
-            ), color = "black") +
-        facet_wrap(~metric, scale = "free_y") +
-        labs(y = "Network metric values", x = "Number of species removed",
-          color = "Trophic level scenario") +
-        theme(legend.position = "bottom")
-    ),
+      pivot_longer(
+        cols = -c(nb_node_extinction, nb_species_extinction,
+          iteration, nb_extinct_species, nb_extinct_node,
+          type, id_sim, seed),
+        names_to = "metric", values_to = "value")),
   tar_target(p_ext_sp,
-    sim_sp_dec_inc %>%
-      filter(!str_detect(metric, "_ff")) %>%
+    extinction_simulation_species_inc_dec_lg %>%
+      filter(metric %in% c("ct", "avg_tl", "prop_redundant_links")) %>%
       mutate(
-        metric = var_replacement()[metric],
+        metric = recode_factor(metric, !!!var_replacement()),
         type = str_to_sentence(type)
         ) %>%
-      ggplot(aes(x = nb_ext, y = value, color = type)) +
+      ggplot(aes(x = nb_extinct_species, y = value, color = type, alpha = type)) +
       geom_line() +
       geom_point(
-        data = rand_sp_met %>%
-          filter(!str_detect(metric, "_ff")) %>%
+        data = extinction_simulation_species_random_lg %>%
+          filter(metric %in% c("ct", "avg_tl", "prop_redundant_links")) %>%
           mutate(
-            metric = var_replacement()[metric],
+            metric = recode_factor(metric, !!!var_replacement()),
             type = str_to_sentence(type)
             )) +
-        geom_smooth(data = rand_sp_met %>%
-          filter(!str_detect(metric, "_ff")) %>%
-          mutate(
-            metric = var_replacement()[metric],
-            type = str_to_sentence(type)
-            ), color = "black") +
-        facet_wrap(~metric, scale = "free_y") +
-        labs(y = "Network metric values", x = "Number of species removed",
-          color = "Trophic level scenario") +
-        theme(legend.position = "bottom")
-    ),
-  tar_target(p_tot_ext_sim_ff,
-    plot_grid(
-      p_ext_sp_ff +
-        theme_half_open() +
-        background_grid() +
-        theme(
-          strip.background = element_blank(),
-          legend.position = "none"
-          ),
-        p_ext_node_ff +
-          theme_half_open() +
-          background_grid() +
-          theme(
-            strip.background = element_blank(),
-            legend.position = "none"
-            ),
-          get_legend(p_ext_node_ff + theme(legend.position = "bottom")),
-          nrow = 3,
-          labels = c("a", "b", ""),
-          rel_heights = c(1, 1, .1)
-    )
+      geom_smooth(data = extinction_simulation_species_random_lg %>%
+        filter(metric %in% c("ct", "avg_tl", "prop_redundant_links")) %>%
+        mutate(
+          metric = recode_factor(metric, !!!var_replacement()),
+          type = str_to_sentence(type)
+          ), color = "black") +
+      scale_color_manual(values = c("Increasing" = "#FDE725FF", "Decreasing" = "#482677FF", "Random" = "grey")) +
+      scale_alpha_manual(values = c("Increasing" = 1, "Decreasing" = 1, "Random" = 0.12), guide = "none") +
+      facet_wrap(~metric, scale = "free_y", strip.position = "left") +
+      labs(y = "Network metric values", x = "Number of species removed",
+        color = "Trophic level scenario") +
+      cowplot::theme_half_open() +
+      theme(
+        legend.position = "bottom",
+        strip.placement = "outside",
+        strip.background = element_blank(),
+        axis.title.y = element_blank()
+      )
     ),
   tar_target(p_tot_ext_sim,
     plot_grid(
-      p_ext_sp +
-        theme_half_open() +
-        background_grid() +
-        theme(
-          strip.background = element_blank(),
-          legend.position = "none"
-          ),
-        p_ext_node +
-          theme_half_open() +
-          background_grid() +
-          theme(
-            strip.background = element_blank(),
-            legend.position = "none"
-            ),
-          get_legend(p_ext_node + theme(legend.position = "bottom")),
-          nrow = 3,
-          labels = c("a", "b", ""),
-          rel_heights = c(1, 1, .1)
+      p_ext_sp + theme(legend.position = "none"),
+      p_ext_node + theme(legend.position = "none"),
+      get_legend(p_ext_node + theme(legend.position = "bottom")),
+      nrow = 3,
+      labels = c("a", "b", ""),
+      rel_heights = c(1, 1, .1)
     )
     ),
+  tar_target(p_sem_tot_ext_sp,
+    plot_grid(
+      p_semeff_tot_ok,
+      p_ext_sp,
+      rel_heights = c(1, .8),
+      nrow = 2, labels = "auto"
+    )),
   tar_target(figSext,
     ggsave_multiple(
-      paste0("tot_ext_sim", c(".png", ".pdf")),
-      plot = p_tot_ext_sim,
+      paste0("p_ext_node", c(".png", ".pdf")),
+      plot = p_ext_node,
       path = here::here("figures"),
       scale = 2.4,
       units = c("mm"),
       width = 120,
-      height = 120 * .6)
+      height = 120 * .35)
     ),
   ## Bioenergetic model
   tar_target(p_sem_list_sim,

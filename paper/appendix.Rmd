@@ -95,7 +95,7 @@ knitr::include_graphics(figStps10)
 
 ```{r}
 cor_cap <- paste0("Correlation among food-web metrics for a) temporal trends by
-  site, b) median values by site (cf Main Methods)", " Pisc: piscivorous, rich.:
+  site, b) median values by site (cf Main Methods), c) bioenergetic model.", " Pisc: piscivorous, rich.:
 species richness, node: node of the food-web corresponding to a trophic species,
 prop.: proportion."
 )
@@ -123,23 +123,24 @@ knitr::include_graphics(p_sem_sp_sim_file)
 
 ```{r}
 rand_sim_cap <- paste0(
-  "Simulations of (a) species and (b) nodes extinctions in the metaweb according
-  to three scenarios: random extinction sequence, extinction sequence by decreasing order of trophic level,
- extinction sequence by increasing order of trophic level. The black line
- represents the prediction of a GAM model for the random extinction sequences (N = 50)."
+  "Simulations of (b) nodes extinctions in the metaweb according to three
+  scenarios: random extinction sequence (grey dots), extinction sequence by
+  decreasing order of trophic level, extinction sequence by increasing order of
+  trophic level. The black line represents the average prediction of a GAM
+  linear model for the 50 random extinction sequences."
 )
 ```
 
 ```{r ext, fig.cap=rand_sim_cap}
 tar_load(figSext)
-knitr::include_graphics(figSext)
+knitr::include_graphics(figSext[[1]])
 ```
 
 
 
 
 ```{r}
-obs_fit_cap <- "Fitted versus observed values from the INLA models estimating
+obs_fit_cap <- "Fitted versus observed values from the linear models estimating
 the temporal trends of the food-web structure. The black line depicts the first
 bissector. Pearson's correlation coefficients are displayed."
 ```
