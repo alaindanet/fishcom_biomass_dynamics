@@ -1,7 +1,7 @@
 ---
 title: Appendix B - Dominator tree and redundancy
 subtitle:
-author: Alain Danet, Loubna El Madouri, Maud Mouchet, Elisa Thébault and Colin Fontaine
+author:
 date: \today
 output:
   bookdown::pdf_document2:
@@ -73,96 +73,174 @@ old_par <- par()
 
 \beginsupplement
 
-As each trophic link does not contribute equally to the robustness of an
-ecological network. In particular in a food-web, ....[Explain why the metric is
-really cool]
+Because species are interdependant, species loss can have cascading effects and
+triger secondary extinctions [@dunne_network_2002]. So assessing the robustness
+of ecological networks to species losses has been a big question in Ecology.
+Previous research showed that food-web structure, such as connectance, increased
+robustness [@dunne_network_2002]. The idea is that more connected food-web will
+be more stable because they contain a large number of pathways convey biomass
+through the food-web. However, connectance as some limitations as a robustness
+metric has some limitations, because each trophic link does not contribute
+equally to the robustness of an ecological network. Trophic links can be as
+functional or redundant, depending on their role in transmitting biomass through
+the food-web. Functional links are the set of links that is required to connect
+every species to the basal resource of the food-web, all of the other being
+redundant. Only functional links affect directly robustness, as their removal
+will trigger secondary extinctions. The removal of redundant links in turn do
+not trigger secondary extinctions, but makes the food-webs more fragile to
+further extinctions [@allesina_functional_2009].
 
-[Implementation] An developed approach is based on the use of denomitor trees
-[@bodini_using_2009; @allesina_who_2004; @allesina_functional_2009].
-[...] The number of functional and redundant links are straightforward to
-compute We computed the number of redundant and functional links using the
-dominator tree approach [@allesina_functional_2009]. A species
-$i$ is a dominator of species $j$ if $i$ mediates the connection $j$ to basal
-resources such as the extinction of $i$ remove the connection of $j$ to basal
-resources. It is then to identify the set of trophic links that are essential to
-connect species to basal resources, i.e. functional links, and the
-redundant links. This method requires a single basal root in the food-webs.
-
-Pioneer papers explained the algorithm [@bodini_using_2009] and examples.
-Replicating the algorithm could seem somewhat intimitating at the time, but the
-computing the dominator tree of a food-web became straightforward. In R, it is
-available in `igraph::dominator_tree()`. Below is presented the function and an
-example of how to use it to compute functional and redundant links.
+The identification of functional and redundant links is based on the use of
+denomitor trees [@bodini_using_2009; @allesina_who_2004;
+@allesina_functional_2009]. Dominator trees allows to identify the set of
+trophic links that are essential to connect species to basal resources, i.e.
+functional links, and the redundant links. Pioneer papers explained the
+algorithm to compute the set of dominator trees and I refer to them for further
+information [@bodini_using_2009; @allesina_who_2004; @allesina_functional_2009]
+and examples. Here, we aim to show that while implementing this algorithm could
+seem somewhat intimitating at the time, this algorithm is now widely
+implemented. In R, it is available in `igraph::dominator_tree()`. Below we show
+how functional and redundant links can be computed easily from R by replicating
+three examples presented in previous studies.
 
 ```{r, echo = TRUE}
 compute_redundancy
 ```
 
-```{r}
+Here is an example with the food-web displayed in appendix of
+@bodini_using_2009:
+
+
+```{r, echo = TRUE}
 # Get the food-web example from Bodini et al. (2009), Appendix 1 
-get_bodini_graph_appendix
-out <- compute_redundancy(get_bodini_graph_appendix(), root = "R")
+g <- get_bodini_graph_appendix()
+# compute reduncancy
+out <- compute_redundancy(g, root = "R")
 as.data.frame(out)
 ```
 
+```{r}
+vertex_color <- "white"
+vertex_size  <- 40
+```
 
-We used this function to reproduce the
-two examples (Fig. \@ref(fig:bod1), \@ref(fig:)) showcased in the Fig.1 and Appendix
-1 of @bodini_using_2009 , and the example (Fig. \@ref(fig:)) presented in the Fig.1 of
-@allesina_functional_2009.
 
-(ref:bod1-cap) bodin cap
+We used this function to reproduce the three examples (Fig. \@ref(fig:examples)),
+which were displayed in the Fig.1 and Appendix 1 of @bodini_using_2009, and
+in the Fig.1 of @allesina_functional_2009. The table \@ref(tab:redun) displays
+the number and the proportion of functional and redundant links.
 
-```{r bod1, fig.cap="(ref:bod1-cap)"}
-par(mfrow = c(1, 2))
 
+```{r bod1}
 bodinifig1 <- get_bodini_graph_fig1()
 
 # Complete graph
-lg <- layout_as_tree(bodinifig1, root = "root")
-lg[, 2] <- -lg[, 2]
-plot(bodinifig1, layout = lg, main = "Redundant & Functional\nlinks")
+p_bodinifig1_all <- ~{
+  lg <- layout_as_tree(bodinifig1, root = "root")
+  lg[, 2] <- -lg[, 2]
+  plot(bodinifig1, layout = lg, vertex.color = vertex_color, vertex.size = vertex_size)
+}
 
 # Only functional links
 bodinifig1_dtree <- dominator_tree(bodinifig1, root = "root")
-layout <- layout_as_tree(bodinifig1_dtree$domtree, root = "root")
-layout[, 2] <- -layout[, 2]
-plot(bodinifig1_dtree$domtree, layout = layout, main = "Functional\nlinks only")
+p_bodinifig1_functional <- ~{
+  layout <- layout_as_tree(bodinifig1_dtree$domtree, root = "root")
+  layout[, 2] <- -layout[, 2]
+  plot(bodinifig1_dtree$domtree, layout = layout, vertex.color = vertex_color, vertex.size = vertex_size)
+}
 ```
 
 
-```{r bod2}
-par(mfrow = c(1, 2))
-
+```{r bod2, echo = FALSE, results = "hide"}
 g <- get_bodini_graph_appendix()
 
 # Complete graph
-lg <- layout_as_tree(g, root = "R")
-lg[, 2] <- -lg[, 2]
-plot(g, layout = lg, main = "Redundant + Functional\nlinks")
+p_bodiniappen_all <- ~{
+  lg <- layout_as_tree(g, root = "R")
+  lg[, 2] <- -lg[, 2]
+  plot(g, layout = lg, vertex.color = vertex_color, vertex.size = vertex_size)
+}
 
 # Only functional links
 dtree <- dominator_tree(g, root = "R")
-layout <- layout_as_tree(dtree$domtree, root = "R")
-layout[, 2] <- -layout[, 2]
-plot(dtree$domtree, layout = layout, main = "Functional\nlinks only")
+p_bodiniappen_functional <- ~{
+  lg <- layout_as_tree(dtree$domtree, root = "R")
+  lg[, 2] <- -lg[, 2]
+  plot(
+    dtree$domtree,
+    layout = lg,
+    vertex.color = vertex_color,
+    vertex.size = vertex_size
+  )
+}
+
+p_bodini <- plot_grid(
+  ggdraw(p_bodinifig1_all), ggdraw(p_bodinifig1_functional),
+  ggdraw(p_bodiniappen_all), ggdraw(p_bodiniappen_functional),
+  labels = "auto"
+)
+ggsave_multiple(
+  paste0("p_bodini", c(".png", ".pdf")),
+  plot = p_bodini,
+  path = here::here("figures"),
+  scale = 2.6,
+  units = c("mm"),
+  width = 80,
+  height = 80 * 1.5)
 ```
 
-```{r all1}
-par(mfrow = c(1, 2))
-
+```{r all1, echo = FALSE, results = "hide"}
 allesinafig1 <- get_allesina_graph(diag = FALSE)
-lg <- layout_as_tree(allesinafig1, root = "0")
-lg[, 2] <- -lg[, 2]
-plot(allesinafig1, layout = lg, main = "Redundant + Functional\nlinks")
+
+p_allesinafig1_all <- ~{
+  lg <- layout_as_tree(allesinafig1, root = "0")
+  lg[, 2] <- -lg[, 2]
+  plot(allesinafig1, layout = lg, vertex.color = vertex_color, vertex.size = vertex_size)
+}
 
 # Only functional links
 allesinafig1_dtree <- dominator_tree(allesinafig1, root = "0")
-layout <- layout_as_tree(allesinafig1_dtree$domtree, root = "0")
-layout[, 2] <- -layout[, 2]
-plot(allesinafig1_dtree$domtree, layout = layout,
-  main = "Functional\nlinks only")
+p_allesinafig1_functional <- ~{
+  layout <- layout_as_tree(allesinafig1_dtree$domtree, root = "0")
+  layout[, 2] <- -layout[, 2]
+  plot(
+    allesinafig1_dtree$domtree,
+    layout = layout,
+    vertex.color = vertex_color,
+    vertex.size = vertex_size
+  )
+}
+
+p_examples <- plot_grid(
+  ggdraw(p_bodinifig1_all), ggdraw(p_bodinifig1_functional),
+  ggdraw(p_bodiniappen_all), ggdraw(p_bodiniappen_functional),
+  ggdraw(p_allesinafig1_all), ggdraw(p_allesinafig1_functional),
+  nrow = 3,
+  labels = "auto"
+)
+ggsave_multiple(
+  paste0("p_examples", c(".png", ".pdf")),
+  plot = p_examples,
+  path = here::here("figures"),
+  scale = 4.0,
+  units = c("mm"),
+  width = 80,
+  height = 80 * 1.2)
 ```
+
+(ref:example-cap) Reproduced examples of categorising functional links in
+food-webs using `igraph::dominator_tree()` R function. Left columns (a, c, e)
+displays the complete food-web while right column displays food-web with the
+functional links only (b, d, f). (a,b): reproduction of Fig. 1 of
+@bodini_using_2009, (c, d): reproduction of appendix figures of @bodini_using_2009,
+(e, f): reproduction of fig. 1 of @allesina_functional_2009. Note that (e, f) is
+a bit different from the original, as noted by the authors, they could have
+removed further redundant links (i.e. $2 \to 5$, or $3 \to 5$).
+
+```{r examples, fig.cap = "(ref:example-cap)", out.height = "80%"}
+knitr::include_graphics(here::here("figures", "p_examples.png"))
+```
+
 
 ```{r}
 examples <- list(
@@ -204,12 +282,14 @@ redundancy_examples %>%
   kable(
     digits = 2,
     row.names = FALSE,
+    label = "redun",
     booktabs = T,
     caption = "Computation of the number (Nb) of functional, redundant links, and
-    their proportion (Prop.) from previous published examples.",
-    label = "inlarand") %>%
+    their proportion (Prop.) from previous published food-webs.",
+    ) %>%
   collapse_rows(columns = c(1), valign = "top") %>%
   kable_styling(latex_options = "scale_down")
 ```
 
-# References {-}
+# References {-}
+

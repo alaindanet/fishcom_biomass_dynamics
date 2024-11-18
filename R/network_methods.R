@@ -133,6 +133,27 @@ compute_gini <- function (mat) {
   return(gini)
 }
 
+get_root_graph4fish <- function() {
+
+  # Get a root "R" to compute dominant tree
+  root_names <- c("R", "det", "biof", "phytopl")
+  root_mat <- matrix(
+    c(
+      0, 1, 1, 1,
+      0, 0, 0, 0,
+      0, 0, 0, 0,
+      0, 0, 0, 0
+      ), nrow = 4, byrow = TRUE,
+    dimnames = list(root_names, root_names)
+  )
+  igraph::graph_from_adjacency_matrix(
+    root_mat,
+    mode = "directed",
+    diag = FALSE
+  )
+
+}
+
 #' Get redundancy in food-webs
 #'
 #' Computes redundant and functional links.
@@ -158,23 +179,9 @@ compute_gini <- function (mat) {
 #' layout[,2] <- -layout[,2]
 #' plot(dtree$domtree, layout=layout, vertex.label=V(dtree$domtree)$name)
 get_redundancy <- function(x = NULL) {
-  # Get a root "R" to compute dominant tree
-  root_names <- c("R", "det", "biof", "phytopl")
-  root_mat <- matrix(
-    c(
-      0, 1, 1, 1,
-      0, 0, 0, 0,
-      0, 0, 0, 0,
-      0, 0, 0, 0
-      ), nrow = 4, byrow = TRUE,
-    dimnames = list(root_names, root_names)
-  )
-  root_graph <- igraph::graph_from_adjacency_matrix(
-    root_mat,
-    mode = "directed",
-    diag = FALSE
-  )
 
+  root_graph <- get_root_graph4fish()
+  root_names <- names(V(root_graph))
   # Check for starving fish nodes
   no_int <- colnames(x)[colSums(x) == 0]
   if  (any(!no_int %in% root_names)) {
