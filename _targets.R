@@ -1337,6 +1337,16 @@ tar_target(semeff_tot_tab,
       width = 80, height = 80 * .75),
     format = "file"
     ),
+  tar_target(p_sem_tot_ext_sp_file,
+    ggsave_multiple(
+      paste0("p_sem_tot_ext_sp", c(".png", ".pdf")),
+      plot = tar_read(p_sem_tot_ext_sp),
+      path = here::here("figures"),
+      scale = 2.4,
+      units = c("mm"),
+      width = 120,
+      height = 120 * .65)
+    ),
   # Tables:
   tar_target(pca_table,
     data_for_pca %>%

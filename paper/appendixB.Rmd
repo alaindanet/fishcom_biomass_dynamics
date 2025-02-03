@@ -1,8 +1,8 @@
 ---
-title: Appendix B - Dominator tree and redundancy
-subtitle:
-author:
-date: \today
+title: "Biodiversity changes are linked to changes in food-web structure and redundancy in riverine ecosystems"
+subtitle: "Alain Danet (a,b), Loubna El Madouri (a,c), Andrew P. Beckerman (b),
+Maud Mouchet (a), Colin Fontaine (a) and Elisa Thébault (d)"
+date: Appendix B - Computation of redundancy of trophic pathways in food webs
 output:
   bookdown::pdf_document2:
     fig_caption: true
@@ -73,35 +73,37 @@ old_par <- par()
 
 \beginsupplement
 
-Because species are interdependant, species loss can have cascading effects and
-triger secondary extinctions [@dunne_network_2002]. So assessing the robustness
-of ecological networks to species losses has been a big question in Ecology.
-Previous research showed that food-web structure, such as connectance, increased
+Because species biomass are involved in trophic interactions, species losses can
+have cascading effects and trigger secondary extinctions [@dunne_network_2002].
+In the context of biodiversity crisis, assessing the robustness of ecological
+networks to species losses has been then a big question in Ecology. Previous
+research showed that food-web structure, such as connectance, increased
 robustness [@dunne_network_2002]. The idea is that more connected food-web will
 be more stable because they contain a large number of pathways convey biomass
 through the food-web. However, connectance as some limitations as a robustness
-metric has some limitations, because each trophic link does not contribute
-equally to the robustness of an ecological network. Trophic links can be as
+metric, because each trophic link does not contribute equally to the robustness
+of an ecological network [@allesina_who_2004]. Trophic links can be categorised as
 functional or redundant, depending on their role in transmitting biomass through
 the food-web. Functional links are the set of links that is required to connect
 every species to the basal resource of the food-web, all of the other being
 redundant. Only functional links affect directly robustness, as their removal
 will trigger secondary extinctions. The removal of redundant links in turn do
-not trigger secondary extinctions, but makes the food-webs more fragile to
-further extinctions [@allesina_functional_2009].
+not directly trigger secondary extinctions, but makes the food-webs more fragile
+to further extinctions [@allesina_functional_2009].
 
 The identification of functional and redundant links is based on the use of
-denomitor trees [@bodini_using_2009; @allesina_who_2004;
+denominator trees [@bodini_using_2009; @allesina_who_2004;
 @allesina_functional_2009]. Dominator trees allows to identify the set of
-trophic links that are essential to connect species to basal resources, i.e.
-functional links, and the redundant links. Pioneer papers explained the
-algorithm to compute the set of dominator trees and I refer to them for further
-information [@bodini_using_2009; @allesina_who_2004; @allesina_functional_2009]
-and examples. Here, we aim to show that while implementing this algorithm could
-seem somewhat intimitating at the time, this algorithm is now widely
-implemented. In R, it is available in `igraph::dominator_tree()`. Below we show
-how functional and redundant links can be computed easily from R by replicating
-three examples presented in previous studies.
+trophic links that are essential to connect all the consumers to the basal resource, i.e.
+the functional links, and the redundant links, i.e. the redundant trophic pathways
+from basal resource to consumers. Pioneer papers explained the algorithm to
+compute the set of dominator trees and we refer to them for further
+information and examples [@bodini_using_2009; @allesina_who_2004;
+@allesina_functional_2009]. Here, we aim to show that while implementing this
+analysis could be difficult at the time, this algorithm is now widely
+available. In R, it is available in `igraph::dominator_tree()`. Below we show
+how the number of functional and redundant links can be  easily computed from R
+by replicating three examples presented in previous studies.
 
 ```{r, echo = TRUE}
 compute_redundancy
@@ -126,9 +128,10 @@ vertex_size  <- 40
 
 
 We used this function to reproduce the three examples (Fig. \@ref(fig:examples)),
-which were displayed in the Fig.1 and Appendix 1 of @bodini_using_2009, and
-in the Fig.1 of @allesina_functional_2009. The table \@ref(tab:redun) displays
-the number and the proportion of functional and redundant links.
+which were displayed in the Fig. 1 and Appendix 1 of @bodini_using_2009, and
+in the Fig. 1 of @allesina_functional_2009. The table \@ref(tab:redun) displays
+the number and the proportion of functional and redundant links from those
+examples.
 
 
 ```{r bod1}
@@ -229,7 +232,7 @@ ggsave_multiple(
 ```
 
 (ref:example-cap) Reproduced examples of categorising functional links in
-food-webs using `igraph::dominator_tree()` R function. Left columns (a, c, e)
+food webs using `igraph::dominator_tree()` R function. Left columns (a, c, e)
 displays the complete food-web while right column displays food-web with the
 functional links only (b, d, f). (a,b): reproduction of Fig. 1 of
 @bodini_using_2009, (c, d): reproduction of appendix figures of @bodini_using_2009,

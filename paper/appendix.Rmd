@@ -1,8 +1,8 @@
 ---
-title: Appendix
-subtitle:
-author: Alain Danet, Loubna El Madouri, Maud Mouchet, Elisa Thébault and Colin Fontaine
-date: \today
+title: "Biodiversity changes are linked to changes in food-web structure and redundancy in riverine ecosystems"
+subtitle: "Alain Danet (a,b), Loubna El Madouri (a,c), Andrew P. Beckerman (b),
+Maud Mouchet (a), Colin Fontaine (a) and Elisa Thébault (d)"
+date: Supplementary figures and tables
 output:
   bookdown::pdf_document2:
     fig_caption: true
