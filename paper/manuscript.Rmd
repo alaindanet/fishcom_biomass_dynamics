@@ -11,7 +11,6 @@ always_allow_html: true
 number_sections: false
 bibliography: references.bib
 link-citations: true
-#csl: ecology-letters.csl
 #https://pkgs.rstudio.com/rticles/articles/examples.html
 toc: false
 linestretch: 2.0
@@ -182,7 +181,7 @@ species coexistence, ecosystem functioning, and stability to perturbations
 @danet_species_2021; @eschenbrenner_diversity_2023; @danet_response_2024]. Both
 theory and empirical evidence demonstrate that species richness and food web
 structure influence coexistence [@chesson_interaction_2008], ecosystem
-productivity [@thebault_food web_2003; @wang_biodiversity_2018], temporal
+productivity [@thebault_food-web_2003; @wang_biodiversity_2018], temporal
 stability [@danet_species_2021; @danet_response_2024;
 @eschenbrenner_diversity_2023], and robustness to disturbances
 [@sole_complexity_2001; @dunne_network_2002; @allesina_functional_2009;
@@ -236,7 +235,7 @@ with spatial gradients using two approaches: (i) replicating our temporal
 analysis using median biodiversity and food web metrics across sites (Fig.
 \@ref(fig:matmet)c & e), and (ii) simulating food web dynamics across gradients
 of species richness and primary productivity using a bioenergetic model
-[@brose_allometric_2006; @lajaaiti_ecologicalnetworksdynamicsjl_2025]. These
+[@brose_allometric_2006; @lajaaiti_ecologicalnetworksdynamicsjl_nodate]. These
 simulations allowed us to evaluate whether theoretical predictions align with
 our empirical data, which are limited to fish biodiversity.
 
@@ -312,12 +311,12 @@ from our `r nb_st` fish communities with 10+ years of population dynamics
 spanning 1995-2018 over France (Fig. \@ref(fig:matmet)a-c). We implemented Bayesian hierarchical
 models to jointly estimate the temporal trends in these metrics. We found a
 great heterogeneity in the temporal trends at the site level (community biomass:
-from `r grbmn`% to +`r grbmx`% per decade, species richness: `r grrhn` to +`r
-grrhx`%, average trophic level: `r grtln` to +`r grtlx`, connectance: `r grctn`
-to +`r grctx`, redundancy: `r grln` to +`r grlx`, Fig. S1) which was effectively
-captured by the hierarchical model ( conditional R2 ranging from `r
-r2cond$log_bm_std` for community biomass to `r r2cond$log_rich_std` for species
-richness, Table S2).
+from `r grbmn`% to +`r grbmx`% per decade, species richness: `r grrhn` to
++`r grrhx`%, average trophic level: `r grtln` to +`r grtlx`, connectance:
+`r grctn` to +`r grctx`, redundancy: `r grln` to +`r grlx`, Fig. S1) which was
+effectively captured by the hierarchical model ( conditional R2 ranging from
+`r r2cond$log_bm_std` for community biomass to `r r2cond$log_rich_std` for
+species richness, Table S2).
 
 ```{r}
 sem_cap <- "(a) Structural equation models linking the temporal trends of
@@ -617,7 +616,7 @@ theoretical studies have reported contrasting effects of connectance on
 productivity [@nie_will_2023; @wang_intraguild_2019; @thebault_food-web_2003;
 @poisot_trophic_2013; @schneider_animal_2016]. For instance, while increased
 connectance between herbivores and plants can either enhance or reduce
-productivity [@thebault_food web_2003; @poisot_trophic_2013; @nie_will_2023],
+productivity [@thebault_food-web_2003; @poisot_trophic_2013; @nie_will_2023],
 greater connectance among carnivores generally boosts productivity by reducing
 top-down control and allowing biomass to accumulate across trophic levels
 [@wang_intraguild_2019; @schneider_animal_2016].
@@ -695,7 +694,7 @@ research, stemming from its limitations. For instance, integrating food web
 metrics into conservation planning will require understanding how they relate to
 other facets of biodiversity, such as the presence of non-native species, and
 drivers of biodiversity changes, including habitat degradation
-[@danet_past_2024] and climate change [@bonnaffe_warming_2024]. Ultimately, our
+[@danet_past_2024] and climate change [@bonnaffe_interaction_2024]. Ultimately, our
 work aims to bridge the gap between Biodiversity-Ecosystem Functioning and food
 web theory, fostering greater integration with research on biodiversity changes.
 
@@ -1010,7 +1009,7 @@ If the final community contained disconnected producers (i.e. without consumers)
 or disconnected consumers (i.e. consumers without preys), we discarded them and
 run the simulations again with the same parametrization. The simulations were
 done using the Julia package `EcologicalNetworksDynamics.jl`
-[@lajaaiti_ecologicalnetworksdynamicsjl_2024]. Then, we computed the community
+[@lajaaiti_ecologicalnetworksdynamicsjl_nodate]. Then, we computed the community
 and food web metrics at the last timesteps and analyzed the data with the same
 SEM described above.
 
@@ -1020,8 +1019,3 @@ SEM described above.
 <div id="refs"></div>
 
 \newpage
-
-
-
-
-

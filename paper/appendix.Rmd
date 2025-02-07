@@ -1,8 +1,8 @@
 ---
-title: "Biodiversity changes are linked to changes in food-web structure and redundancy in riverine ecosystems"
+title: "Biodiversity temporal trends are reshaping food web structure and redundancy in riverine ecosystems"
 subtitle: "Alain Danet (a,b), Loubna El Madouri (a,c), Andrew P. Beckerman (b),
 Maud Mouchet (a), Colin Fontaine (a) and Elisa Thébault (d)"
-date: Supplementary figures and tables
+date: Supplementary Material
 output:
   bookdown::pdf_document2:
     fig_caption: true
@@ -10,7 +10,6 @@ output:
     toc: false
 fontsize: 10pt
 header-includes:
-   - \usepackage{natbib}
    - \newcommand{\beginsupplement}{\renewcommand{\thetable}{S\arabic{table}} \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}}
    - \usepackage{float}
    - \usepackage{multirow}
@@ -24,6 +23,7 @@ header-includes:
 geometry: margin=2cm
 bibliography: references.bib
 number_sections: false
+csl: pnas.csl
 ---
 
 
@@ -59,6 +59,7 @@ library(cowplot)
 library(kableExtra)
 library(sf)
 library(nlme)
+library(igraph)
 
 mypath <- rprojroot::find_package_root_file
 source(mypath("R/variable_shortcut.R")) # Define your custom code as a bunch of
@@ -73,7 +74,373 @@ mytheme <- theme_cowplot() +
 theme_set(mytheme)
 ```
 
+```{r}
+tar_load(c(semeff_tot, semeff_tot_ok))
+semeff_tot <- semeff_tot %>%
+  mutate(across(c(response, predictor), ~str_remove(.x, "mean_")))
+
+rdtps <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std")
+    )
+)
+rdsp <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std", model = "spatial"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std", model = "spatial")
+    )
+)
+rdm <- map(
+  setNames(
+    c("Connectance", "Avg trophic level", "Biomass", "Redundancy"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(x = semeff_tot_ok, type = "Direct", resp = .x, term = "Biomass", model = "Theoretical model"),
+    r = get_semeff_ci(x = semeff_tot_ok, type = "Direct", resp = .x, term = "Species richness", model = "Theoretical model")
+    )
+)
+```
+
+```{r}
+ridtps <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    r = get_semeff_ci(resp = .x, term = "log_rich_std", type = "indirect")
+    )
+)
+ridsp <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    r = get_semeff_ci(resp = .x, term = "log_rich_std",
+      model = "spatial", type = "indirect")
+    )
+)
+ridm <- map(
+  setNames(
+    c("Connectance", "Avg trophic level", "Biomass", "Redundancy"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(x = semeff_tot_ok, type = "Indirect", resp = .x, term = "Biomass", model = "Theoretical model"),
+    r = get_semeff_ci(x = semeff_tot_ok, type = "Indirect", resp = .x, term = "Species richness", model = "Theoretical model")
+    )
+)
+rttps <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std", type = "total"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std", type = "total")
+    )
+)
+rtsp <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std",
+      model = "spatial", type = "total"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std",
+      model = "spatial", type = "total")
+    )
+)
+rtm <- map(
+  setNames(
+    c("Connectance", "Avg trophic level", "Biomass", "Redundancy"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(x = semeff_tot_ok, type = "Total", resp = .x, term = "Biomass", model = "Theoretical model"),
+    r = get_semeff_ci(x = semeff_tot_ok, type = "Total", resp = .x, term = "Species richness", model = "Theoretical model")
+    )
+)
+```
+
+
 \beginsupplement
+
+# Comparison of analysis in space and time
+
+We further assessed the consistency of the reported associations among temporal
+trends by implementing two additional analyses. We first tested if the
+associations among the temporal trends within sites was holding across sites,
+i.e. using spatial variations in food web structure rather than temporal changes
+over time (space-for-time hypothesis). Second, we performed theoretical
+simulations with a bioenergetic food web model to cross-reference our site and
+species specific empirical data on riverine fish with a more generalized
+representation of food web dynamics known to represent accurate relationships
+among our focal variables [@brose_allometric_2006; @eschenbrenner_diversity_2023;
+@danet_response_2024]. With those additional empirical and theoretical data, we
+assessed additional SEM models with the same structure as in Section 4.2.
+
+As in the temporal analysis, species richness had a positive effect on community
+biomass both in empirical data and in theoretical simulations (resp. $r_\delta
+=$ `r rdsp$bm$r` and `r rdm$bm$r`, Fig. 3a and S3). In both
+empirical data and theoretical simulations, community biomass had a positive
+effect on average trophic level (resp. $r_\delta =$ `r rdsp$tlvl$bm` and
+`r rdm$tlvl$bm`), and redundancy (resp. $r_\delta =$ `r rdsp$red$bm` and
+`r rdm$red$bm`), as in temporal analysis. We found weak evidence of a positive
+effect of spatial variation in community biomass on connectance in empirical
+data ($r_\delta =$ `r rdsp$ct$bm`) but strong evidence in theoretical
+simulations ($r_\delta =$ `r rdm$ct$bm`, Fig. 3a).
+
+The effects of spatial variations in species richness on food web structure
+mostly aligned with those from the temporal trend analysis, except for average
+trophic level. We found a direct negative effect of species richness on
+connectance both using data and model simulations (resp. $r_\delta =$
+`r rdsp$ct$r` and `r rdm$ct$r`, Fig. 3a), on average trophic level
+(resp. $r_\delta =$ `r rdsp$tlvl$r` and `r rdm$tlvl$r`), but a direct positive
+effect on redundancy (resp. $r_\delta =$ `r rdsp$red$r` and `r rdm$red$r`).
+Species richness had an indirect positive effect of species richness through
+community biomass, which added up to strong total negative effects on
+connectance in empirical data and simulations (resp. $r_\delta =$
+`r rtsp$ct$r` and `r rtm$ct$r`) and positive on redundancy (resp. $r_\delta =$
+`r rtsp$red$r` and `r rtm$red$r`). We found that
+species richness had a total positive effect on average trophic level in
+bioenergetic model, in agreement with temporal trends (resp. $r_\delta =$ `r rtm$tlvl$r`),
+but a total negative effect in spatial variations (resp. $r_\delta =$ `r rtsp$tlvl$r`).
+
+# Disantengling functional and redundant links
+
+Because species biomass are involved in trophic interactions, species losses can
+have cascading effects and trigger secondary extinctions [@dunne_network_2002].
+In the context of biodiversity crisis, assessing the robustness of ecological
+networks to species losses has been then a big question in Ecology. Previous
+research showed that food-web structure, such as connectance, increased
+robustness [@dunne_network_2002]. The idea is that more connected food-web will
+be more stable because they contain a large number of pathways convey biomass
+through the food-web. However, connectance as some limitations as a robustness
+metric, because each trophic link does not contribute equally to the robustness
+of an ecological network [@allesina_who_2004]. Trophic links can be categorised as
+functional or redundant, depending on their role in transmitting biomass through
+the food-web. Functional links are the set of links that is required to connect
+every species to the basal resource of the food-web, all of the other being
+redundant. Only functional links affect directly robustness, as their removal
+will trigger secondary extinctions. The removal of redundant links in turn do
+not directly trigger secondary extinctions, but makes the food-webs more fragile
+to further extinctions [@allesina_functional_2009].
+
+The identification of functional and redundant links is based on the use of
+denominator trees [@bodini_using_2009; @allesina_who_2004;
+@allesina_functional_2009]. Dominator trees allows to identify the set of
+trophic links that are essential to connect all the consumers to the basal resource, i.e.
+the functional links, and the redundant links, i.e. the redundant trophic pathways
+from basal resource to consumers. Pioneer papers explained the algorithm to
+compute the set of dominator trees and we refer to them for further
+information and examples [@bodini_using_2009; @allesina_who_2004;
+@allesina_functional_2009]. Here, we aim to show that while implementing this
+analysis could be difficult at the time, this algorithm is now widely
+available. In R, it is available in `igraph::dominator_tree()`. Below we show
+how the number of functional and redundant links can be  easily computed from R
+by replicating three examples presented in previous studies.
+
+```{r, echo = TRUE}
+compute_redundancy
+```
+
+Here is an example with the food-web displayed in appendix of
+@bodini_using_2009:
+
+
+```{r, echo = TRUE}
+# Get the food-web example from Bodini et al. (2009), Appendix 1 
+g <- get_bodini_graph_appendix()
+# compute reduncancy
+out <- compute_redundancy(g, root = "R")
+as.data.frame(out)
+```
+
+```{r}
+vertex_color <- "white"
+vertex_size  <- 40
+```
+
+
+We used this function to reproduce the three examples (Fig. \@ref(fig:examples)),
+which were displayed in the Fig. 1 and Appendix 1 of @bodini_using_2009, and
+in the Fig. 1 of @allesina_functional_2009. The table \@ref(tab:redun) displays
+the number and the proportion of functional and redundant links from those
+examples.
+
+
+```{r bod1}
+bodinifig1 <- get_bodini_graph_fig1()
+
+# Complete graph
+p_bodinifig1_all <- ~{
+  lg <- layout_as_tree(bodinifig1, root = "root")
+  lg[, 2] <- -lg[, 2]
+  plot(bodinifig1, layout = lg, vertex.color = vertex_color, vertex.size = vertex_size)
+}
+
+# Only functional links
+bodinifig1_dtree <- dominator_tree(bodinifig1, root = "root")
+p_bodinifig1_functional <- ~{
+  layout <- layout_as_tree(bodinifig1_dtree$domtree, root = "root")
+  layout[, 2] <- -layout[, 2]
+  plot(bodinifig1_dtree$domtree, layout = layout, vertex.color = vertex_color, vertex.size = vertex_size)
+}
+```
+
+
+```{r bod2, echo = FALSE, results = "hide"}
+g <- get_bodini_graph_appendix()
+
+# Complete graph
+p_bodiniappen_all <- ~{
+  lg <- layout_as_tree(g, root = "R")
+  lg[, 2] <- -lg[, 2]
+  plot(g, layout = lg, vertex.color = vertex_color, vertex.size = vertex_size)
+}
+
+# Only functional links
+dtree <- dominator_tree(g, root = "R")
+p_bodiniappen_functional <- ~{
+  lg <- layout_as_tree(dtree$domtree, root = "R")
+  lg[, 2] <- -lg[, 2]
+  plot(
+    dtree$domtree,
+    layout = lg,
+    vertex.color = vertex_color,
+    vertex.size = vertex_size
+  )
+}
+
+p_bodini <- plot_grid(
+  ggdraw(p_bodinifig1_all), ggdraw(p_bodinifig1_functional),
+  ggdraw(p_bodiniappen_all), ggdraw(p_bodiniappen_functional),
+  labels = "auto"
+)
+ggsave_multiple(
+  paste0("p_bodini", c(".png", ".pdf")),
+  plot = p_bodini,
+  path = here::here("figures"),
+  scale = 2.6,
+  units = c("mm"),
+  width = 80,
+  height = 80 * 1.5)
+```
+
+```{r all1, echo = FALSE, results = "hide"}
+allesinafig1 <- get_allesina_graph(diag = FALSE)
+
+p_allesinafig1_all <- ~{
+  lg <- layout_as_tree(allesinafig1, root = "0")
+  lg[, 2] <- -lg[, 2]
+  plot(allesinafig1, layout = lg, vertex.color = vertex_color, vertex.size = vertex_size)
+}
+
+# Only functional links
+allesinafig1_dtree <- dominator_tree(allesinafig1, root = "0")
+p_allesinafig1_functional <- ~{
+  layout <- layout_as_tree(allesinafig1_dtree$domtree, root = "0")
+  layout[, 2] <- -layout[, 2]
+  plot(
+    allesinafig1_dtree$domtree,
+    layout = layout,
+    vertex.color = vertex_color,
+    vertex.size = vertex_size
+  )
+}
+
+p_examples <- plot_grid(
+  ggdraw(p_bodinifig1_all), ggdraw(p_bodinifig1_functional),
+  ggdraw(p_bodiniappen_all), ggdraw(p_bodiniappen_functional),
+  ggdraw(p_allesinafig1_all), ggdraw(p_allesinafig1_functional),
+  nrow = 3,
+  labels = "auto"
+)
+ggsave_multiple(
+  paste0("p_examples", c(".png", ".pdf")),
+  plot = p_examples,
+  path = here::here("figures"),
+  scale = 4.0,
+  units = c("mm"),
+  width = 80,
+  height = 80 * 1.2)
+```
+
+(ref:example-cap) Reproduced examples of categorising functional links in
+food webs using `igraph::dominator_tree()` R function. Left columns (a, c, e)
+displays the complete food-web while right column displays food-web with the
+functional links only (b, d, f). (a,b): reproduction of Fig. 1 of
+@bodini_using_2009, (c, d): reproduction of appendix figures of @bodini_using_2009,
+(e, f): reproduction of fig. 1 of @allesina_functional_2009. Note that (e, f) is
+a bit different from the original, as noted by the authors, they could have
+removed further redundant links (i.e. $2 \to 5$, or $3 \to 5$).
+
+```{r examples, fig.cap = "(ref:example-cap)", out.height = "80%"}
+knitr::include_graphics(here::here("figures", "p_examples.png"))
+```
+
+
+```{r}
+examples <- list(
+  bodiniappendix = g,
+  bodinifig1 = bodinifig1,
+  allesinafig1 = allesinafig1
+)
+redundancy_examples <- map2_dfr(
+  examples,
+  list(bodiniappendix = "R", bodinifig1 = "root", allesinafig1 = "0"),
+  ~compute_redundancy(.x, root = .y), .id = "reference")
+```
+
+```{r}
+paper_replacement <- c(
+  bodinifig1 = "Bodini et al. (2009) Fig. 1",
+  bodiniappendix = "Bodini et al. (2009) Supp material 1",
+  allesinafig1 = "Allesina et al. (2009) Fig. 1"
+)
+
+redundancy_var_replacement <- function() {
+  c(
+    reference = "References",
+    functional_links = "Nb functional links",
+    redundant_links = "Nb redundant links",
+    total_links = "Nb links",
+    prop_functional_links = "Prop. functional links",
+    prop_redundant_links = "Prop. redundant links"
+  )
+}
+
+redundancy_examples %>%
+  select(reference, total_links,
+    functional_links, redundant_links,
+    prop_functional_links, prop_redundant_links
+  ) %>%
+  mutate(reference = paper_replacement[reference]) %>%
+  rename_with(~redundancy_var_replacement()[.x]) %>%
+  kable(
+    digits = 2,
+    row.names = FALSE,
+    label = "redun",
+    booktabs = T,
+    caption = "Computation of the number (Nb) of functional, redundant links, and
+    their proportion (Prop.) from previous published food-webs.",
+    ) %>%
+  collapse_rows(columns = c(1), valign = "top") %>%
+  kable_styling(latex_options = "scale_down")
+```
 
 # Supplementary figures {-}
 
