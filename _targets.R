@@ -384,6 +384,8 @@ list(
             x = log_rich_std,
             y = log_bm_std
             )) +
+        geom_hline(yintercept = 0, color = "grey50") +
+        geom_vline(xintercept = 0, color = "grey50") +
         geom_point(shape = 1, size = 2) +
         geom_abline(intercept = coef(sem[["log_bm_std"]])[1], slope = coef(sem[["log_bm_std"]])[2], size = 1) +
         labs(x = "Species richness trend\n(% by decade)", y = "Biomass trend\n(% by decade)"),
@@ -392,6 +394,8 @@ list(
             x = log_rich_std,
             y = connectance,
             )) +
+        geom_hline(yintercept = 0, color = "grey50") +
+        geom_vline(xintercept = 0, color = "grey50") +
         geom_point(shape = 1, size = 2) +
         geom_abline(intercept = coef(sem[["connectance"]])["(Intercept)"] + mean(tps_for_sem$log_bm_std) * coef(sem[["connectance"]])["log_bm_std"],
           slope = coef(sem[["connectance"]])["log_rich_std"], size = 1) +
@@ -401,6 +405,8 @@ list(
             x = log_bm_std,
             y = connectance,
             )) +
+        geom_hline(yintercept = 0, color = "grey50") +
+        geom_vline(xintercept = 0, color = "grey50") +
         geom_point(shape = 1, size = 2) +
         geom_abline(
           intercept = coef(sem[["connectance"]])["(Intercept)"] + mean(tps_for_sem$log_rich_std) * coef(sem[["connectance"]])["log_rich_std"],
@@ -411,6 +417,8 @@ list(
             x = log_rich_std,
             y = w_trph_lvl_avg,
             )) +
+        geom_hline(yintercept = 0, color = "grey50") +
+        geom_vline(xintercept = 0, color = "grey50") +
         geom_point(shape = 1, size = 2) +
         geom_abline(intercept = coef(sem[["w_trph_lvl_avg"]])["(Intercept)"] + mean(tps_for_sem$log_bm_std) * coef(sem[["w_trph_lvl_avg"]])["log_bm_std"],
           slope = coef(sem[["w_trph_lvl_avg"]])["log_rich_std"], size = 1) +
@@ -420,6 +428,8 @@ list(
             x = log_bm_std,
             y = w_trph_lvl_avg,
             )) +
+        geom_hline(yintercept = 0, color = "grey50") +
+        geom_vline(xintercept = 0, color = "grey50") +
         geom_point(shape = 1, size = 2) +
         geom_abline(
           intercept = coef(sem[["w_trph_lvl_avg"]])["(Intercept)"] + mean(tps_for_sem$log_rich_std) * coef(sem[["w_trph_lvl_avg"]])["log_rich_std"],
@@ -432,6 +442,8 @@ list(
             x = log_rich_std,
             y = prop_redundant_links,
             )) +
+        geom_hline(yintercept = 0, color = "grey50") +
+        geom_vline(xintercept = 0, color = "grey50") +
         geom_point(shape = 1, size = 2) +
         geom_abline(intercept = coef(sem[["prop_redundant_links"]])["(Intercept)"] + mean(tps_for_sem$log_bm_std) * coef(sem[["prop_redundant_links"]])["log_bm_std"],
           slope = coef(sem[["prop_redundant_links"]])["log_rich_std"], size = 1) +
@@ -441,6 +453,8 @@ list(
             x = log_bm_std,
             y = prop_redundant_links
             )) +
+        geom_hline(yintercept = 0, color = "grey50") +
+        geom_vline(xintercept = 0, color = "grey50") +
         geom_point(shape = 1, size = 2) +
         geom_abline(
           intercept = coef(sem[["prop_redundant_links"]])["(Intercept)"] + mean(tps_for_sem$log_rich_std) * coef(sem[["prop_redundant_links"]])["log_rich_std"],

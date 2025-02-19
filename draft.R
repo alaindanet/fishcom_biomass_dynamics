@@ -12,6 +12,28 @@ library(lme4)
 library(INLA)
 lapply(list.files(here::here("R"), full.names = TRUE), source)
 
+tar_load(p_list_sem_tps)
+
+p_list_sem_tps[[1]] +
+  theme_half_open()
+tar_load(c(sem, tps_for_sem))
+tps_for_sem %>%
+  ggplot(aes(
+      x = log_rich_std,
+      y = log_bm_std
+      )) +
+  geom_hline(yintercept = 0, color = "grey50") +
+  geom_vline(xintercept = 0, color = "grey50") +
+  geom_point(shape = 1, size = 2) +
+  geom_abline(
+    intercept = coef(sem[["log_bm_std"]])[1],
+    slope = coef(sem[["log_bm_std"]])[2], size = 1) +
+  labs(x = "Species richness trend\n(% by decade)",
+    y = "Biomass trend\n(% by decade)") +
+  theme_half_open()
+
+
+
 library(sf)
 tar_load(c(basin_dce, station_analysis))
 
