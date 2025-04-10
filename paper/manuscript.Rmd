@@ -130,20 +130,19 @@ ecosystem function and fragility.
 
 # Significance {-}
 
-Understanding how biodiversity loss affects ecological communities is crucial
-for predicting and mitigating human impacts on ecosystems. This study provides
-comprehensive evidence on how biodiversity changes are reshaping food web
-structure using an extensive dataset of riverine fish communities. We
-demonstrate that temporal changes in species richness and community biomass
-consistently correlate with altered trophic levels, connectance, and the
-redundancy of feeding relationships, suggesting energetic constraints and
-biodiversity-ecosystem functioning mechanisms jointly shape food web assembly
-and disassembly. Importantly, we show that declining biodiversity reduces the
-redundancy of trophic pathways, potentially making communities more vulnerable
-to future perturbations. These results suggest that food web structure metrics
-could serve as valuable indicators for monitoring ecosystem health and
-evaluating conservation strategies.
-
+Current rates of biodiversity loss raise urgent concerns about ecosystem
+functioning and stability, yet how biodiversity trends directly impact these
+critical processes remains unclear. For instance, food web &
+Biodiversity-Ecosystem Functioning research delivered strong predictions
+about the ecological consequences of biodiversity loss. Using an extensive
+dataset of riverine fish communities, we link biodiversity trends to temporal
+changes in food web structure. We demonstrate that temporal changes in species
+richness and community biomass consistently associate with altered trophic
+levels, connectance, and the redundancy of feeding relationships. We found that
+declining biodiversity reduces trophic pathway redundancy, likely increasing
+ecosystem vulnerability to perturbations. Our findings suggest that food web
+structure metrics could serve as valuable indicators for monitoring ecosystem
+health and guiding conservation strategies.
 
 # Introduction
 

@@ -181,45 +181,39 @@ rtm <- map(
 
 # Disentangling functional and redundant trophic pathways
 
-Because species biomass are involved in trophic interactions, species losses can
-have cascading effects and trigger secondary extinctions [@dunne_network_2002].
-In the context of biodiversity crisis, assessing the robustness of ecological
-networks to species losses has been then a big question in Ecology. Previous
-research showed that food-web structure, such as connectance, increased
-robustness [@dunne_network_2002]. The idea is that more connected food-web will
-be more stable because they contain a large number of pathways convey biomass
-through the food-web. However, connectance as some limitations as a robustness
-metric, because each trophic link does not contribute equally to the robustness
-of an ecological network [@allesina_who_2004]. Trophic links can be categorised as
-functional or redundant, depending on their role in transmitting biomass through
-the food-web. Functional links are the set of links that is required to connect
-every species to the basal resource of the food-web, all of the other being
-redundant. Only functional links affect directly robustness, as their removal
-will trigger secondary extinctions. The removal of redundant links in turn do
-not directly trigger secondary extinctions, but makes the food-webs more fragile
-to further extinctions [@allesina_functional_2009].
+Species losses can trigger cascading extinctions by disrupting trophic
+interactions [@dunne_network_2002]. To assess ecological network robustness,
+researchers often examine food web connectance — the proportion of possible
+trophic links that are realized. While higher connectance generally increases
+stability by providing multiple pathways for biomass flow, not all links
+contribute equally to robustness [@allesina_who_2004].
 
-The identification of functional and redundant links is based on the use of
-denominator trees [@bodini_using_2009; @allesina_who_2004;
-@allesina_functional_2009]. Dominator trees allows to identify the set of
-trophic links that are essential to connect all the consumers to the basal resource, i.e.
-the functional links, and the redundant links, i.e. the redundant trophic pathways
-from basal resource to consumers. Pioneer papers explained the algorithm to
-compute the set of dominator trees and we refer to them for further
-information and examples [@bodini_using_2009; @allesina_who_2004;
-@allesina_functional_2009]. Here, we aim to show that while implementing this
-analysis could be difficult at the time, this algorithm is now widely
-available. In R, it is available in `igraph::dominator_tree()`. Below we show
-how the number of functional and redundant links can be  easily computed from R
-by replicating three examples presented in previous studies.
+Trophic links can be categorized into two types based on their role in
+maintaining food web integrity. Functional links are those essential for
+connecting all species to basal resources — their removal directly triggers
+secondary extinctions. In contrast, redundant links provide alternative pathways
+but are not strictly necessary for maintaining basic connectivity. While the
+loss of redundant links doesn’t cause immediate extinctions, it reduces the
+network’s resilience to future perturbations [@allesina_functional_2009]. This
+distinction makes quantifying redundancy crucial for predicting ecosystem
+vulnerability.
+
+To identify functional and redundant links, we employed dominator trees
+[@bodini_using_2009], a graph-theoretic approach that maps the minimal set of
+connections required to link all consumers to basal resources. Though once
+considered a niche tool, dominator tree algorithms are now readily accessible
+through common packages like R’s `igraph::dominator_tree()`. Below, we demonstrate
+this method by replicating classic examples from the literature.
+
+For implementation, we used a custom `compute_redundancy` function to quantify
+functional and redundant links. As an example, we applied this to the food-web
+from Bodini et al. (2009, see Appendix 1 therein), showing how easily these
+metrics can be derived from network data.
+
 
 ```{r, echo = TRUE}
 compute_redundancy
 ```
-
-Here is an example with the food-web displayed in appendix of
-@bodini_using_2009:
-
 
 ```{r, echo = TRUE}
 # Get the food-web example from Bodini et al. (2009), Appendix 1 
@@ -229,18 +223,19 @@ out <- compute_redundancy(g, root = "R")
 as.data.frame(out)
 ```
 
+
+Figure \@ref(fig:examples) provides visual comparisons between complete food-webs
+(left panels) and their functional-link subsets (right panels), reproducing key
+results from three seminal studies [@bodini_using_2009;
+@allesina_functional_2009]. The accompanying Table \@ref(tab:redun) summarizes
+the proportion of redundant links in these systems, highlighting how dominator
+trees can simplify robustness assessments.
+
+
 ```{r}
 vertex_color <- "white"
 vertex_size  <- 40
 ```
-
-
-We used this function to reproduce the three examples (Fig. \@ref(fig:examples)),
-which were displayed in the Fig. 1 and Appendix 1 of @bodini_using_2009, and
-in the Fig. 1 of @allesina_functional_2009. The table \@ref(tab:redun) displays
-the number and the proportion of functional and redundant links from those
-examples.
-
 
 ```{r bod1}
 bodinifig1 <- get_bodini_graph_fig1()
@@ -339,14 +334,14 @@ ggsave_multiple(
   height = 80 * 1.2)
 ```
 
-(ref:example-cap) Reproduced examples of categorising functional links in
-food webs using `igraph::dominator_tree()` R function. Left columns (a, c, e)
-displays the complete food-web while right column displays food-web with the
-functional links only (b, d, f). (a,b): reproduction of Fig. 1 of
-@bodini_using_2009, (c, d): reproduction of appendix figures of @bodini_using_2009,
-(e, f): reproduction of fig. 1 of @allesina_functional_2009. Note that (e, f) is
-a bit different from the original, as noted by the authors, they could have
-removed further redundant links (i.e. $2 \to 5$, or $3 \to 5$).
+
+(ref:example-cap) **Functional link identification using dominator trees**. Left
+panels show complete food-webs, while right panels display only functional
+links. (a,b) reproduce @bodini_using_2009 Figure 1; (c,d) recreate their
+Appendix example; (e,f) replicate @bodini_using_2009 Figure 1 (with minor
+differences noted in the original text, they could have
+removed further redundant links, i.e. $2 \to 5$, or $3 \to 5$).
+
 
 ```{r examples, fig.cap = "(ref:example-cap)", out.height = "80%"}
 knitr::include_graphics(here::here("figures", "p_examples.png"))
