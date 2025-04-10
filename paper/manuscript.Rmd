@@ -166,7 +166,7 @@ and theoretical approaches [@loreau_biodiversity_2001; @loreau_ecological_2022;
 @allesina_functional_2009]. These approaches often rely on the critical
 assumption that spatial comparisons of ecological communities can serve as a
 proxy for temporal trends—a space-for-time substitution—when direct temporal
-data are scarce [@damgaard_a_2019]. To advance our understanding of the
+data are scarce [@damgaard_critique_2019]. To advance our understanding of the
 ecological consequences of biodiversity changes, it is essential to investigate
 how these changes are reshaping food web structure in natural settings.
 
