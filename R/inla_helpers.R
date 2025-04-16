@@ -39,7 +39,7 @@ get_re_prediction_inla <- function(
       quant0.025 = `0.025quant`,
       quant0.975 = `0.975quant`,
       quant0.5 = `0.5quant`
-    ) %>% 
+    ) %>%
     select(-kld)
 
   re_name <- str_extract(effect, "station|basin")
@@ -106,7 +106,7 @@ get_hpdmarginal_inla <- function(
         select(term, mean),
       by = "term"
     )
- 
+
 
   if (type == "rand") {
     output[c("low", "mean", "high")] <- map(output[c("low", "mean", "high")], tau_to_sigma)
@@ -169,11 +169,11 @@ get_global_effect <- function (
   ci_lvl = "level:0.95"
   ) {
 
-  out <- effect %>% 
+  out <- effect %>%
     filter(
       ci_level == ci_lvl,
       term == "log1_year_nb",
-      response == resp 
+      response == resp
     )
 
   out[, c("low", "high", "mean")] %>%
@@ -231,12 +231,8 @@ compute_trends_meaningful_units <- function (
 
   if (resp %in% c("log_rich_std", "log_bm_std")) {
     return(log_beta_to_perc_rate(x) * time)
-
-  } else if (resp %in% c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_nind",
-      "piel_bm", "prop_pisc_node", "prop_pisc_rich")) {
-    return(x * time)
   } else {
-    stop("undefined resp")
+    return(x * time)
   }
 
 }
@@ -278,4 +274,61 @@ r2_mvp <- function(
     return(out[["conditional"]])
   }
 
+}
+
+log_beta_to_perc_rate <- function (x) {
+  (exp(x) - 1) * 100
+}
+
+get_global_effect <- function (
+  effect = glob_tps_trends_decade_no_drivers,
+  resp = NULL,
+  ci_lvl = "level:0.95"
+  ) {
+
+  out <- effect %>%
+    filter(
+      ci_level == ci_lvl,
+      term == "nb_year",
+      response == resp
+    )
+
+  out[, c("low", "high", "mean")] %>%
+    pivot_longer(everything()) %>%
+    deframe()
+}
+
+p_ci <- function(x, r = 2, p = TRUE) {
+  out <- format(round(x, r), nsmall = r)
+
+  if (p) {
+    paste0(out["mean"], "%", " [", out["low"],"%,", out["high"],"%]")
+  } else {
+    paste0(out["mean"], " [", out["low"],",", out["high"],"]")
+  }
+
+}
+
+get_effect_ci <- function(
+  effect = glob_tps_trends_decade_no_drivers,
+  resp = NULL,
+  term = "nb_year",
+  ci_lvl = "level:0.95",
+  r = 2,
+  p = FALSE
+  ) {
+  term1 <- term
+
+  out <- effect %>%
+    filter(
+      ci_level == ci_lvl,
+      term == term1,
+      response == resp
+    )
+
+  out <- out[, c("low", "high", "mean")] %>%
+    pivot_longer(everything()) %>%
+    deframe()
+
+  p_ci(x = out, r = r, p = p)
 }

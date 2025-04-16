@@ -1,19 +1,17 @@
 ---
-title: Appendix
-subtitle:
-author: Alain Danet, Maud Mouchet, Loubna El Madouri, Elisa Thébault and Colin Fontaine (ordre non fixé)
-date: \today 
+title: "Biodiversity temporal trends are reshaping food web structure and redundancy in riverine ecosystems"
+subtitle: "Alain Danet , Loubna El Madouri, Willem Bonnaffé, Andrew P. Beckerman,
+Maud Mouchet, Colin Fontaine and Elisa Thébault"
+date: Supplementary Material
 output:
   bookdown::pdf_document2:
-    fig_caption: true 
+    fig_caption: true
     keep_tex: true
-    toc: true
-fontsize: 12pt
+    toc: false
+fontsize: 10pt
 header-includes:
-   - \usepackage{natbib}
-   - \newcommand{\beginsupplement}{\renewcommand{\thetable}{S\arabic{table}} \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}} 
+   - \newcommand{\beginsupplement}{\renewcommand{\thetable}{S\arabic{table}} \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}}
    - \usepackage{float}
-   - \usepackage[table]{xcolor}
    - \usepackage{multirow}
    - \usepackage{booktabs}
    - \usepackage{makecell}
@@ -21,9 +19,11 @@ header-includes:
    - \doublespacing
    - \usepackage{lineno}
    - \linenumbers
+   - \renewcommand{\arraystretch}{1}
 geometry: margin=2cm
 bibliography: references.bib
-number_sections: true
+number_sections: false
+csl: pnas.csl
 ---
 
 
@@ -36,16 +36,22 @@ knitr::opts_chunk$set(
   fig.align = "center",
   fig.fullwidth = TRUE,
   fig.show = "hold",
+  fig.pos = "H",
   echo = FALSE,
   message = FALSE,
   warning = FALSE,
   results = TRUE
 )
+options(
+  #kableExtra.latex.load_packages = FALSE,
+  knitr.table.format = "latex",
+  knitr.graphics.rel_path = FALSE
+)
 ```
 
 
 ```{r, echo=FALSE, message=FALSE, results="hide"}
-library(drake)
+library(targets)
 library(tidyverse)
 library(magrittr)
 library(ggeffects)
@@ -53,6 +59,7 @@ library(cowplot)
 library(kableExtra)
 library(sf)
 library(nlme)
+library(igraph)
 
 mypath <- rprojroot::find_package_root_file
 source(mypath("R/variable_shortcut.R")) # Define your custom code as a bunch of
@@ -65,756 +72,551 @@ mytheme <- theme_cowplot() +
   background_grid()
 
 theme_set(mytheme)
-options(knitr.table.format = "latex")
-```
-```{r}
-var_analysis <- c("ct_ff", "w_trph_lvl_avg", "log_rich_std", "log_bm_std")
 ```
 
-\beginsupplement
-\newpage
-
-# Data exploration
-
-
 ```{r}
-loadd(p_st_mono_trends_stable_rich_bm, st_mono_trends_stable_rich_bm)
+tar_load(c(semeff_tot, semeff_tot_ok))
+semeff_tot <- semeff_tot %>%
+  mutate(across(c(response, predictor), ~str_remove(.x, "mean_")))
 
+rdtps <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std")
+    )
+)
+rdsp <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std", model = "spatial"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std", model = "spatial")
+    )
+)
+rdm <- map(
+  setNames(
+    c("Connectance", "Avg trophic level", "Biomass", "Redundancy"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(x = semeff_tot_ok, type = "Direct", resp = .x, term = "Biomass", model = "Theoretical model"),
+    r = get_semeff_ci(x = semeff_tot_ok, type = "Direct", resp = .x, term = "Species richness", model = "Theoretical model")
+    )
+)
 ```
 
-
 ```{r}
-range_cap <- paste0(
-  "Range of variation of variables in spatial (vertical lines) and temporal
-  dataset for the (A) minimum and maximum values and (B) the range (i.e. maximum
-    - minimum)."
+ridtps <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    r = get_semeff_ci(resp = .x, term = "log_rich_std", type = "indirect")
+    )
+)
+ridsp <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    r = get_semeff_ci(resp = .x, term = "log_rich_std",
+      model = "spatial", type = "indirect")
+    )
+)
+ridm <- map(
+  setNames(
+    c("Connectance", "Avg trophic level", "Biomass", "Redundancy"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(x = semeff_tot_ok, type = "Indirect", resp = .x, term = "Biomass", model = "Theoretical model"),
+    r = get_semeff_ci(x = semeff_tot_ok, type = "Indirect", resp = .x, term = "Species richness", model = "Theoretical model")
+    )
+)
+rttps <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std", type = "total"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std", type = "total")
+    )
+)
+rtsp <- map(
+  setNames(
+    c("connectance", "w_trph_lvl_avg", "log_bm_std", "prop_redundant_links"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(resp = .x, term = "log_bm_std",
+      model = "spatial", type = "total"),
+    r = get_semeff_ci(resp = .x, term = "log_rich_std",
+      model = "spatial", type = "total")
+    )
+)
+rtm <- map(
+  setNames(
+    c("Connectance", "Avg trophic level", "Biomass", "Redundancy"),
+    c("ct", "tlvl", "bm", "red")
+    ),
+  ~ list(
+    bm = get_semeff_ci(x = semeff_tot_ok, type = "Total", resp = .x, term = "Biomass", model = "Theoretical model"),
+    r = get_semeff_ci(x = semeff_tot_ok, type = "Total", resp = .x, term = "Species richness", model = "Theoretical model")
+    )
 )
 ```
 
 
-```{r range, fig.cap=range_cap, fig.height=10}
-loadd(p_range)
-plot_grid(plotlist = p_range, nrow = 2, labels = "AUTO")
+\beginsupplement
+
+
+# Disentangling functional and redundant trophic pathways
+
+Species losses can trigger cascading extinctions by disrupting trophic
+interactions [@dunne_network_2002]. To assess ecological network robustness,
+researchers often examine food web connectance — the proportion of possible
+trophic links that are realized. While higher connectance generally increases
+stability by providing multiple pathways for biomass flow, not all links
+contribute equally to robustness [@allesina_who_2004].
+
+Trophic links can be categorized into two types based on their role in
+maintaining food web integrity. Functional links are those essential for
+connecting all species to basal resources — their removal directly triggers
+secondary extinctions. In contrast, redundant links provide alternative pathways
+but are not strictly necessary for maintaining basic connectivity. While the
+loss of redundant links doesn’t cause immediate extinctions, it reduces the
+network’s resilience to future perturbations [@allesina_functional_2009]. This
+distinction makes quantifying redundancy crucial for predicting ecosystem
+vulnerability.
+
+To identify functional and redundant links, we employed dominator trees
+[@bodini_using_2009], a graph-theoretic approach that maps the minimal set of
+connections required to link all consumers to basal resources. Though once
+considered a niche tool, dominator tree algorithms are now readily accessible
+through common packages like R’s `igraph::dominator_tree()`. Below, we demonstrate
+this method by replicating classic examples from the literature.
+
+For implementation, we used a custom `compute_redundancy` function to quantify
+functional and redundant links. As an example, we applied this to the food-web
+from Bodini et al. (2009, see Appendix 1 therein), showing how easily these
+metrics can be derived from network data.
+
+
+```{r, echo = TRUE}
+compute_redundancy
 ```
 
-\newpage
+```{r, echo = TRUE}
+# Get the food-web example from Bodini et al. (2009), Appendix 1 
+g <- get_bodini_graph_appendix()
+# compute reduncancy
+out <- compute_redundancy(g, root = "R")
+as.data.frame(out)
+```
 
-## Correlation
+
+Figure \@ref(fig:examples) provides visual comparisons between complete food-webs
+(left panels) and their functional-link subsets (right panels), reproducing key
+results from three seminal studies [@bodini_using_2009;
+@allesina_functional_2009]. The accompanying Table \@ref(tab:redun) summarizes
+the proportion of redundant links in these systems, highlighting how dominator
+trees can simplify robustness assessments.
 
 
 ```{r}
-cor_cap <- paste0("Correlation plot among variables.", "Median values over time were
-  used for spatial relationships. ", "For temporal model, we used the
-  temporal trends in each station. Futhermore, each station was weighted by the
-  average error standard on the temporal trends of the variables.",
-  " Pisc: piscivorous, Nb: number, node: node of the food-web corresponding to a
-  trophic species, prop: proportion."
+vertex_color <- "white"
+vertex_size  <- 40
+```
+
+```{r bod1}
+bodinifig1 <- get_bodini_graph_fig1()
+
+# Complete graph
+p_bodinifig1_all <- ~{
+  lg <- layout_as_tree(bodinifig1, root = "root")
+  lg[, 2] <- -lg[, 2]
+  plot(bodinifig1, layout = lg, vertex.color = vertex_color, vertex.size = vertex_size)
+}
+
+# Only functional links
+bodinifig1_dtree <- dominator_tree(bodinifig1, root = "root")
+p_bodinifig1_functional <- ~{
+  layout <- layout_as_tree(bodinifig1_dtree$domtree, root = "root")
+  layout[, 2] <- -layout[, 2]
+  plot(bodinifig1_dtree$domtree, layout = layout, vertex.color = vertex_color, vertex.size = vertex_size)
+}
+```
+
+
+```{r bod2, echo = FALSE, results = "hide"}
+g <- get_bodini_graph_appendix()
+
+# Complete graph
+p_bodiniappen_all <- ~{
+  lg <- layout_as_tree(g, root = "R")
+  lg[, 2] <- -lg[, 2]
+  plot(g, layout = lg, vertex.color = vertex_color, vertex.size = vertex_size)
+}
+
+# Only functional links
+dtree <- dominator_tree(g, root = "R")
+p_bodiniappen_functional <- ~{
+  lg <- layout_as_tree(dtree$domtree, root = "R")
+  lg[, 2] <- -lg[, 2]
+  plot(
+    dtree$domtree,
+    layout = lg,
+    vertex.color = vertex_color,
+    vertex.size = vertex_size
+  )
+}
+
+p_bodini <- plot_grid(
+  ggdraw(p_bodinifig1_all), ggdraw(p_bodinifig1_functional),
+  ggdraw(p_bodiniappen_all), ggdraw(p_bodiniappen_functional),
+  labels = "auto"
+)
+ggsave_multiple(
+  paste0("p_bodini", c(".png", ".pdf")),
+  plot = p_bodini,
+  path = here::here("figures"),
+  scale = 2.6,
+  units = c("mm"),
+  width = 80,
+  height = 80 * 1.5)
+```
+
+```{r all1, echo = FALSE, results = "hide"}
+allesinafig1 <- get_allesina_graph(diag = FALSE)
+
+p_allesinafig1_all <- ~{
+  lg <- layout_as_tree(allesinafig1, root = "0")
+  lg[, 2] <- -lg[, 2]
+  plot(allesinafig1, layout = lg, vertex.color = vertex_color, vertex.size = vertex_size)
+}
+
+# Only functional links
+allesinafig1_dtree <- dominator_tree(allesinafig1, root = "0")
+p_allesinafig1_functional <- ~{
+  layout <- layout_as_tree(allesinafig1_dtree$domtree, root = "0")
+  layout[, 2] <- -layout[, 2]
+  plot(
+    allesinafig1_dtree$domtree,
+    layout = layout,
+    vertex.color = vertex_color,
+    vertex.size = vertex_size
+  )
+}
+
+p_examples <- plot_grid(
+  ggdraw(p_bodinifig1_all), ggdraw(p_bodinifig1_functional),
+  ggdraw(p_bodiniappen_all), ggdraw(p_bodiniappen_functional),
+  ggdraw(p_allesinafig1_all), ggdraw(p_allesinafig1_functional),
+  nrow = 3,
+  labels = "auto"
+)
+ggsave_multiple(
+  paste0("p_examples", c(".png", ".pdf")),
+  plot = p_examples,
+  path = here::here("figures"),
+  scale = 4.0,
+  units = c("mm"),
+  width = 80,
+  height = 80 * 1.2)
+```
+
+
+(ref:example-cap) **Functional link identification using dominator trees**. Left
+panels show complete food-webs, while right panels display only functional
+links. (a,b) reproduce @bodini_using_2009 Figure 1; (c,d) recreate their
+Appendix example; (e,f) replicate @bodini_using_2009 Figure 1 (with minor
+differences noted in the original text, they could have
+removed further redundant links, i.e. $2 \to 5$, or $3 \to 5$).
+
+
+```{r examples, fig.cap = "(ref:example-cap)", out.height = "80%"}
+knitr::include_graphics(here::here("figures", "p_examples.png"))
+```
+
+
+```{r}
+examples <- list(
+  bodiniappendix = g,
+  bodinifig1 = bodinifig1,
+  allesinafig1 = allesinafig1
+)
+redundancy_examples <- map2_dfr(
+  examples,
+  list(bodiniappendix = "R", bodinifig1 = "root", allesinafig1 = "0"),
+  ~compute_redundancy(.x, root = .y), .id = "reference")
+```
+
+```{r}
+paper_replacement <- c(
+  bodinifig1 = "Bodini et al. (2009) Fig. 1",
+  bodiniappendix = "Bodini et al. (2009) Supp material 1",
+  allesinafig1 = "Allesina et al. (2009) Fig. 1"
+)
+
+redundancy_var_replacement <- function() {
+  c(
+    reference = "References",
+    functional_links = "Nb functional links",
+    redundant_links = "Nb redundant links",
+    total_links = "Nb links",
+    prop_functional_links = "Prop. functional links",
+    prop_redundant_links = "Prop. redundant links"
+  )
+}
+
+redundancy_examples %>%
+  select(reference, total_links,
+    functional_links, redundant_links,
+    prop_functional_links, prop_redundant_links
+  ) %>%
+  mutate(reference = paper_replacement[reference]) %>%
+  rename_with(~redundancy_var_replacement()[.x]) %>%
+  kable(
+    digits = 2,
+    row.names = FALSE,
+    label = "redun",
+    booktabs = T,
+    caption = "Computation of the number (Nb) of functional, redundant links, and
+    their proportion (Prop.) from previous published food-webs.",
+    ) %>%
+  collapse_rows(columns = c(1), valign = "top") %>%
+  kable_styling(latex_options = "scale_down")
+```
+
+## References {-}
+
+<div id="refs"></div>
+
+
+\pagebreak
+
+# Supplementary results: comparison of analysis in space and time
+
+We further assessed the consistency of the reported associations among temporal
+trends by implementing two additional analyses. We first tested if the
+associations among the temporal trends within sites was holding across sites,
+i.e. using spatial variations in food web structure rather than temporal changes
+over time (space-for-time hypothesis). Second, we performed theoretical
+simulations with a bioenergetic food web model to cross-reference our site and
+species specific empirical data on riverine fish with a more generalized
+representation of food web dynamics known to represent accurate relationships
+among our focal variables. With those additional empirical and theoretical data, we
+assessed additional SEM models with the same structure as in Section 4.2 (see
+main text, Fig. 2a).
+
+As in the temporal analysis, species richness had a positive effect on community
+biomass both in empirical data and in theoretical simulations (resp. $r_\delta
+=$ `r rdsp$bm$r` and `r rdm$bm$r`, Fig. 3a and S3). In both
+empirical data and theoretical simulations, community biomass had a positive
+effect on average trophic level (resp. $r_\delta =$ `r rdsp$tlvl$bm` and
+`r rdm$tlvl$bm`), and redundancy (resp. $r_\delta =$ `r rdsp$red$bm` and
+`r rdm$red$bm`), as in temporal analysis. We found weak evidence of a positive
+effect of spatial variation in community biomass on connectance in empirical
+data ($r_\delta =$ `r rdsp$ct$bm`) but strong evidence in theoretical
+simulations ($r_\delta =$ `r rdm$ct$bm`, Fig. 3a).
+
+The effects of spatial variations in species richness on food web structure
+mostly aligned with those from the temporal trend analysis, except for average
+trophic level. We found a direct negative effect of species richness on
+connectance both using data and model simulations (resp. $r_\delta =$
+`r rdsp$ct$r` and `r rdm$ct$r`, Fig. 3a), on average trophic level
+(resp. $r_\delta =$ `r rdsp$tlvl$r` and `r rdm$tlvl$r`), but a direct positive
+effect on redundancy (resp. $r_\delta =$ `r rdsp$red$r` and `r rdm$red$r`).
+Species richness had an indirect positive effect of species richness through
+community biomass, which added up to strong total negative effects on
+connectance in empirical data and simulations (resp. $r_\delta =$
+`r rtsp$ct$r` and `r rtm$ct$r`) and positive on redundancy (resp. $r_\delta =$
+`r rtsp$red$r` and `r rtm$red$r`). We found that
+species richness had a total positive effect on average trophic level in
+bioenergetic model, in agreement with temporal trends (resp. $r_\delta =$ `r rtm$tlvl$r`),
+but a total negative effect in spatial variations (resp. $r_\delta =$ `r rtsp$tlvl$r`).
+
+# Supplementary figures {-}
+
+
+```{r}
+tps10_cap <- paste0("Distribution of temporal trends per decade of the food-web
+  structure by site estimated from the Bayesian models using Best Linear
+  Unbiased Prediction (BLUP). Species richness and biomass temporal trends are
+  reported in percentage change per decade. Dashed red line and solid black line
+  respectively indicate 0 and median change.")
+
+```
+
+```{r tps10, fig.cap=tps10_cap}
+tar_load(figStps10)
+knitr::include_graphics(figStps10)
+```
+
+
+```{r}
+cor_cap <- paste0("Correlation among food-web metrics for a) temporal trends by
+  site, b) median values by site (cf Main Methods), c) bioenergetic model.", " Pisc: piscivorous, rich.:
+species richness, node: node of the food-web corresponding to a trophic species,
+prop.: proportion."
 )
 ```
 
 
 ```{r cor, fig.cap=cor_cap}
-oldpar <- par()
-loadd(corr_plot_med, corr_plot_tps)
-
-rv <- var_replacement()
-rv_more <- c(
-  nbnode_std = "Nb node",
-  nb_pisc_rich_std = "Nb pisc species",
-  nb_pisc_node_std = "Nb pisc nodes",
-  prop_pisc_node = "Prop pisc node",
-  prop_pisc_rich = "Prop pisc species"
-)
-
-rv <- c(rv_more, rv[!names(rv) == "rich_std"])
-
-set_names_corr <- function(mat = NULL, replacement_vector = var_replacement()) {
-  colnames(mat) <- str_replace_all(colnames(mat), replacement_vector)
-  rownames(mat) <- str_replace_all(rownames(mat), replacement_vector)
-  return(mat)
-}
-
-corr_plot_tps %<>% set_names_corr(., replacement_vector = rv)
-corr_plot_med %<>% set_names_corr(., replacement_vector = rv)
-
-#par(mfrow = c(1, 2))
-corrplot::corrplot(
-  corr_plot_med,
-  type = "upper",
-  diag = FALSE,
-  order = "alphabet",
-  tl.srt = 30,
-  tl.cex = .7
-)
-title("Spatial", adj = 0, line = 3)
-corrplot::corrplot(corr_plot_tps, type = "upper", diag = FALSE, order =
-  "alphabet",
-  tl.srt = 30,
-  tl.cex = .7
-)
-title("Temporal trends", adj = 0, line = 3.2)
+tar_load(figcorr)
+knitr::include_graphics(figcorr)
 ```
 
+```{r}
+sem_sp_mod_cap <- "Direct effects of biomass and species richness on food-web
+structure, derived from the structural equation models for the (a) spatial and
+(b) bioenergetic model. Points display the data, black lines display the
+predicted relationships."
+
+```
+
+```{r, fig.cap=sem_sp_mod_cap, out.width = "100%"}
+tar_load(p_sem_sp_sim_file)
+knitr::include_graphics(p_sem_sp_sim_file)
+```
+
+
+```{r}
+rand_sim_cap <- paste0(
+  "Simulations of trophic species extinctions in the metaweb according to three
+  scenarios: random extinction sequence (grey dots), extinction sequence by
+  decreasing order of trophic level, extinction sequence by increasing order of
+  trophic level. The black line represents the average prediction of a GAM
+  linear model for the 50 random extinction sequences. Please note that the
+  results are qualitatively similar that when considering species (see Fig. 3b,
+  main text) instead of trophic species."
+)
+```
+
+```{r ext, fig.cap=rand_sim_cap, out.width = "100%"}
+tar_load(figSext)
+knitr::include_graphics(figSext[[1]])
+```
+
+
+
+
+```{r}
+obs_fit_cap <- "Fitted versus observed values from the linear models estimating
+the temporal trends of the food-web structure. The black line depicts the first
+bissector. Pearson's correlation coefficients are displayed."
+```
+
+
+```{r, fig.cap=obs_fit_cap}
+tar_load(figSobsfit)
+knitr::include_graphics(figSobsfit)
+```
+
+\pagebreak
 \newpage
 
-# Statistical analysis
 
-## Proportion and number of piscivorous species 
+# Supplementary tables {-}
 
-```{r}
-loadd(rigal_classification, st_mono_trends_stable_rich_bm, full_data2)
-full_data2 %>%
-  select(richness, nb_pisc_rich, nb_non_pisc_rich)
-unique(rigal_classification$variable)
-var_pisc_mod <- c("nb_pisc_rich_std", "prop_pisc_rich", "nb_non_pisc_rich_std",
-    "prop_non_pisc_rich",
-      "log_rich_std", "log_bm_std")
-pisc_data <- map(var_pisc_mod,
-    function(x, var_to_keep, classif_var) {
-
-      x_data <- classif_var[classif_var$variable == x, ] %>%
-	unnest(classif)
-      x_data <- x_data[, colnames(x_data) %in% var_to_keep]
-
-      # Rename according to the variable
-      colnames(x_data)[colnames(x_data) %in% var_to_keep[2:3]] <-
-	paste0(x, c("", "_strd_error"))
-      return(x_data)
-
-    },
-    var_to_keep = c("station", "linear_slope", "linear_slope_strd_error"),
-  classif_var = rigal_classification) %>%
-  Reduce(merge.all, .) %>%
-  filter(station %in% st_mono_trends_stable_rich_bm) %>%
-  na.omit()
-
-# for standardized coefficients 
-pisc_data_scaled <- pisc_data %>%
-  mutate(across(all_of(var_pisc_mod), ~ scale(., center = FALSE)[,1]))
-
-pisc_mod_std <- tibble(
-  response = c("nb_pisc_rich_std", "nb_non_pisc_rich_std", "prop_pisc_rich", "prop_non_pisc_rich"),
-  mod = list(
-    lm(
-      nb_pisc_rich_std ~ log_bm_std + log_rich_std,
-      data = pisc_data_scaled,
-      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
-        nb_pisc_rich_std_strd_error)
-      ),
-    lm(
-      nb_non_pisc_rich_std ~ log_bm_std + log_rich_std,
-      data = pisc_data_scaled,
-      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
-        nb_non_pisc_rich_std_strd_error)
-      ),
-    lm(
-      prop_pisc_rich ~ log_bm_std + log_rich_std,
-      data = pisc_data_scaled,
-      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
-        prop_pisc_rich_strd_error)
-      ),
-    lm(
-      prop_non_pisc_rich ~ log_bm_std + log_rich_std,
-      data = pisc_data_scaled,
-      weight = 1 / (log_rich_std_strd_error + log_bm_std_strd_error +
-        prop_non_pisc_rich_strd_error)
-      )
-  )
-  )
-
-pisc_mod_std <- pisc_mod_std %>%
-  mutate(
-    coefs = map(mod, broom::tidy),
-    perf = map(mod, broom::glance) 
-  )
-
-pisc_mod_std %>%
-  select(response, coefs) %>%
-  unnest(coefs)
-```
-
-
-## Spatial model
+\pagebreak
 
 ```{r}
-loadd(est_sp_models, colin_sp_models, sp_models)
-```
-
-```{r}
-tmp <- map(colin_sp_models, enframe)
-t_colin_sp_models <- tibble(vif = tmp, mod = names(colin_sp_models)) %>%
-  unnest(vif) %>%
-  filter(name %in% c("log_rich_std", "log_bm_std", "ct_ff"), mod == "log_rich_std") %>% #same model for
-  #all, so the vif is the same
-  rename(Response = name, vif = value) %>%
-  select(-mod) %>%
-  mutate(vif = map(vif, enframe)) %>%
-  unnest(vif) %>%
-  mutate(
-    value = round(value, 3),
-    name = str_replace_all(name, var_replacement()),
-    Response = str_replace_all(
-      Response,
-      c("log_rich_std" = "Richness model", "log_bm_std" = "Biomass model",
-	"ct_ff" = "Food-web structure"))
+tar_load(c(op_table, com_metric_tab))
+tab_quanti <- purrr::map_dfr(
+  list(com_metric_tab, op_table),
+  function(x) {colnames(x)[1] <- "Variable"; x}
+)
+tab_quanti %>%
+  kbl(
+    caption = "Summary distribution of community metrics and fish monitoring variables.",
+    booktabs = T
     ) %>%
-  spread(name, value)
+  kable_styling() %>%
+  pack_rows("Community metrics", 1, 8) %>%
+  pack_rows("Summary of fish monitoring", 9, 13)
+```
 
-
-# colinearity table
-kable(t_colin_sp_models,
+```{r}
+tar_load(r2_inla_tab)
+kable(r2_inla_tab,
   row.names = FALSE,
   booktabs = T,
-  caption = "Variance Inflation Factor for the linear models in the spatial
-  models. NA values indicate that the term in column was not included in the
-  modeling of the response variable in row.",
-  label = "vif-sp",
-  ) %>%
-  kable_styling(latex_options = c("scale_down", "stripped"))
-```
-
-## Sensisivity analysis for the temporal model
-
-```{r}
-loadd(
-  resume_bm_rich_mod_mono_trends,
-  model_bm_rich_no_covar_no_inc_mono_trends,
-  reg_table_bm_rich_mono_trends,
-  reg_table_bm_rich_mono_stable_trends,
-  reg_table_bm_rich_trends,
-  reg_table_bm_rich,
-  anova_table_bm_rich_mono_trends,
-  anova_table_bm_rich_mono_stable_trends,
-  anova_table_bm_rich_trends,
-  anova_table_bm_rich,
-  anova_bm_rich_mod
-)
-loadd(
-  st_trends_rich_bm,
-  st_mono_trends_rich_bm,
-  st_mono_trends_stable_rich_bm,
-  basin_station
-)
-loadd(
-  pred_bm_rich_mono_trends,
-  pred_bm_rich,
-  pred_bm_rich_trends,
-  pred_bm_rich_mono_stable_trends
-)
+  caption = "Marginal and Conditional R-squared for the INLA models estimating
+  the temporal trends of the food-web structure. Mean [95\\% Credible Interval].",
+  label = "inlarsq") %>%
+  kable_styling()
 ```
 
 ```{r}
-cap_sens_temp_model <- paste0("
-  Testing the robustness of the estimated coefficients to the selection of
-  sites. 'All trends' corresponds to all the sites, 'Only monotonuous trends'
-  corresponds to all the trends negative or positive monotonically, 'Monotonuous
-  + stable' includes the previous selection and the stable ones (the selection
-    used in main text), 'All significant trends' correspond to all the trends
-significantly negative or positive.", " We classified a site as
-  having a significant trend when it displays both significant trends in biomass
-and in species richness."
-)
-```
-```{r sens, out.width="100%", fig.cap=cap_sens_temp_model}
-# Merge reg_table
-merged_reg_table <- pmap_dfr(
-  list(
-    df = list(
-      reg_table_bm_rich_mono_trends,
-      reg_table_bm_rich_mono_stable_trends,
-      reg_table_bm_rich_trends,
-      reg_table_bm_rich
-      ),
-    name = list(
-      "Only monotonuous",
-      "Monotonuous + stable (used in main text)",
-      "All significant trends",
-      "All sites"
-      ),
-    st = list(
-      st_mono_trends_rich_bm,
-      st_mono_trends_stable_rich_bm,
-      st_trends_rich_bm,
-      seq(1,400)
-    )
-    ), function (df, name, st) {
-    df$selection <- paste0(name, " (N = ", length(st),")")
-    return(select(df, selection, everything()))
-  }
-)
-
-merged_reg_table %>%
-  filter(! term %in% "(Intercept)", ! response %in% "piel_nind") %>%
-  mutate(
-   response = str_replace_all(response, var_replacement()),
-   term = str_replace_all(term, var_replacement()),
-  ) %>%
-  ggplot(aes(x = term, y = std_estimate)) +
-  geom_point(aes(color = selection)) +
-  facet_grid(cols = vars(response)) +
-  labs(
-    x = "Explicative variable",
-    y = "Standardized coefficients"
-  ) +
-  theme(
-    legend.position = "bottom",
-    axis.text.x = element_text(hjust = 1, angle = 15, size = 8),
-    text = element_text(size = 8)) +
-  guides(color = guide_legend(nrow = 2, byrow = TRUE))
-```
-
-We found that selection of data can have either low or high effects on estimated
-effects. When selecting only the sites that display significant decrease or
-increase of community biomass and species richness across time, i.e. 
-a tenth of the site, we found stronger links among the temporal dynamics of
-average trophic level, connectance, biomass and the temporal dynamics of biomass
-and species richness (Fig. \@ref(fig:sens), purple and red points). On the other
-side, we found that the data selection that we used in the main analysis
-displays roughly the same results that the selection that includes all sites
-(Fig. \@ref(fig:sens), blue and green points).
-
-The fact that we observed differences with data selection is that  "Only
-monotonuous" and "All significant trends" do not contain temporal dynamics
-around 0 because they are often non significant. We think that this data
-selection is not satisfactory because we wanted to include the temporal dynamics
-of biomass of species richness that were not significant, i.e. that can be
-considered as stable. The rational is that we wanted to know what was the
-expected temporal trends of food-web structure while the ones of biomass and
-species richness are kept stable. Without those data, the regression becomes
-constrained only by the extreme temporal trends of species richness and
-community biomass.
-
-\newpage
-
-## Interaction between community biomass trends and species richness trends
-
-```{r}
-loadd(model_bm_rich_int_mono_stable_trends)
-```
-
-```{r}
-model_bm_rich_int_mono_stable_trends %>%
-  .[names(.) %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")] %>%
-  map(., car::Anova) %>%
-  map(., tidy) %>%
-  map2_dfr(., names(.), ~.x %>% mutate(response = .y) %>% select(response,
-      everything())) %>%
-  mutate(
-    response = str_replace_all(response, var_replacement()),
-    term = str_replace_all(term, var_replacement())
-  ) %>%
-  rename_all(~str_to_title(.)) %>%
-  kable(., booktabs = TRUE,
+tar_load(semeff_tot_tab)
+ti <- semeff_tot_tab %>%
+  pivot_wider(names_from = "Effect type", values_from = "Effect") %>%
+  mutate(Response = factor(Response, levels = unique(var_replacement()))) %>%
+  arrange(Model, Response)
+kable(ti %>%
+    select(-Model),
   row.names = FALSE,
-  caption =
-    paste0(
-      "ANOVA results with interactions."
-      ),
-    label = "aov-int"
-    ) %>%
-kable_styling(latex_options =c("scale_down", "stripped")) %>%
-collapse_rows(columns = 1, valign = "top")
-#map(model_bm_rich_int_mono_stable_trends, ~try(car::vif(.x)))
+  booktabs = T,
+  caption = "Direct and total Standardized effects derived from the structural
+  equation models. [95\\% Confidence Interval]. The confidence intervals were
+  obtained with bootstrap (see Methods).") %>%
+  collapse_rows(columns = c(1), valign = "top") %>%
+  pack_rows(index = table(ti$Model))
 ```
 
 ```{r}
-model_bm_rich_int_mono_stable_trends %>%
-  .[names(.) %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")] %>%
-  map(., tidy) %>%
-  map2_dfr(., names(.), ~.x %>% mutate(response = .y) %>% select(response,
-      everything())) %>%
+tar_load(r2_sem_tab)
+kable(r2_sem_tab %>%
   mutate(
-    response = str_replace_all(response, var_replacement()),
-    term = str_replace_all(term, var_replacement())
-  ) %>%
-  rename_all(~str_to_title(.)) %>%
-  kable(., booktabs = TRUE,
+    Type = factor(Type, levels = effect_type_var()),
+    Response = factor(Response, levels = unique(var_replacement()))
+    ) %>%
+  arrange(Type, Response),
   row.names = FALSE,
-  caption =
-    paste0(
-      "Regression results of the model with interactions between the temporal
-      dynamics of community biomass and the one of species richness."
-      ),
-    label = "reg-int"
-    ) %>%
-kable_styling(latex_options =c("scale_down", "stripped")) %>%
-collapse_rows(columns = 1, valign = "top")
-```
-
-
-```{r, results="hide", echo=FALSE}
-pred_int_rich <- map(model_bm_rich_int_mono_stable_trends,
-      ~ggpredict(.x,
-        terms = c("log_rich_std", "log_bm_std [quart2]")) %>%
-        as_tibble() %>%
-        mutate(group = as.numeric(as.character(group))) %>%
-        rename("log_rich_std" = x, "log_bm_std" = group)
-        ) %>%
-enframe(name = "response", value = "pred_int")
-
-ti <- pred_bm_rich_mono_stable_trends %>%
-  filter(
-    term == "log_rich_std",
-    response %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")
-    ) %>%
-  select(response, raw_plot) %>%
-  left_join(pred_int_rich) %>%
-  mutate(pred_plot_color = pmap(
-      list(raw_plot, response, pred_int),
-      function(p, resp, pred, ...) {
-        p +
-          geom_line(data = pred,
-            aes(
-              y = predicted,
-              x = log_rich_std,
-              color = as.factor(log_bm_std)
-            ), size = 1
-          ) +
-        scale_color_discrete() +
-        labs(x = "Log species richness",
-          y = var_replacement()[resp],
-          color = "Log community biomass"
-          ) +
-        theme(
-          text = element_text(size = 8),
-          axis.text = element_text(size = 8)
-        )
-      }
-        )
-  )
-rich_leg <- get_legend(ti$pred_plot_color[[1]])
-```
-
-```{r}
-int_rich_cap <- paste0(
-  "Relationships between the temporal dynamics of food-web
-  structure and the one of species richness. The interaction between
-  the temporal dynamic of species richness and community biomass is significant
-  for the three descriptors of food-web structure. The chosen values for the
-  community biomass temporal dynamic correspond respectively to the first,
-  second and third quartiles.
-  ")
-
-```
-
-
-```{r int-rich, fig.cap=int_rich_cap}
-plot_grid(plotlist = 
-  map(ti$pred_plot_color,
-    ~.x + theme(
-      legend.position = "none",
-    )
-    ),
-rich_leg)
-```
-
-
-```{r eval = FALSE}
-test <- pred_int_rich[3, ]$pred_int[[1]] %>%
-  select(predicted, log_rich_std, log_bm_std) %>%
-  arrange(log_rich_std, log_bm_std)
-
-mat <- reshape2::acast(test, log_rich_std~log_bm_std, value.var = "predicted")
-library(plotly)
-plot_ly(
-  x = ~as.numeric(colnames(mat)),
-  y = ~as.numeric(rownames(mat)),
-  z = ~mat) %>%
-  add_surface()
-```
-
-```{r, results="hide", echo=FALSE}
-pred_int_bm <- map(model_bm_rich_int_mono_stable_trends,
-      ~ggpredict(.x,
-        terms = c("log_bm_std", "log_rich_std [quart2]")) %>%
-        as_tibble() %>%
-        mutate(group = as.numeric(as.character(group))) %>%
-        rename("log_bm_std" = x, "log_rich_std" = group)
-        ) %>%
-enframe(name = "response", value = "pred_int")
-
-ti_bm <- pred_bm_rich_mono_stable_trends %>%
-  filter(term == "log_bm_std", response %in% c("ct_ff", "w_trph_lvl_avg", "piel_bm")) %>%
-  select(response, raw_plot) %>%
-  left_join(pred_int_bm) %>%
-  mutate(pred_plot_color = pmap(
-      list(raw_plot, response, pred_int),
-      function(p, resp, pred) {
-        p +
-          geom_line(data = pred,
-            aes(
-              y = predicted,
-              x = log_bm_std,
-              color = as.factor(log_rich_std)
-            ), size = 1
-          ) +
-        scale_color_discrete() +
-                labs(x = "Log species richness",
-          y = var_replacement()[resp],
-          color = "Log community biomass"
-          ) +
-        theme(
-          text = element_text(size = 8),
-          axis.text = element_text(size = 8)
-        )
-
-      }
-      )
-  )
-bm_leg <- get_legend(ti_bm$pred_plot_color[[1]])
-```
-
-```{r}
-int_bm_cap <- paste0(
-  "Relationships between the temporal dynamics of food-web
-  structure and the one of community biomass. The interaction between
-  the temporal dynamics of species richness and community biomass is significant
-  for the three descriptors of food-web structure. The chosen values for the
-  species richness temporal dynamic correspond respectively to the first,
-  second and third quartiles.
-  "
-)
-```
-
-```{r int-bm, fig.cap=int_bm_cap}
-plot_grid(plotlist = map(ti_bm$pred_plot_color, ~.x + theme(legend.position = "none")), bm_leg)
-```
-
-
-```{r, echo=FALSE, results="hide"}
-test <- model_bm_rich_int_mono_stable_trends[["ct_ff"]]
-car::Anova(test)
-co <- coef(test)
-pred <- ggpredict(
-  test,
-  terms = c("log_bm_std ", "log_rich_std")
+  booktabs = T,
+  caption = "Marginal and conditional R squared for the Structural Equation
+  Models.",
+  label = "r2sem",
   ) %>%
-  as_tibble() %>%
-  mutate(group = as.numeric(as.character(group))) %>%
-  rename("log_bm_std" = x, "log_rich_std" = group)
-
-pred$y <- co[1] +
- # co["log_rich_std"] * pred[["log_rich_std"]] + bc not significant
-  co["log_bm_std"] * pred[["log_bm_std"]] +
-  co["log_rich_std:log_bm_std"] * pred[["log_rich_std"]] * pred[["log_bm_std"]]
-
-# all.equal(pred$y, pred$predicted)
-
-mat <- reshape2::acast(pred, log_rich_std~log_bm_std, value.var = "y")
-library(plotly)
-p <- plot_ly(
-  x = ~as.numeric(colnames(mat)),
-  y = ~as.numeric(rownames(mat)),
-  z = ~mat, ) %>%
-  add_surface() %>%
-  layout(scene = list(
-      xaxis = list(title = "species richness"),
-      yaxis = list(title = "Community biomass"),
-      zaxis = list(title = "Connectance")
-      ))
+  kableExtra::collapse_rows(columns = 1, valign = "top")
 ```
 
-```{r, results=FALSE}
-mod4_3d <- model_bm_rich_int_mono_stable_trends[
-  names(model_bm_rich_int_mono_stable_trends) %in%
-    c("ct_ff", "w_trph_lvl_avg")]
-
-pred_list <- map(mod4_3d,
-  function (modl, p) {
-    co <- coef(modl)
-    p$y <- co[1] +
-#      co["log_rich_std"] * p[["log_rich_std"]] +
-      co["log_bm_std"] * p[["log_bm_std"]] +
-      co["log_rich_std:log_bm_std"] * p[["log_rich_std"]] * p[["log_bm_std"]]
-    return(p)
-
-  }, p = pred)
-```
-
-```{r,results=FALSE}
-mat <- reshape2::acast(
-  pred_list$w_trph_lvl_avg,
-  log_rich_std~log_bm_std,
-  value.var = "y")
-p <- plot_ly(
-  x = ~as.numeric(colnames(mat)),
-  y = ~as.numeric(rownames(mat)),
-  z = ~mat, ) %>%
-  add_surface() %>%
-  layout(scene = list(
-      xaxis = list(title = "Community biomass"),
-      yaxis = list(title = "species richness"),
-      zaxis = list(title = "Avg trophic level")
-      ))
-```
-
-```{r,results=FALSE, eval=FALSE}
-test <- model_bm_rich_int_mono_stable_trends[["piel_bm"]]
-car::Anova(test)
-co <- coef(test)
-pred <- ggpredict(
-  test,
-  terms = c("log_bm_std ", "log_rich_std")
-  ) %>%
-  as_tibble() %>%
-  mutate(group = as.numeric(as.character(group))) %>%
-  rename("log_bm_std" = x, "log_rich_std" = group)
-
-pred$y <- co[1] +
-  co["log_rich_std"] * pred[["log_rich_std"]] +
-  co["log_bm_std"] * pred[["log_bm_std"]] +
-  co["log_rich_std:log_bm_std"] * pred[["log_rich_std"]] * pred[["log_bm_std"]]
-
-# all.equal(pred$y, pred$predicted)
-
-mat <- reshape2::acast(pred, log_rich_std~log_bm_std, value.var = "y")
-p <- plot_ly(
-  x = ~as.numeric(colnames(mat)),
-  y = ~as.numeric(rownames(mat)),
-  z = ~mat, ) %>%
-  add_surface() %>%
-  layout(scene = list(
-      xaxis = list(title = "species richness"),
-      yaxis = list(title = "Community biomass"),
-      zaxis = list(title = "Eveness of biomass")
-      ))
-```
 
 ```{r}
-int_3d_cap <- paste0(
-  "Tri-dimentional plot displaying the relationships among food-web structure
-  from one side and the temporal dynamics of species richness and community
-  biomass from the other side. The surface represents the values predicted by
-  the model."
-)
+tar_load(tab_inla_rand)
+tab_inla_rand %>%
+  mutate(Response = factor(Response, levels = unique(var_replacement()))) %>%
+  arrange(Response) %>%
+  kable(
+    row.names = FALSE,
+    booktabs = T,
+    caption = "Standard deviation associated to the random effects and the residual error of
+    the models. Mean [95\\% Credible Interval].",
+    label = "inlarand") %>%
+  collapse_rows(columns = c(1), valign = "top") %>%
+  kable_styling()
 ```
 
-```{r int-3d, fig.cap=int_3d_cap}
-p_ct_ff <- ggdraw() +
-    draw_image(get_mypath("figures", "int_rich_bm_cf_ff.png"), scale = 1)
-p_tlvl <- ggdraw() +
-    draw_image(get_mypath("figures", "int_rich_bm_tlvl.png"), scale = 1)
-p_piel_bm <- ggdraw() +
-    draw_image(get_mypath("figures", "int_rich_bm_eveness.png"), scale = 1)
-plot_grid(
-  p_ct_ff,
-  p_tlvl,
-  p_piel_bm,
-  labels = "AUTO"
-)
-```
-
-All together, we found that interactions between the temporal dynamics of
-community biomass and species richness have no major effects on the bivariate
-relationships (Fig. \@ref(fig:int-bm) and \@ref(fig:int-rich)), at least in
-the range of values observed in the dataset (1st to 3rd quartiles).  It is more
-complicated for connectance when exploring the full range of possible values
-(Fig. \@ref(fig:int-3d) A). We found that connectance strongly decrease with
-increasing of community biomass temporal trends when species richness temporal
-trends is strongly negative, while we found the opposite when species richness temporal
-trends is strongly positive. Furthermore we found that the temporal dynamic of
-connectance had a strong positive relationship with the one of species richness
-when community biomass increases through time while we found no relationship
-when the temporal trend of community biomass was strongly negative.
-
-- Results for interactions: 
-  - Connectance: 
-    - Always decreases when richness decreases (inverse of expectation)
-    - Increases when richness increases (inverse of expectation), but always
-      decreases if biomass decreases
-    - Increases when biomass increases
-  - Average trophic level:
-    - Always decreases when biomass decreases 
-    - Always increases when biomass increases 
-    - Whatever the richness dynamics, it is the biomass dynamics which drives
-      all
-  - Pielou of biomass:
-    - Always positive when biomass decreases
-    - Always negative when biomass increases 
-    - Whatever the richness dynamics, it is the biomass dynamics which drives
-      all
 
 ```{r}
-template_cross <- tibble(
-  bm_std = c("-", "0", "+"),
-  `-` = c(NA, NA, NA),
-  `0` = c(NA, NA, NA),
-  `+` = c(NA, NA, NA),
+tar_load(tabvif)
+kable(tabvif,
+  row.names = FALSE,
+  booktabs = T,
+  caption = "Variance Inflation Factor for the more complex linear models
+  included in the Structural Equation Models.",
+  label = "vif",
   )
-
-ct_ff_cross_table <- tibble(
-  rich_std = c("-", "0", "+", "sign_relationship"),
-  `-` = c("-", "-", "--", "-"),
-  `0` = c("-", "-", "-", "0"),
-  `+` = c("-", "+", "++", "+"),
-  "sign_relationship" = c("0", "+", "+", "")
-  )
-
-kable(ct_ff_cross_table) %>%
-  add_header_above(c(" " = 1, "bm_std" = 3))
-```
-
-```{r}
-tlvl_cross_table <- tibble(
-  rich_std = c("-", "0", "+", "sign_relationship"),
-  `-` = c("-", "0", "+", "+"),
-  `0` = c("-", "0", "+", "+"),
-  `+` = c("-", "0", "+", "+"),
-  "sign_relationship" = c("+", "0", "-", "")
-  )
-
-kable(tlvl_cross_table) %>%
-  add_header_above(c(" " = 1, "bm_std" = 3))
-```
-
-\newpage
-
-## Statistical model tables 
-
-### Temporal
-
-```{r}
-loadd(sem_tps)
-```
-
-```{r}
-map_dfr(sem_tps, piecewiseSEM::rsquared) %>%
-  mutate(
-    Response = str_replace_all(Response, var_replacement())
-  ) %>%
-  select(Response, R.squared) %>%
-  kable(., booktabs = TRUE,
-    caption =
-      paste0(
-      "Marginal R-squared for temporal models."),
-  label = "rsq"
-      ) %>% #
-  kable_styling(latex_options = c("striped"))
-```
-
-
-### Spatial
-
-```{r}
-loadd(sp_sem)
-```
-
-```{r}
-map_dfr(sp_sem, piecewiseSEM::rsquared) %>%
-  mutate(
-    Response = str_replace_all(Response, var_replacement())
-  ) %>%
-  select(Response, Marginal, Conditional) %>%
-  mutate(
-    Response = str_replace_all(Response, var_replacement()),
-    Marginal = round(Marginal, 2),
-    Conditional = round(Conditional, 2)
-  ) %>%
-  kable(., booktabs = TRUE,
-    caption =
-      paste0("Marginal and conditional $R^2$ for the spatial models."),
-  label = "rsq-sp"
-      ) %>% #
-  kable_styling(latex_options = c("striped"))
 ```
 

@@ -1,0 +1,110 @@
+---
+author:
+- On behalf of all the authors, Dr. Alain Danet
+opening: Dear Editor in Chief and Associate Editors,
+closing: Sincerely yours,
+fontsize: 10pt
+return-address:
+- Dr. Alain Danet
+- School of Biosciences
+- The University of Sheffield
+- Western Bank, S10 2TN, Sheffield, UK
+output:
+  linl::linl:
+    keep_tex: true
+
+letterhead: ./misc/letterhead.png
+signature: /home/alain/Documents/Administration/signature.pdf
+letterhead-y-offset: 0pt
+letterhead-scale: .7
+colorlinks: false
+---
+
+```{r, results = "hide", include = FALSE}
+Sys.setlocale("LC_TIME", "C")
+```
+
+Please find enclosed our manuscript entitled *“Biodiversity temporal trends are
+reshaping food web structure and redundancy in riverine ecosystems”*, which we
+submit for consideration in *PNAS*.
+
+In the midst of the current biodiversity crisis, understanding the ecological
+consequences of biodiversity changes is critical for designing and implementing
+effective conservation policies. This is especially urgent in freshwater
+systems, which are among the most threatened ecosystems globally. While
+biodiversity temporal trends have been widely documented, their impacts on
+ecosystem functioning and stability remain poorly understood. Conversely, food
+web and Biodiversity-Ecosystem Functioning research have provided robust
+theoretical and experimental predictions on how biodiversity loss affects
+ecosystem productivity and stability. For instance, food web structural
+properties such as connectance and average trophic level are predicted to
+strongly influence ecosystem productivity, while the presence of redundant
+trophic pathways is linked to robustness against species extinctions. However,
+aligning these predictions with empirical data from natural settings remains
+challenging, as it requires simultaneous temporal data on biodiversity and food
+web structure, which are rarely available.
+
+We address this challenge here and reveal several effects of biodiversity
+temporal trends on food web structure and function in riverine fish communities.
+Using a unique dataset of over 400 fish community time series from multiple
+hydrographic basins across France, we reconstructed food web structures for each
+sampling event using individual body size, ontogenetic diet data, and predation
+size windows. We then related changes in biodiversity (community biomass and
+species richness) to changes in food web structure (connectance, average trophic
+level, and the proportion of redundant trophic pathways). Our results reveal
+that declines in species richness are associated with losses in community
+biomass, while declines in community biomass are linked to reduced connectance
+and average trophic level. We also found that top trophic-level species play a
+disproportionate role in driving these trends. Importantly, declines in both
+community biomass and species richness are associated with a reduction in the
+proportion of redundant trophic pathways, suggesting weakened ecosystem
+robustness to future perturbations.
+
+Our study provides a large-scale perspective on how biodiversity trends reshape
+food web structure in freshwater ecosystems, offering critical insights into the
+ecological consequences of biodiversity loss. Our findings align with
+predictions from food web and Biodiversity-Ecosystem Functioning research and
+are supported by spatial analyses and bioenergetic food web modeling, which
+validate the use of space-for-time substitution in this context. These results
+underscore that widely reported biodiversity changes across taxa and ecosystems
+likely have profound impacts on ecosystem functioning and resilience.
+
+As *PNAS* has been at the forefront of research on biodiversity changes and food
+web structure, we are confident that our study will interest the journal’s broad
+readership and stimulate new perspectives on the ecological consequences of
+biodiversity loss. The methods we developed to reconstruct food webs and
+quantify redundancy using graph theory metrics will be of particular interest to
+researchers across multiple disciplines. Additionally, this study provides
+valuable insights for freshwater scientists and conservation practitioners,
+offering the first comprehensive analysis of how biodiversity changes reshape
+food web structure and integrating the fields of biodiversity change, food web
+ecology, and Biodiversity-Ecosystem Functioning.
+
+The enclosed manuscript has been approved by all authors and has not been
+published or submitted elsewhere. We have had no prior discussions with a *PNAS*
+editor regarding this work.
+
+We suggest the following experts as potential editors and reviewers for their relevant expertise:
+
+- Editorial Board members:
+  - Power, Mary
+  - Hastings, Alan
+  - Marquet, Pablo A.
+- NAS members:
+  - Stephen R. Carpenter
+  - Peter B. Reich
+  - Sandra Lavorel
+  - Marten Scheffer
+  - Gene E. Likens
+  - Lisa A. Levin
+- Qualified referees (name & email link, institution, expertise):
+  - [Shaopeng Wang](shaopeng.wang@pku.edu.cn), Peking University (expertise in Biodiversity-Ecosystem Functioning in food webs)
+  - [Mary O’Connor](oconnor@zoology.ubc.ca), The University of British Columbia (expertise in the effects of biodiversity changes on ecosystem functioning)
+  - [Jennifer Dunne](jdunne@santafe.edu), Santa Fe Institute (expertise in the effects of biodiversity loss on food web structure)
+  - [Antonio Bodini](antonio.bodini@unipr.it), Universita di Parma (expertise in food web alteration and graph theory)
+  - [Mike Heithaus](CASEdean@fiu.edu), Florida International University (expertise in the ecological consequences of top predator removal)
+
+Thank you for considering our submission. We look forward to the possibility of
+contributing to *PNAS*.
+
+

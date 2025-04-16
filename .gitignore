@@ -3,3 +3,17 @@
 .RData
 inst/doc
 data/*.rda
+**.toc
+**.html
+**.rtf
+**.doc*
+**.out
+**.log
+**.aux
+**.tex
+**_files/
+**_cache/
+**.txt
+**.pdf
+**.svg
+

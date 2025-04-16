@@ -2,8 +2,10 @@
 # For Loubna
 
 ```{r}
-library(drake)
+library('targets')
 library(tidyverse)
+library('magrittr')
+library(cowplot)
 
 mypath <- rprojroot::find_package_root_file
 
@@ -148,11 +150,12 @@ get_adj_net_station <- function (net = NULL, station = NULL) {
 
   net <- net %>%
     filter(station %in% st) %>%
-    dplyr::select(station, year, network) %>%
-    unnest(cols = c(network))
+    dplyr::select(station, year, network)
 
-  ## Compute metrics:
-  net %>%
+  if ("data.frame" %in% class(net$network[[1]])) {
+
+   net <- net %>%
+    unnest(cols = c(network)) %>%
     dplyr::select(year, from, to) %>%
     arrange(year) %>%
     group_by(year) %>%
@@ -169,6 +172,24 @@ get_adj_net_station <- function (net = NULL, station = NULL) {
 	return(TL)
 	})
     )
+  } else {
+
+    net <- net %>%
+    arrange(year) %>%
+    group_by(year) %>%
+    rename(adj_mat = network) %>%
+    mutate(
+      troph = map(adj_mat, ~NetIndices::TrophInd(.x)),
+      obs_troph_level_vector = map(troph, function (x) {
+	TL <- x$TL
+	names(TL) <- rownames(x) 
+	return(TL)
+	})
+    )
+  }
+
+  return(net)
+
 }
 
 get_net_biomass <- function (net = NULL, station = NULL) {
@@ -286,8 +307,7 @@ get_network_temporal_plot <- function (
 ```
 
 ```{r}
-myload(metaweb_analysis, dir = get_mypath("data"), envir = environment())
-
+tar_load(metaweb_analysis)
 my_species_color <- set_color_species(
   node_list = colnames(metaweb_analysis$metaweb),
   resource_list = metaweb_analysis$resource,
@@ -297,25 +317,30 @@ my_species_color <- set_color_species(
 
 
 ```{r}
-loadd(rigal_classification, com_data, op_data)
+tar_load(c(com_data, op_data, com_analysis_data))
 op_data %<>%
   mutate(year = as.integer(year))
-myload(community_metrics, dir =
-  "~/Documents/post-these/mnhn/fishcom_biomass_dynamics/data", envir =
-  environment())
+
+ti <- com_analysis_data %>%
+  group_by(opcod) %>%
+  summarise(sp_vector = list(setNames(biomass, species))) %>%
+  left_join(dplyr::select(op_data, station, opcod, year, surface))
 
 
-community_metrics %<>%
+com_data %<>%
     left_join(dplyr::select(op_data, station, opcod, year))
-ti <- rigal_classification %>%
-  filter(variable == "bm_std") %>%
-  unnest(classif)
-first_st <- ti %>%
-  filter(shape_class == "decrease_constant") %>%
-  arrange(linear_slope)
 
-tes <- map(first_st$station[1:12], ~plot_dyn_web(
-    com = community_metrics,
+tar_load(gaussian_pred_station_tps10)
+tr10 <- gaussian_pred_station_tps10 %>%
+  select(response, station, mean) %>%
+  pivot_wider(names_from = "response", values_from = "mean")
+
+first_st <- tr10 %>%
+  arrange(log_bm_std)
+
+
+tes <- map(first_st$station[12:24], ~plot_dyn_web(
+    com = ti,
     sem_df = NULL,
     station = .x,
 #    .log = TRUE,
@@ -324,13 +349,11 @@ tes <- map(first_st$station[1:12], ~plot_dyn_web(
 plot_grid(plotlist = tes)
 ```
 ```{r}
+last_st <- tr10 %>%
+  arrange(desc(log_bm_std))
 
-last_st <- ti %>%
-  filter(shape_class == "increase_constant") %>%
-  arrange(linear_slope)
-
-tes <- map(last_st$station[1:12], ~plot_dyn_web(
-    com = community_metrics,
+tes <- map(last_st$station[13:24], ~plot_dyn_web(
+    com = ti,
     sem_df = NULL,
     station = .x,
 #    .log = TRUE,
@@ -340,37 +363,38 @@ plot_grid(plotlist = tes)
 ```
 
 
+
 ```{r}
-st <- first_st$station[4]
-st[2] <- last_st$station[13]
+st <- first_st$station[20]
+st[2] <- last_st$station[16]
 names(st) <- c("decreasing", "increasing")
 #11432 my choice
 ```
 
 
 ```{r}
-myload(network_analysis, dir =
-  "~/Documents/post-these/mnhn/fishcom_biomass_dynamics/data/classes", envir =
-  environment())
+tar_load(c(net_analysis_data, net_data))
+load(here::here("data", "classes", "network_analysis.rda"))
 network_analysis %<>%
   left_join(dplyr::select(op_data, opcod, station, year)) %>%
   filter(!is.na(opcod))
 
+
 p <- get_network_temporal_plot(
   net_list = network_analysis,
   station = st[1],
-  selected_years = NULL,
-  node_color = NULL, scale_node_size = 0.06,
+  selected_years = c(1995, 2005),
+  node_color = NULL, scale_node_size = 0.02,
   par_options = par(mar = c(0,0,0,0)),
-  log_abun = TRUE
+  log_abun = FALSE 
 )
-g <- plot_grid(plotlist = map(p, ggdraw), nrow = 3)
+g <- plot_grid(plotlist = map(p, ggdraw), ncol = 2)
 
 save_plot(
   get_mypath("figures/decreasing_biomass_network.pdf"),
   g,
-  nrow = 3,
-  ncol = 4,
+  nrow = 1,
+  ncol = 2,
   base_height = 4,
   base_width = 4)
 
@@ -396,7 +420,7 @@ save_plot(
 library(lubridate)
 
 tes <- plot_dyn_web(
-    com = mutate(community_metrics, year = ymd(year, truncated = 2L)),
+    com = mutate(ti, year = ymd(year, truncated = 2L)),
     sem_df = NULL,
     station = st[1],
 #    .log = TRUE,
@@ -414,7 +438,7 @@ save_plot(
   base_width = 7)
 
 tes2 <- plot_dyn_web(
-    com = mutate(community_metrics, year = ymd(year, truncated = 2L)),
+    com = mutate(com_data, year = ymd(year, truncated = 2L)),
     sem_df = NULL,
     station = st[2],
 #    .log = TRUE,
@@ -445,6 +469,7 @@ rig_st_dec <- rigal_classification %>%
 ```
 
 ```{r}
+tar_load(full_data2)
 tps_ct_dec <- full_data2 %>%
   mutate(year = ymd(year, truncated = 2L)) %>%
   filter(station == st[1]) %>%
@@ -527,7 +552,7 @@ save_plot(
 
 # New figure
 
-```{r}
+```{r, eval = FALSE}
 # get a station that represents the results
 st_var_shape <- rigal_classification %>%
   unnest(classif) %>%
@@ -543,9 +568,9 @@ dec_representative <- st_var_shape %>%
 
 
 ```{r}
-color_tes <- map(dec_representative$station,
+color_tes <- map(st[1],
   ~set_color_species(
-  node_list = community_metrics %>%
+  node_list = ti %>%
   filter(station == .x) %$%
   .$sp_vector %>%
   reduce(., c) %>%
@@ -555,10 +580,10 @@ color_tes <- map(dec_representative$station,
   col_resource = NULL
   )
 )
-names(color_tes) <- as.character(dec_representative$station)
+names(color_tes) <- as.character(st[1])
 
-tes <- map(dec_representative$station, ~plot_dyn_web(
-    com = community_metrics,
+tes <- map(st[1], ~plot_dyn_web(
+    com = ti,
     sem_df = NULL,
     station = .x,
 #    .log = TRUE,
@@ -566,31 +591,75 @@ tes <- map(dec_representative$station, ~plot_dyn_web(
     color_species = color_tes[[as.character(.x)]]
     ))
 
-names(tes) <- as.character(dec_representative$station)
+names(tes) <- as.character(st["decreasing"])
 plot_grid(plotlist = tes)
 ```
 ```{r}
-
-st_decreasing <- dec_representative$station[3]
+st_decreasing <- st["decreasing"]
 
 p_dec_log_bm <- tes[[as.character(st_decreasing)]] +
   labs(color = "Species", fill = "Species") +
-  theme(legend.position = c(.2, .8), legend.direction = "horizontal")
+  theme(legend.position = c(.2, .9), legend.direction = "horizontal")
 
 save_plot(
   get_mypath("figures/p_dec_log_bm.pdf"),
   p_dec_log_bm,
   nrow = 1,
   ncol = 1,
-  base_height = 6.6,
-  base_asp = 1.2
+  base_height = 4,
+  base_width = 7
   )
 ```
+
 ```{r}
-v_colors =  viridis(n = 2, begin = 0.5, end = 1)
+tar_load(c(net_analysis_data, net_data))
+load(here::here("data", "classes", "network_analysis.rda"))
+network_analysis %<>%
+  left_join(dplyr::select(op_data, opcod, station, year)) %>%
+  filter(!is.na(opcod))
+
+
+p <- get_network_temporal_plot(
+  net_list = network_analysis,
+  station = st[1],
+  selected_years = c(1995, 2005),
+  node_color = color_tes[[st[1]]], scale_node_size = 0.05,
+  par_options = par(mar = c(0, 0, 0, 0)),
+  log_abun = TRUE 
+)
+g <- plot_grid(plotlist = map(p, ggdraw), ncol = 2)
+
+save_plot(
+  get_mypath("figures/decreasing_biomass_network.pdf"),
+  g,
+  nrow = 1,
+  ncol = 2,
+  base_height = 4,
+  base_width = 4)
+
+p2 <- get_network_temporal_plot(
+  net_list = network_analysis,
+  station = st[2],
+  selected_years = NULL,
+  node_color = NULL, scale_node_size = 0.06,
+  par_options = par(mar = c(0,0,0,0)),
+  log_abun = TRUE
+)
+g2 <- plot_grid(plotlist = map(p2, ggdraw), nrow = 4)
+
+save_plot(
+  get_mypath("figures/increasing_biomass_network.png"), g2,
+  nrow = 4,
+  ncol = 4,
+  base_height = 4,
+  base_width = 4)
+```
+
+```{r}
+v_colors =  viridisLite::viridis(n = 2, begin = 0.5, end = 1)
 names(v_colors) <- c("tps", "sp")
 
-tps_dec_inc <- map(c("log_bm_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg", "piel_bm"), # 
+tps_dec_inc <- map(c("log_bm_std", "log_rich_std", "ct_ff", "w_trph_lvl_avg"), # 
   ~plot_temporal_variable_lm(st = st_decreasing, var = .x, col_median =
     v_colors["sp"], col_trend = v_colors["tps"]) +
     theme(axis.title = element_text(size = 12))
@@ -617,7 +686,6 @@ save_plot(
   base_height = 2.6,
   base_asp = 1.2 
 )
-theme_get()$text
 ```
 
 ```{r temporal foodwebs}

@@ -11,7 +11,7 @@ get_richness_var <- function (all = FALSE) {
 
   x <- c("log_rich_std")
   if (all) {
-    x <- c(x, "rich_std", "richness", "log_rich") 
+    x <- c(x, "rich_std", "richness", "log_rich")
   }
   return(x)
 }
@@ -51,8 +51,8 @@ model_type_var <- function(
 get_com_str_var <- function (all = FALSE) {
 
   x <- c(
-    "ct_ff", "w_trph_lvl_avg", "log_rich_std", "piel_nind", "piel_bm",
-    "prop_pisc_node", "prop_pisc_rich"
+    "ct_ff", "connectance", "w_trph_lvl_avg", "log_rich_std", "prop_pisc_node",
+    "prop_pisc_rich", "node_fish_top_nb", "prop_redundant_links"
   )
 
   if (all) {
@@ -71,25 +71,42 @@ get_com_str_var <- function (all = FALSE) {
 get_model_terms <- function ( ) {
   c("bm_slope", "inc_f", "bm", "log_bm")
 
-} 
+}
 
 var_replacement <- function (slope = FALSE, several_lines = FALSE) {
   x <- c(
+    log_bm_std = "Biomass",
+    bm_std = "Biomass (g.m^-2)",
+    biomass = "Biomass (g)",
+    bm = "Biomass",
+    log_total_bm = "Biomass",
+    biomass_kg = "Biomass (kg)",
     log_RC1 = "PCA Avg stream size",
     log_RC2 = "PCA Avg temperature",
-    ct_ff = "Connectance",
-    avg_tl_ff = "Avg trophic level",
-    max_tl_ff = "Max trophic level",
+    ct_ff = "Connectance (fish)",
+    ct = "Connectance",
+    connectance = "Connectance",
+    log_connectance_final = "Connectance",
+    avg_tl_ff = "Avg trophic level (fish)",
+    avg_tl = "Avg trophic level",
+    tlvl = "Avg trophic level",
+    max_tl_ff = "Max trophic level (fish)",
+    max_tl = "Max trophic level",
     w_trph_lvl_avg = "Avg trophic level",
-    #connectance ,weighted_connectance,
-    log_rich_std = "Log Species richness (m^-2)",
-    log_bm_std = "Log Biomass (g.m^-2)",
-    bm_std = "Biomass (g.m^-2)",
+    log_w_trph_lvl_avg = "Avg trophic level",
+    log_weighted_average_trophic_level = "Avg trophic level",
+    log_rich_std = "Species richness",
     rich_std = "Species richness (m^-2)",
+    log_final_richness = "Species richness",
+    richness = "Species richness",
     piel_nind = "Evenness (abundance)",
     piel_bm = "Evenness (biomass)",
-    biomass = "Biomass (g)",
-    richness = "Species richness"
+    prop_pisc_node = "Piscivorous node prop.",
+    prop_pisc_rich = "Piscivorous rich prop.",
+    prop_redundant_links = "Redundancy",
+    node_fish_top_nb = "Top consumer node nb",
+    nbnode = "Nb of nodes",
+    nind = "Nb of individuals"
   )
 
   if (several_lines) {
@@ -127,4 +144,54 @@ get_var_for_pca <- function() {
 
 get_all_var_analysis <- function () {
   c(get_com_str_var(), get_biomass_var(), get_richness_var()) %>% unique
+}
+
+net_ext_met_to_keep <- function() {
+    c("ct", "ct_ff", "avg_tl", "avg_tl_ff", "max_tl", "max_tl_ff", "prop_redundant_links")
+}
+
+replacement_random_term <- function() {
+  c(
+    "Gaussian observations" = "Error",
+    "intercept_basin" = "Intercept (basin)",
+    "basin1" = "Time (basin)",
+    "intercept_basin_station" = "Intercept (site nested in basin)",
+    "station1" = "Time (site nested in basin)"
+  )
+}
+
+replacement_pca_var <- function() {
+  c(
+    "alt"                    = "Altitude (m)",
+    "avg_depth_station_cv"   = "River depth CV",
+    "avg_depth_station_mean" = "River depth (m)",
+    "d_source"               = "Distance from source (km)",
+    "DBO_cv"                 = "BOD CV",
+    "DBO_med"                = "BOD",
+    "flow_cv"                = "Water flow CV",
+    "flow_med"               = "Water flow (m3/s)",
+    "slope"                  = "Slope (deg.)",
+    "strahler"               = "Strahler order",
+    "temperature_cv"         = "Temperature CV",
+    "temperature_med"        = "Temperature (°C)",
+    "width_river_cv"         = "River width CV",
+    "width_river_mean"       = "River width (m)"
+  )
+}
+
+replacement_op_data <- function() {
+  c(
+    "baseline_year" = "Baseline year",
+    "completeness"  = "Completeness",
+    "nb_op"         = "Sampling number",
+    "span"          = "Year span"
+  )
+}
+
+effect_type_var <- function() {
+  c(
+    temporal = "Temporal",
+    spatial = "Spatial",
+    `theoretical model` = "Theoretical model"
+  )
 }

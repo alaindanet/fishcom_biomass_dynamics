@@ -45,22 +45,49 @@ from_semEff_to_table <- function(x = NULL) {
 
 get_tps_semeff <- function(
   sem = NULL,
-  data_tps_sem = data_tps_sem
+  sem_data = tps_for_sem,
+  ci_type = "perc"
   ) {
-
-  semeff <- semEff(sem, R = 1000, seed = 13, parallel = "no",
-    ci.type = "perc")
+  booteff <- bootEff(sem, R = 1000, seed = 13, parallel = "no", data = sem_data)
+  semeff <- semEff(booteff, ci.type = ci_type)
   return(semeff)
 
 }
 
 get_sp_semeff <- function(
   sem = NULL,
-  data_sp_sem = data_sp_sem
+  sem_data = sp_for_sem,
+  ci_type = "perc"
   ) {
-
-  semeff <- semEff(sem, R = 1000, seed = 13, parallel = "no",
-    type = "parametric", ci.type = "perc")
+  #semeff <- semEff(sem, R = 1000, seed = 13, parallel = "no",
+    #type = "parametric", ci.type = ci_type)
+  booteff <- bootEff(sem, R = 1000, seed = 13 ,ran.eff = "basin", parallel = "no", data = sem_data)
+  semeff <- semEff(booteff, ci.type = ci_type)
   return(semeff)
+}
 
+get_semeff_ci <- function(
+  x = semeff_tot,
+  model = "temporal",
+  type = "direct",
+  resp = "ct_ff",
+  term = "log_bm_std",
+  r = 2
+) {
+  model1 <- model
+
+  out <- x %>%
+    filter(
+      model == model1,
+      effect_type == type,
+      predictor == term,
+      response == resp
+    )
+
+  out <- out[, c("effect", "lower_ci", "upper_ci")] %>%
+    pivot_longer(everything()) %>%
+    deframe()
+
+  out <- format(round(out, r), nsmall = r)
+  paste0(out["effect"], "\ [", out["lower_ci"],",", out["upper_ci"],"]")
 }
