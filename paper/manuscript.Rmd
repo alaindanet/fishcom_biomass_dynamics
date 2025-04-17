@@ -19,6 +19,7 @@ link-citations: true
 toc: false
 linestretch: 2.0
 header-includes:
+  - \usepackage{amsmath}
   - \usepackage[left]{lineno}
   - \linenumbers
   - \usepackage{hyperref}
@@ -105,44 +106,43 @@ France
 Biodiversity temporal changes are expected to profoundly impact ecosystem
 functioning and stability, yet large-scale empirical evidence remains limited.
 Bridging this gap requires aligning biodiversity temporal trends with food web
-theory and Biodiversity-Ecosystem Functioning research, which provide strong
-predictions about the ecological consequences of biodiversity loss. Most
-insights rely on spatial comparisons of ecological communities, assuming they
-reflect temporal trends—a space-for-time substitution. Here, we analyze
-biodiversity and food web time series from over 400 riverine fish communities
-across France (1995–2018) to evaluate how biodiversity temporal trends reshape
-food web structure and community functioning. We examine relationships among
-species richness, community biomass, and three key food web metrics:
-connectance, weighted average trophic level, and trophic pathway redundancy. We
-also test the space-for-time hypothesis using spatial gradients and a
-theoretical food web model. Structural equation models and robustness analyses
-reveal that declines in species richness strongly correlate with reduced
-community biomass, with top trophic-level species playing a disproportionate
-role in food web changes. Declining biomass is associated with the loss of top
-trophic levels and decreased connectance, while temporal changes of species
-richness negatively correlates with those of connectance. Both biomass and
-species richness declines reduce trophic pathway redundancy, suggesting
-biodiversity loss undermines community robustness to future perturbations. Our
-findings align with food web theory and Biodiversity-Ecosystem Functioning
-research, support the validity of space-for-time approaches for basic food web
-metrics, and highlight the relevance of food web metrics as indicators of
-ecosystem function and fragility.
+theory and Biodiversity-Ecosystem Functioning research, both of which provide
+strong predictions about the ecological consequences of biodiversity loss. Most
+insights on those consequences currently rely on spatial comparisons of
+ecological communities, assuming they reflect temporal trends—a space-for-time
+substitution. Here, we analyze biodiversity and food web time series from over
+400 riverine fish communities across France (1995–2018) to evaluate how
+biodiversity temporal trends reshape food web structure and community
+functioning. We examine relationships among species richness, community biomass,
+and three key food web metrics: connectance, weighted average trophic level, and
+trophic pathway redundancy. We also test the space-for-time hypothesis using
+spatial gradients and a theoretical food web model. Our structural equation
+models and robustness analysis reveal that declines in species richness strongly
+correlate with reduced community biomass, with top trophic-level species playing
+a disproportionate role in food web changes. Declining biomass is associated
+with the loss of top trophic levels and decreased connectance, while temporal
+changes in species richness negatively correlates with changes in connectance.
+Both biomass and species richness declines reduce trophic pathway redundancy,
+suggesting that biodiversity loss weakens community robustness to future
+perturbations. Our findings align with food web theory and
+Biodiversity-Ecosystem Functioning research, support the validity of
+space-for-time approaches for basic food web metrics, and demonstrate the
+relevance of food web metrics as indicators of ecosystem function and fragility.
 
 # Significance {-}
 
-Current rates of biodiversity loss raise urgent concerns about ecosystem
-functioning and stability, yet how biodiversity trends directly impact these
-critical processes remains unclear. For instance, food web &
-Biodiversity-Ecosystem Functioning research delivered strong predictions
-about the ecological consequences of biodiversity loss. Using an extensive
-dataset of riverine fish communities, we link biodiversity trends to temporal
-changes in food web structure. We demonstrate that temporal changes in species
-richness and community biomass consistently associate with altered trophic
-levels, connectance, and the redundancy of feeding relationships. We found that
-declining biodiversity reduces trophic pathway redundancy, likely increasing
-ecosystem vulnerability to perturbations. Our findings suggest that food web
-structure metrics could serve as valuable indicators for monitoring ecosystem
-health and guiding conservation strategies.
+Rates of biodiversity loss raise urgent concerns about ecosystem functioning and
+stability, yet how biodiversity trends directly impact these critical processes
+remains unclear. For instance, food web & Biodiversity-Ecosystem Functioning
+research has delivered strong predictions about the ecological consequences of
+biodiversity loss but lack of empirical assessment. Using an extensive dataset
+of riverine fish communities, we link biodiversity trends to temporal changes in
+food web structure. We demonstrate that temporal changes in species richness and
+community biomass consistently associate with altered food web structure. We
+found that declining biodiversity reduces trophic pathway redundancy, likely
+increasing ecosystem vulnerability to perturbations. Our findings suggest that
+food web structure metrics could serve as valuable indicators for monitoring
+ecosystem health and guiding conservation strategies.
 
 # Introduction
 
@@ -248,7 +248,7 @@ and primary productivity using a bioenergetic model [@brose_allometric_2006;
 evaluate whether theoretical predictions align with our empirical data, which
 are limited to fish biodiversity.
 
-(ref:fig-met-cap) Methodological Approach: (a) We analyzed `r nb_st` stream fish
+(ref:met-cap) **Methodological approach**: (a) We analyzed `r nb_st` stream fish
 communities in France, each monitored for at least 10 years. (b) For each site
 and sampling event, we reconstructed food webs using a metaweb based on
 ontogenetic diet information and predator-prey body size ratios. (c) We computed
@@ -257,7 +257,7 @@ connectance, average trophic level, and redundancy at each site. (d) We then
 assessed relationships among these food web descriptors over time and (e) across
 spatial gradients.
 
-```{r matmet, fig.cap="(fig-met-cap)", out.width="100%"}
+```{r matmet, fig.cap="(ref:met-cap)", out.width="100%"}
 knitr::include_graphics(get_mypath("figures", "mat_met.png"))
 ```
 
@@ -313,7 +313,7 @@ grlx <- dfv(r = "prop_redundant_links", v = "max", d = 2)
 Our food web reconstruction delivered `r nb_op` annual estimates of species richness,
 biomass, connectance, weighted average trophic level, and proportion of
 redundant trophic links (hereafter “redundancy”, see Appendix 1,
-Fig. S1, Table S2) from the `r nb_st`
+Fig. S1, Table S1) from the `r nb_st`
 sampling sites with 10+ years of community dynamics (Fig. \@ref(fig:matmet)a-c). We used
 ontogenic food diet data at the species level and individual fish body size to
 reconstruct trophic species food webs, i.e. at the size class species level (See
@@ -329,13 +329,13 @@ ranging from `r r2cond$log_bm_std` for community biomass to
 `r r2cond$log_rich_std` for species richness, Table S3).
 
 
-(ref:sem-cap) (a) Structural equation models linking the temporal trends of
+(ref:sem-cap) **a**, Structural equation models linking the temporal trends of
 biodiversity and food web structure. Dashed and solid arrows display
 respectively negative and positive the standardized slope coefficients, their
 widths being proportional to the absolute values of the coefficients. The
 standardized slope coefficients and their associated 95% confidence intervals
 obtained by bootstrapping are displayed along the path. $R^2$ displays the marginal
-R-squared of the linear models. (b to h) Direct bivariate relationships derived
+R-squared of the linear models. **b** to **h**, Direct bivariate relationships derived
 from the structural equation model. Points display the temporal trends at each
 site estimated with a hierarchical Bayesian model, lines display the linear
 relationship estimated with the SEM. The distribution of the site temporal
@@ -536,24 +536,24 @@ extinction at random had little effect on food web structure (black line, Fig.
 above, suggest that top consumers play a disproportionate role in driving the
 changes in food web structure reported.
 
-(ref:fig-std-cap) a, Direct and total effects of community biomass and species
-richness trends on food web structure trends. Standardized coefficients (r)
-derived from the temporal, spatial, and bioenergetic model Structural Equation
-Models. Points and lines display the estimated effects and their confidence
-intervals at 95%. Values are displayed in Table S4, R-squared in Table S4, and
-the visualization of the bivariate relationships for the spatial and
-bioenergetic model SEMs are displayed in Figure S4. Average trophic level is
-weighted by the biomass of the trophic species. Redundancy is the proportion of
-redundant links. b, Effect of species extinctions on the structure of the
-empirical metaweb according to three scenarios. In the Decreasing and Increasing
-scenarios, species were ordered by their trophic level and removed from the
-metaweb starting respectively from the highest and lowest trophic level. Species
-were removed in a random sequence (50 sequences, grey dots) for the random
-scenario, the black line displaying the average predicted by a GAM linear model.
-For the extinction sequence, the average trophic level was not weighted by the
-biomass of species as this information is not available at the metaweb scale.
-Similar results were obtained with trophic species (i.e. node) extinction (Fig.
-S5).
+(ref:fig-std-cap) **a**, Direct and total effects of community biomass and
+species richness trends on food web structure trends. Standardized coefficients
+($r_\delta$) derived from the temporal, spatial, and bioenergetic model
+Structural Equation Models. Points and lines display the estimated effects and
+their confidence intervals at 95%. Values are displayed in Table S4, $R^2$
+in Table S5, and the visualization of the bivariate relationships for the
+spatial and bioenergetic model SEMs are displayed in Fig. S4. Average trophic
+level is weighted by the biomass of the trophic species. Redundancy is the
+proportion of redundant links. **b**, Effect of species extinctions on the
+structure of the empirical metaweb according to three scenarios. In the
+Decreasing and Increasing scenarios, species were ordered by their trophic level
+and removed from the metaweb starting respectively from the highest and lowest
+trophic level. Species were removed in a random sequence (50 sequences, grey
+dots) for the random scenario, the black line displaying the average predicted
+by a GAM linear model. For the extinction sequence, the average trophic level
+was not weighted by the biomass of species as this information is not available
+at the metaweb scale. Similar results were obtained with trophic species (i.e.
+node) extinction (Fig. S5).
 
 
 
@@ -833,7 +833,7 @@ the observed values (Fig. S6). We also computed the marginal ($R^2_m$) and condi
 ($R^2_c$) R-squared of the models following previous formulations
 [@nakagawa_general_2013; @lahuis_explained_2014]. In order to account for the
 variability associated with the priors [@gelman_r-squared_2019], we computed the
-variance of the posterior distribution  of each predicted values ($Var_{fit} =
+variance of the posterior distribution of each predicted values ($Var_{fit} =
 \sigma^2(\hat{Y_i})$). We computed $R^2$ values for each predicted values, then
 obtaining a $R^2$ distribution [@gelman_r-squared_2019]. We reported mean
 marginal and conditional $R^2$ associated the 95% credible interval computed
@@ -861,8 +861,8 @@ change by decade by back-transforming the slopes ($\beta\prime = (e^{\beta } - 1
 \times 100 \times 10$).
 
 Overall, we found that standard deviation attributed to site effects in both
-baseline (i.e. the intercept) and temporal trends in community structure were much higher than the
-ones found for hydrographic basin (Table S6).
+baseline (i.e. the intercept) and temporal trends in community structure were
+much higher than the ones found for hydrographic basin (Table S6).
 
 ## Spatial
 
@@ -895,7 +895,7 @@ PiecewiseSEM R package [@lefcheck_piecewisesem_2016]. The coefficients were stan
 confidence intervals were computed with semEff R package [@murphy_semeff_2021]. Confidence
 intervals were obtained by bootstrapping the linear models 1000 times and
 computing adjusted bootstrap percentile intervals (BCa), which are adjusted for
-the asymmetric distribution of resampling. The marginal and conditional R2
+the asymmetric distribution of resampling. The marginal and conditional $R^2$
 associated with the linear models of the SEMs were computed with the Nagelkerke
 method [@lefcheck_piecewisesem_2016, Table S5].
 
@@ -933,7 +933,7 @@ We used a bioenergetic food web model to simulate the relations between
 community biomass, species richness and food web structure. This food web model
 lifts one of the limitations of our data, that is it includes the biomass of all
 species in the food webs from primary producers to top predators. This model
-allows simulating complex communities because its parameterization depends
+allows simulating complex communities because its parametrization depends
 mainly on species body masses. We first generated `r nfw` food webs varying in species
 richness (range: `r s_range["min"]`-`r s_range["max"]`)
 and connectance (range: `r c_range["min"]`-`r c_range["max"]`) using the niche
@@ -1011,6 +1011,27 @@ the Julia package `EcologicalNetworksDynamics.jl`
 [@lajaaiti_ecologicalnetworksdynamicsjl_nodate]. Then, we computed the community
 and food web metrics at the last timesteps and analyzed the data with the same
 SEM described above.
+
+# Data, Materials, and Software Availability
+
+The raw data used for the analysis are available on Zenodo:
+https://zenodo.org/records/5095656. The raw fish database is public and
+available on Zenodo: https://zenodo.org/records/8099409. The manuscript and the
+supplementary materials are written in Rmarkdown, i.e. combining code and text,
+and are available on github:
+https://github.com/alaindanet/fishcom_biomass_dynamics. We further implemented a
+code pipeline using the targets R package to ensure that the code, the data, the
+figures, the manuscript and the results are up to date.
+
+# Acknowledgments
+
+We are indebted to the OFB for providing the database, and we thank the numerous
+people who contributed to the fish records. We thank Dr Katherine Assersohn for
+her constructive feedback on the study. AD, LEM, MM, CF, and EL have received
+support from by the ANR project ECOSTAB (ANR-17-CE32-0002) awarded to EL. AD and
+APB have received support from the Natural Environment Research Council under
+grant agreement no. NE/T003502/1 awarded to APB.
+
 
 # References  {-}
 
