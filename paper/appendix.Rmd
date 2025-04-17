@@ -539,7 +539,9 @@ tab_quanti <- purrr::map_dfr(
 )
 tab_quanti %>%
   kbl(
-    caption = "Summary distribution of community metrics and fish monitoring variables.",
+    caption = "Summary distribution of community metrics and fish monitoring
+    variables. Q1 and Q3 are the first and third quartiles of the
+    distributions.",
     booktabs = T
     ) %>%
   kable_styling() %>%
